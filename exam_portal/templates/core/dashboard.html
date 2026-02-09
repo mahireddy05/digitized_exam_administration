@@ -1,0 +1,20 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+{% block content %}
+<div class="pages-main">
+    <h1 class="pages-main-head">Welcome to the Admin Dashboard</h1>
+    <div class="dashboard-cards">
+        <div class="dashboard-pie-container">
+            <div class="dashboard-pie-title">User Distribution</div>
+            <canvas id="userPieChart"
+                data-admin="{{ admin_users|add:'0' }}"
+                data-faculty="{{ faculty_count|add:'0' }}"
+                data-student="{{ student_count|add:'0' }}">
+            </canvas>
+                <span>Total users: <b>{{ total_users }}</b></span>
+                <span>Active users: <b>{{ active_users }}</b></span>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

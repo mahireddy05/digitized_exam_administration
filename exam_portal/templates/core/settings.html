@@ -1,0 +1,16 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+{% block content %}
+    <div class="pages-main">
+        <h1 class="pages-main-head">Settings</h1>
+        <div class="settings-container">
+            <div class="settings-card">
+                <h2 class="settings-card-head">Add Users</h2>
+                <p class="setting-paragraph">Add new faculty or students to the system.</p>
+                <label for="uploadFile" class="settings-card-link" style="cursor: pointer;">Upload File</label>
+                <input type="file" id="uploadFile" style="display: none;" accept=".csv, .xlsx">
+                <a href="{% static 'samples/usersdata.csv' %}" download class="settings-card-link">Download Sample CSV</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
