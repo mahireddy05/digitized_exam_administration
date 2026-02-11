@@ -6,10 +6,51 @@
         <div class="settings-container">
             <div class="settings-card">
                 <h2 class="settings-card-head">Add Users</h2>
-                <p class="setting-paragraph">Add new faculty or students to the system.</p>
-                <label for="uploadFile" class="settings-card-link" style="cursor: pointer;">Upload File</label>
-                <input type="file" id="uploadFile" style="display: none;" accept=".csv, .xlsx">
-                <a href="{% static 'samples/usersdata.csv' %}" download class="settings-card-link">Download Sample CSV</a>
+                <p class="setting-paragraph">Add new users to the system.</p>
+                <div class="setting-card-navs">
+                    <form action="{% url 'core:upload_users' %}" method="post" enctype="multipart/form-data" style="display:inline;">
+                        {% csrf_token %}
+                        <label for="uploadUsersFile" class="settings-card-link" style="cursor: pointer;">
+                            <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload">Upload
+                        </label>
+                        <input type="file" id="uploadUsersFile" name="users_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
+                    </form>
+                    <a href="{% static 'samples/usersdata.csv' %}" download class="settings-card-link">
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download">Sample CSV
+                    </a>
+                </div>
+            </div>
+            <div class="settings-card">
+                <h2 class="settings-card-head">Add Departments</h2>
+                <p class="setting-paragraph">Add new departments to the system.</p>
+                <div class="setting-card-navs">
+                    <form action="{% url 'core:upload_departments' %}" method="post" enctype="multipart/form-data" style="display:inline;">
+                        {% csrf_token %}
+                        <label for="uploadDepartmentsFile" class="settings-card-link" style="cursor: pointer;">
+                            <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload">Upload
+                        </label>
+                        <input type="file" id="uploadDepartmentsFile" name="departments_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
+                    </form>
+                    <a href="{% static 'samples/departments.csv' %}" download class="settings-card-link">
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download">Sample CSV
+                    </a>
+                </div>
+            </div>
+            <div class="settings-card">
+                <h2 class="settings-card-head">Add Programs</h2>
+                <p class="setting-paragraph">Add new programs to the system.</p>
+                <div class="setting-card-navs">
+                    <form action="{% url 'core:upload_programs' %}" method="post" enctype="multipart/form-data" style="display:inline;">
+                        {% csrf_token %}
+                        <label for="uploadProgramsFile" class="settings-card-link" style="cursor: pointer;">
+                            <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="uploadFile">Upload
+                        </label>
+                        <input type="file" id="uploadProgramsFile" name="programs_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
+                    </form>
+                    <a href="{% static 'samples/programs.csv' %}" download class="settings-card-link">
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download">Sample CSV
+                    </a>
+                </div>
             </div>
         </div>
     </div>

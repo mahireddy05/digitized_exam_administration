@@ -11,9 +11,12 @@
         </div>
         <div class="add-data">
             <a class="control-btn" href="#">Add new course</a>
-            <label for="uploadFile" class="control-btn" style="cursor: pointer;">Upload File</label>
-            <input type="file" id="uploadFile" style="display: none;" accept=".csv" />
-            <a href="#" class="control-btn">Download Sample CSV</a>
+            <form id="courseUploadForm" action="{% url 'masters:course_upload' %}" method="post" enctype="multipart/form-data" style="display:inline;">
+                {% csrf_token %}
+                <label for="uploadFile" class="control-btn" style="cursor: pointer;">Upload File</label>
+                <input type="file" id="uploadFile" name="csv_file" style="display: none;" accept=".csv" onchange="this.form.submit();" />
+            </form>
+            <a href="{% static 'samples/coursedata.csv' %}" download class="control-btn">Download Sample CSV</a>
         </div>
     </div>
 
@@ -21,32 +24,6 @@
         <form onsubmit="return false;">
             <label for="search">Search Course:</label>
             <input type="text" id="search" placeholder="Enter Course name or Code" />
-
-            <label for="department">Department:</label>
-            <select id="department">
-                <option value="all">All Departments</option>
-                <option value="CSE">Computer Science and Engineering (CSE)</option>
-                <option value="ECE">Electronics and Communication Engineering (ECE)</option>
-                <option value="EEE">Electrical and Electronics Engineering (EEE)</option>
-                <option value="MECH">Mechanical Engineering (MECH)</option>
-                <option value="CIVIL">Civil Engineering (CIVIL)</option>
-            </select>
-
-            <label for="year">Year:</label>
-            <select id="year">
-                <option value="all">All Years</option>
-                <option value="1">1st Year</option>
-                <option value="2">2nd Year</option>
-                <option value="3">3rd Year</option>
-                <option value="4">4th Year</option>
-            </select>
-
-            <label for="semester">Semester:</label>
-            <select id="semester">
-                <option value="all">All</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-            </select>
         </form>
     </div>
 
@@ -69,9 +46,7 @@
                     <th>#</th>
                     <th>Course Code</th>
                     <th>Course Name</th>
-                    <th>Department</th>
-                    <th>Year</th>
-                    <th>Semester</th>
+                    <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -79,24 +54,69 @@
                 {% for course in courses %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ course.code }}</td>
-                    <td>{{ course.name }}</td>
-                    <td>{{ course.department }}</td>
-                    <td>{{ course.year }}</td>
-                    <td>{{ course.semester }}</td>
+                    <td>{{ course.course_code }}</td>
+                    <td>{{ course.course_name }}</td>
+                    <td>{% if course.is_active %}Active{% else %}Inactive{% endif %}</td>
                     <td>
-                        <a href="#" class="course-action-link">View</a>
-                        <a href="#" class="course-action-link">Edit</a>
-                        <a href="#" class="course-action-link">Delete</a>
+                        <a href="#" class="course-action-link edit-course-btn" 
+                           data-id="{{ course.id }}" 
+                           data-code="{{ course.course_code }}" 
+                           data-name="{{ course.course_name }}" 
+                           data-active="{{ course.is_active }}"><img src="https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000" alt="Edit" title="Edit Details"></a>
+                        <a href="#" class="course-action-link delete-course-btn" data-id="{{ course.id }}"><img src="https://img.icons8.com/?size=100&id=99971&format=png&color=000000" alt="Delete" title="Delete Student"></a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7">No courses found.</td>
+                    <td colspan="5">No courses found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <!-- Edit Course Modal -->
+    <div id="editCourseModal" class="modal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
+        <div class="edit-form">
+            <h2>Edit Course</h2>
+            <form id="editCourseForm">
+                <input type="hidden" id="editCourseId" name="id" />
+                <div>
+                    <label>Course Code:</label>
+                    <input type="text" id="editCourseCode" name="course_code" required />
+                </div>
+                <div>
+                    <label>Course Name:</label>
+                    <input type="text" id="editCourseName" name="course_name" required />
+                </div>
+                <div>
+                    <label>Status:</label>
+                    <select id="editCourseActive" name="is_active">
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+                <div style="text-align:right;">
+                    <button type="submit">Save</button>
+                    <button type="button" id="closeEditModal" style="margin-right:8px;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Course Modal -->
+    <div id="deleteCourseModal" class="modal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
+        <div class="delete-form">
+            <h2>Delete Course</h2>
+            <p>Are you sure you want to delete this course?</p>
+            <form id="deleteCourseForm">
+                <input type="hidden" id="deleteCourseId" name="id" />
+                <div style="text-align:right;">
+                    <button type="button" id="closeDeleteModal" style="margin-right:8px;">Cancel</button>
+                    <button type="submit">Delete</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 

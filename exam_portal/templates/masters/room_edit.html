@@ -2,15 +2,16 @@
 {% load static %}
 {% block content %}
     <div class="edit-form">
-        <h2>Edit Room ({{ room.room_id }})</h2>
+        <h2>Edit Room ({{ room.room_code }})</h2>
         <form method="post">
             {% csrf_token %}
             <p>Block: <input type="text" name="block" value="{{ room.block }}" /></p>
-            <p>Capacity: <input type="number" name="capacity" value="{{ room.capacity }}" /></p>
+            <p>Floor: <input type="text" name="floor" value="{{ room.floor }}" /></p>
             <p>Rows: <input type="number" name="rowscount" value="{{ room.rows }}" /></p>
             <p>Columns: <input type="number" name="columnscount" value="{{ room.columns }}" /></p>
+            <p>Status: <input type="checkbox" name="is_active" value="1" {% if room.is_active %}checked{% endif %} /> Active</p>
             <button type="submit">Save</button>
         </form>
-        <a href="{% url 'admin-rooms' %}" class="action-link">Back to Room List</a>
+        <a href="{% url 'masters:rooms' %}" class="action-link">Back to Room List</a>
     </div>
 {% endblock %}

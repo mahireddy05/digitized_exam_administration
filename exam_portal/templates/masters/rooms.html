@@ -11,9 +11,12 @@
         </div>
         <div class="add-data">
             <a class="control-btn" href="addroom.html">Add new room</a>
-            <label for="uploadFile" class="control-btn" style="cursor: pointer;">Upload File</label>
-            <input type="file" id="uploadFile" data-entity="room" style="display: none;" accept=".csv">
-            <a href="{% static 'samples/roomdata.csv' %}" download class="control-btn">Download Sample CSV</a>
+            <form id="room-upload-form" action="{% url 'masters:room_upload' %}" method="post" enctype="multipart/form-data" style="display:inline;">
+                {% csrf_token %}
+                <label for="uploadFile" class="control-btn" style="cursor: pointer;"><img class="button-icons" src="https://img.icons8.com/?size=100&id=82888&format=png&color=FFFFFF" alt="uploadFile">Upload File</label>
+                <input type="file" id="uploadFile" name="csv_file" style="display: none;" accept=".csv" onchange="document.getElementById('room-upload-form').submit();">
+            </form>
+            <a href="{% static 'samples/roomsdata.csv' %}" download class="control-btn"><img src="https://img.icons8.com/?size=100&id=83159&format=png&color=ffffff" alt="Download">Sample CSV</a>
         </div>
     </div>
     <div class="controls">
@@ -24,9 +27,9 @@
             <label for="room-block">Block</label>
             <select id="room-block">
                 <option value="All">Select Block</option>
-                <option value="A">A Block</option>
-                <option value="B">B Block</option>
-                <option value="C">C Block</option>
+                {% for block in unique_blocks %}
+                <option value="{{ block }}">{{ block }}</option>
+                {% endfor %}
             </select>
 
             <label for="capacity-min">Capacity Min:</label>
@@ -57,8 +60,7 @@
                     <th>Room ID</th>
                     <th>Block</th>
                     <th>Room Capacity</th>
-                    <th>Rows</th>
-                    <th>Columns</th>
+                    <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -66,15 +68,14 @@
                 {% for room in rooms %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td>{{ room.room_id }}</td>
+                    <td>{{ room.room_code }}</td>
                     <td>{{ room.block }}</td>
                     <td>{{ room.capacity }}</td>
-                    <td>{{ room.rows }}</td>
-                    <td>{{ room.columns }}</td>
+                    <td>{% if room.is_active %}Active{% else %}Temporarily Unavailable{% endif %}</td>
                     <td>
-                        <a href="{% url 'room_view' room.id %}" class="room-action-link">View</a>
-                        <a href="{% url 'room_edit' room.id %}" class="room-action-link">Edit</a>
-                        <a href="{% url 'room_delete' room.id %}" class="room-action-link">Delete</a>
+                        <a href="{% url 'masters:room_detail' room.id %}" class="room-action-link"><img src="https://img.icons8.com/?size=100&id=fdX9cvS8MtuS&format=png&color=000000" alt="View" title="View details"></a>
+                        <a href="{% url 'masters:room_edit' room.id %}" class="room-action-link"><img src="https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000" alt="Edit" title="Edit Details"></a>
+                        <a href="{% url 'masters:room_delete' room.id %}" class="room-action-link"><img src="https://img.icons8.com/?size=100&id=99971&format=png&color=000000" alt="Delete" title="Delete Room"></a>
                     </td>
                 </tr>
                 {% empty %}

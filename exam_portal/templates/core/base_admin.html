@@ -24,14 +24,18 @@
 {% if messages %}
 <div id="popup-messages">
     {% for message in messages %}
-        <div class="popup-message popup-{{ message.tags }}">{{ message }}</div>
+        <div class="popup-message popup-{{ message.tags }}" tabindex="0">{{ message }}</div>
     {% endfor %}
 </div>
 <script>
-setTimeout(function() {
+// Persistent popup: dismiss only when clicking outside
+document.addEventListener('mousedown', function(event) {
     var popup = document.getElementById('popup-messages');
-    if (popup) popup.style.display = 'none';
-}, 3500);
+    if (!popup) return;
+    if (!popup.contains(event.target)) {
+        popup.style.display = 'none';
+    }
+});
 </script>
 {% endif %}
 

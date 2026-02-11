@@ -3,9 +3,9 @@
 {% block content %}
     <div class="pages-main">
         <div class="view-page">
-            <h1 class="pages-main-head">{{room.block}} - {{room.room_id}}</h1>
-            <p style="color:red;"><strong>Note:</strong> This page displays the details of the selected student.</p>
-            <h2>Student Details</h2>
+            <h1 class="pages-main-head">{{room.block}} - {{room.room_code}}</h1>
+            <p style="color:red;"><strong>Note:</strong> This page displays the details of the selected room.</p>
+            <h2>Room Details</h2>
             <div class="view-actions">
 
                 <table class="details-table">
@@ -16,15 +16,18 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Room ID</td><td>{{room.room_id}}</room></td></tr>
+                        <tr><td>Room ID</td><td>{{room.room_code}}</td></tr>
                         <tr><td>Block</td><td>{{ room.block }}</td></tr>
-                        <tr><td>Capacity</td><td>{{ room.capacity }}</td></tr>
+                        <tr><td>Floor</td><td>{{ room.floor }}</td></tr>
                         <tr><td>Rows</td><td>{{ room.rows }}</td></tr>
-                        <tr><td>Column</td><td>{{ room.columns }}</td></tr>
+                        <tr><td>Columns</td><td>{{ room.columns }}</td></tr>
+                        <tr><td>Capacity</td><td>{{ room.capacity }}</td></tr>
+                        <tr><td>Status</td><td>{% if room.is_active %}Active{% else %}Temporarily Unavailable{% endif %}</td></tr>
                     </tbody>
                 </table>
             </div>
-            <a href="{% url 'admin-rooms' %}" class="action-link student-action-link">Back</a>
+            <a href="{% url 'masters:room_edit' room.id %}" class="action-link student-action-link"><img src="https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=ffffff" alt="Edit" title="Edit Details">Edit</a>
+            <a href="{% url 'masters:rooms' %}" class="action-link student-action-link">Back</a>
         </div>
     </div>
 {% endblock %}

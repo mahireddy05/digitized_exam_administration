@@ -12,8 +12,11 @@
         </div>
         <div class="add-data">
             <a class="control-btn" href="#">Add new faculty</a>
-            <label for="uploadFile" class="control-btn" style="cursor: pointer;">Upload File</label>
-            <input type="file" id="uploadFile" style="display: none;" accept=".csv" />
+            <form action="{% url 'masters:faculty_upload' %}" method="post" enctype="multipart/form-data" style="display:inline;">
+                {% csrf_token %}
+                <label for="uploadFile" class="control-btn" style="cursor: pointer;">Upload File</label>
+                <input type="file" id="uploadFile" name="csv_file" style="display: none;" accept=".csv" onchange="this.form.submit()">
+            </form>
             <a href="{% static 'samples/facultydata.csv' %}" download class="control-btn">Download Sample CSV</a>
         </div>
     </div>
@@ -23,15 +26,13 @@
             <label for="search">Search Faculty:</label>
             <input type="text" id="search" placeholder="Enter Faculty name or ID" />
 
-            <label for="department">Department:</label>
-            <select id="department">
-                <option value="all">All Departments</option>
-                <option value="CSE">Computer Science and Engineering (CSE)</option>
-                <option value="ECE">Electronics and Communication Engineering (ECE)</option>
-                <option value="EEE">Electrical and Electronics Engineering (EEE)</option>
-                <option value="MECH">Mechanical Engineering (MECH)</option>
-                <option value="CIVIL">Civil Engineering (CIVIL)</option>
-            </select>
+                        <label for="department">Department:</label>
+                        <select id="department">
+                                <option value="all">All Departments</option>
+                                {% for dept in departments %}
+                                    <option value="{{ dept.dept_code }}">{{ dept.dept_name }} ({{ dept.dept_code }})</option>
+                                {% endfor %}
+                        </select>
         </form>
     </div>
 
@@ -67,15 +68,25 @@
                 {% for faculty in faculties %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
-                    <td><a href="{% url 'faculty_view' faculty.emp_id %}" class="faculty-action-link">{{faculty.emp_id}}</a></td>
+                    <td><a href="{% url 'masters:faculty_detail' faculty.id %}" class="faculty-action-link">{{faculty.faculty_id}}</a></td>
                     <td>{{ faculty.user.first_name }} {{ faculty.user.last_name }}</td>
-                    <td>{{ faculty.department }}</td>
-                    <td>{{ faculty.phone }}</td>
+                    <td>{{ faculty.dept.dept_name }} ({{ faculty.dept.dept_code }})</td>
+                    <td>{{ faculty.phone_number }}</td>
                     <td>{{ faculty.user.email }}</td>
                     <td>
-                        <a href="{% url 'faculty_view' faculty.emp_id %}" class="faculty-action-link">View</a>
-                        <a href="{% url 'faculty_edit' faculty.emp_id %}" class="faculty-action-link">Edit</a>
-                        <a href="{% url 'faculty_delete' faculty.emp_id %}" class="faculty-action-link">Delete</a>
+                        <a href="{% url 'masters:faculty_detail' faculty.id %}" class="faculty-action-link"><img src="https://img.icons8.com/?size=100&id=fdX9cvS8MtuS&format=png&color=000000" alt="View" title="View details"></a>
+                        <a href="{% url 'masters:faculty_edit' faculty.id %}" class="faculty-action-link"><img src="https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000" alt="Edit" title="Edit Details"></a>
+                        <button class="faculty-delete-btn"
+                            data-faculty-id="{{ faculty.id }}"
+                            data-faculty-name="{{ faculty.user.first_name }} {{ faculty.user.last_name }}"
+                            data-faculty-email="{{ faculty.user.email }}"
+                            data-faculty-dept="{{ faculty.dept.dept_name }}"
+                            data-faculty-phone="{{ faculty.phone_number }}"
+                            data-faculty-designation="{{ faculty.designation }}"
+                            data-faculty-status="{{ faculty.status }}"
+                            style="background:none;border:none;padding:0;cursor:pointer;">
+                            <img src="https://img.icons8.com/?size=100&id=99971&format=png&color=000000" alt="Delete" title="Delete Faculty">
+                        </button>
                     </td>
                 </tr>
                 {% empty %}
@@ -85,6 +96,14 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+
+<!-- Faculty Delete Modal using AJAX -->
+<div id="facultyDeleteModal" class="modal" style="display:none;align-items:center;justify-content:center;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(30,58,95,0.18);z-index:1000;">
+    <div class="modal-content" id="facultyDeleteModalContent" style="background:transparent;padding:0;border-radius:14px;max-width:480px;width:100%;box-shadow:none;position:relative;">
+        <!-- Content will be loaded here -->
     </div>
 </div>
 

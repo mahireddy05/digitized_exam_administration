@@ -1,0 +1,41 @@
+{% extends "core/base_admin.html" %}
+{% block content %}
+<div class="pages-main">
+    <h1 class="pages-main-head">Faculty Data Conflicts</h1>
+    <form method="post">
+        {% csrf_token %}
+        {% if mismatches %}
+            {% for mismatch in mismatches %}
+                <div class="conflict-block" style="margin-bottom: 32px; border: 1px solid #f59e42; border-radius: 8px; padding: 18px;">
+                    <label style="font-weight: bold; font-size: 1.1em;">
+                        <input type="checkbox" name="update_faculty" value="{{ mismatch.faculty_id }}" style="margin-right: 8px;">
+                        {{ mismatch.faculty_id }}
+                    </label>
+                    <table style="margin-top: 10px; width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 6px 12px; border: 1px solid #e5e7eb;">Field</th>
+                                <th style="padding: 6px 12px; border: 1px solid #e5e7eb;">Old Value</th>
+                                <th style="padding: 6px 12px; border: 1px solid #e5e7eb;">New Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for diff in mismatch.diffs %}
+                                <tr>
+                                    <td style="padding: 6px 12px; border: 1px solid #e5e7eb;">{{ diff.0 }}</td>
+                                    <td style="padding: 6px 12px; border: 1px solid #e5e7eb;">{{ diff.1 }}</td>
+                                    <td style="padding: 6px 12px; border: 1px solid #e5e7eb; color: #ef4444;">{{ diff.2 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+            <button type="submit" class="control-btn" style="background: #f59e42; color: #fff; font-weight: bold;">Update Selected</button>
+        {% else %}
+            <p>No mismatched faculty found.</p>
+        {% endif %}
+    </form>
+    <a href="{% url 'masters:faculty' %}" class="action-link" style="margin-top: 18px; display: inline-block;">Back to Faculty List</a>
+</div>
+{% endblock %}

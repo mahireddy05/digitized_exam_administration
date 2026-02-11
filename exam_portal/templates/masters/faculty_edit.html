@@ -2,16 +2,37 @@
 {% load static %}
 {% block content %}
     <div class="edit-form">
-        <h2>Edit Faculty ({{ faculty.emp_id }}-{{ user.first_name }} {{user.last_name}})</h2>
+        <h2>Edit Faculty ({{ faculty.faculty_id }} - {{ user.first_name }} {{ user.last_name }})</h2>
         <form method="post">
             {% csrf_token %}
             <p>First Name: <input type="text" name="first_name" value="{{ user.first_name }}" /></p>
             <p>Last Name: <input type="text" name="last_name" value="{{ user.last_name }}" /></p>
-            <p>Department ID: <input type="text" name="department" value="{{ faculty.department_id }}" /></p>
-            <p>Phone: <input type="text" name="phone" value="{{ faculty.phone }}" /></p>
             <p>Email: <input type="email" name="email" value="{{ user.email }}" /></p>
+            <p>Department:
+                <select name="department">
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if faculty.dept.id == dept.id %}selected{% endif %}>{{ dept.dept_name }} ({{ dept.dept_code }})</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>Phone: <input type="text" name="phone" value="{{ faculty.phone_number }}" /></p>
+            <p>Designation:
+                <select name="designation">
+                    <option value="">-- Select --</option>
+                    <option value="Assistant Professor" {% if faculty.designation == "Assistant Professor" %}selected{% endif %}>Assistant Professor</option>
+                    <option value="Associate Professor" {% if faculty.designation == "Associate Professor" %}selected{% endif %}>Associate Professor</option>
+                    <option value="Professor" {% if faculty.designation == "Professor" %}selected{% endif %}>Professor</option>
+                </select>
+            </p>
+            <p>Status:
+                <select name="status">
+                    <option value="ACTIVE" {% if faculty.status == "ACTIVE" %}selected{% endif %}>ACTIVE</option>
+                    <option value="RESIGNED" {% if faculty.status == "RESIGNED" %}selected{% endif %}>RESIGNED</option>
+                    <option value="ON_LEAVE" {% if faculty.status == "ON_LEAVE" %}selected{% endif %}>ON LEAVE</option>
+                </select>
+            </p>
             <button type="submit">Save</button>
         </form>
-        <a href="{% url 'admin-faculty' %}" class="action-link">Back to Faculty List</a>
+        <a href="{% url 'masters:faculty' %}" class="action-link">Back to Faculty List</a>
     </div>
 {% endblock %}

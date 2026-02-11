@@ -2,18 +2,38 @@
 {% load static %}
 {% block content %}
     <div class="edit-form">
-        <h2>Edit Student ({{ student.id }}-{{ user.first_name }} {{user.last_name}})</h2>
+        <h2>Edit Student ({{ student.student_id }} - {{ student.user.first_name }} {{ student.user.last_name }})</h2>
         <form method="post">
             {% csrf_token %}
-            <p>First Name: <input type="text" name="first_name" value="{{ user.first_name }}" /></p>
-            <p>Last Name: <input type="text" name="last_name" value="{{ user.last_name }}" /></p>
-            <p>Department ID: <input type="text" name="department" value="{{ student.department_id }}" /></p>
-            <p>Year: <input type="number" name="year" value="{{ student.year }}" /></p>
-            <p>Semester: <input type="number" name="semester" value="{{ student.semester }}" /></p>
-            <p>Phone: <input type="text" name="phone" value="{{ student.phone }}" /></p>
-            <p>Email: <input type="email" name="email" value="{{ user.email }}" /></p>
+            <p>Student ID: <input type="text" name="student_id" value="{{ student.student_id }}" readonly style="background:#e5e7eb;" /></p>
+            <p>First Name: <input type="text" name="first_name" value="{{ student.user.first_name }}" /></p>
+            <p>Last Name: <input type="text" name="last_name" value="{{ student.user.last_name }}" /></p>
+            <p>Department:
+                <select name="department">
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if student.dept.id == dept.id %}selected{% endif %}>{{ dept.dept_name }} ({{ dept.dept_code }})</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>Program:
+                <select name="program">
+                    {% for prog in programs %}
+                        <option value="{{ prog.id }}" {% if student.program.id == prog.id %}selected{% endif %}>{{ prog.program_name }} ({{ prog.program_code }})</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>Email: <input type="email" name="email" value="{{ student.email }}" /></p>
+            <p>Mobile: <input type="text" name="phone_number" value="{{ student.phone_number }}" /></p>
+            <p>Parent Mobile: <input type="text" name="parent_phone_number" value="{{ student.parent_phone_number }}" /></p>
+            <p>Status:
+                <select name="status">
+                    <option value="ACTIVE" {% if student.status == 'ACTIVE' %}selected{% endif %}>ACTIVE</option>
+                    <option value="GRADUATED" {% if student.status == 'GRADUATED' %}selected{% endif %}>GRADUATED</option>
+                    <option value="DROPPED" {% if student.status == 'DROPPED' %}selected{% endif %}>DROPPED</option>
+                </select>
+            </p>
             <button type="submit">Save</button>
         </form>
-        <a href="{% url 'admin-students' %}" class="action-link">Back to Student List</a>
+        <a href="{% url 'masters:student' %}" class="action-link">Back to Student List</a>
     </div>
 {% endblock %}
