@@ -1,0 +1,27 @@
+{% extends 'core/base_admin.html' %}
+{% block content %}
+<h2>Data Conflict Detected</h2>
+<p>The following records in your CSV already exist in the database but do not match exactly. Please review the mismatched data below:</p>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            {% for col in headers %}
+            <th>{{ col }}</th>
+            {% endfor %}
+            <th>Database Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row, db_row in mismatches %}
+        <tr>
+            {% for value in row %}
+            <td>{{ value }}</td>
+            {% endfor %}
+            <td>{{ db_row }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p class="text-danger">Please resolve these conflicts before re-uploading.</p>
+<a href="{% url 'core:settings' %}" class="btn btn-primary">Back to Settings</a>
+{% endblock %}

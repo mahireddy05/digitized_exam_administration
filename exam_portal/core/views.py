@@ -1,3 +1,89 @@
+def program_conflict(request):
+    context = request.session.get('program_conflicts')
+    if not context:
+        messages.error(request, "No program conflict data to display.")
+        return redirect("core:settings")
+    if request.method == "POST":
+        selected = request.POST.getlist('update_program')
+        updated = []
+        if not selected:
+            messages.error(request, "No programs selected. Please select at least one program to update.")
+            return render(request, "core/program_conflict.html", context)
+        for row, db_row in context['mismatches']:
+            program_code = row[0]
+            program_name = row[1]
+            if program_code in selected:
+                Program.objects.filter(program_code=program_code).update(program_name=program_name)
+                updated.append(program_code)
+        del request.session['program_conflicts']
+        if updated:
+            messages.success(request, f"Successfully updated {len(updated)} program(s): {', '.join(updated)}.")
+        else:
+            messages.info(request, "No programs were updated.")
+        return redirect("core:settings")
+    return render(request, "core/program_conflict.html", context)
+
+def user_conflict(request):
+    context = request.session.get('user_conflicts')
+    if not context:
+        messages.error(request, "No user conflict data to display.")
+        return redirect("core:settings")
+    if request.method == "POST":
+        selected = request.POST.getlist('update_user')
+        updated = []
+        if not selected:
+            messages.error(request, "No users selected. Please select at least one user to update.")
+            return render(request, "core/user_conflict.html", context)
+        User = get_user_model()
+        for row, db_row in context['mismatches']:
+            # row is the original CSV row, db_row is [username, db_email, db_role, db_first_name, db_last_name]
+            username = row[0]
+            email = row[4] if len(row) > 4 else ''
+            role = row[5] if len(row) > 5 else ''
+            first_name = row[2] if len(row) > 2 else ''
+            last_name = row[3] if len(row) > 3 else ''
+            if username in selected:
+                user = User.objects.filter(username=username).first()
+                if user:
+                    user.email = email
+                    user.first_name = first_name
+                    user.last_name = last_name
+                    if hasattr(user, "role"):
+                        user.role = role
+                    user.save()
+                    updated.append(username)
+        del request.session['user_conflicts']
+        if updated:
+            messages.success(request, f"Successfully updated {len(updated)} user(s): {', '.join(updated)}.")
+        else:
+            messages.info(request, "No users were updated.")
+        return redirect("core:settings")
+    return render(request, "core/user_conflict.html", context)
+from django.utils.safestring import mark_safe
+def dept_conflict(request):
+    context = request.session.get('dept_conflicts')
+    if not context:
+        messages.error(request, "No department conflict data to display.")
+        return redirect("core:settings")
+    if request.method == "POST":
+        selected = request.POST.getlist('update_dept')
+        updated = []
+        if not selected:
+            messages.error(request, "No departments selected. Please select at least one department to update.")
+            return render(request, "core/dept_conflict.html", context)
+        for row, db_row in context['mismatches']:
+            dept_code = row[0]
+            dept_name = row[1]
+            if dept_code in selected:
+                Department.objects.filter(dept_code=dept_code).update(dept_name=dept_name)
+                updated.append(dept_code)
+        del request.session['dept_conflicts']
+        if updated:
+            messages.success(request, f"Successfully updated {len(updated)} department(s): {', '.join(updated)}.")
+        else:
+            messages.info(request, "No departments were updated.")
+        return redirect("core:settings")
+    return render(request, "core/dept_conflict.html", context)
 from django.shortcuts import render, redirect
 from django.contrib import messages
 import csv
@@ -30,29 +116,85 @@ def upload_departments(request):
     if request.method == "POST" and request.FILES.get("departments_file"):
         file = request.FILES["departments_file"]
         file_path = default_storage.save("tmp/departments.csv", file)
+        error_found = False
+        new_count = 0
+        exact_duplicate_count = 0
+        mismatch_rows = []
+        total_rows = 0
+        dept_code_to_name = {}
+        csv_rows = []
         with default_storage.open(file_path, mode='rb') as f:
-            # Decode with utf-8-sig to handle BOM and ensure text for csv.reader
             text = f.read().decode('utf-8-sig')
             reader = csv.reader(text.splitlines())
             header = next(reader, None)
-            for row in reader:
-                if len(row) < 2:
-                    messages.error(request, "CSV format error: Each row must have dept_code and dept_name.")
-                    continue
-                dept_code = row[0].strip()
-                dept_name = row[1].strip()
-                if not dept_code or not dept_name:
-                    messages.error(request, "Dept code and dept name cannot be empty.")
-                    continue
-                if len(dept_code) > Department._meta.get_field('dept_code').max_length:
-                    messages.error(request, f"Dept code '{dept_code}' is too long (max {Department._meta.get_field('dept_code').max_length}).")
-                    continue
-                if len(dept_name) > Department._meta.get_field('dept_name').max_length:
-                    messages.error(request, f"Dept name '{dept_name}' is too long (max {Department._meta.get_field('dept_name').max_length}).")
-                    continue
-                Department.objects.get_or_create(dept_code=dept_code, dept_name=dept_name)
+            valid_headers = [["dept_code", "dept_name"], ["department_code", "department_name"]]
+            header_lower = [h.strip().lower() for h in header] if header else []
+            if header_lower == valid_headers[0]:
+                code_idx, name_idx = 0, 1
+                required_headers = valid_headers[0]
+            elif header_lower == valid_headers[1]:
+                code_idx, name_idx = 0, 1
+                required_headers = valid_headers[1]
+            else:
+                messages.error(request, f"CSV header error: Expected headers {valid_headers[0]} or {valid_headers[1]}.")
+                error_found = True
+                code_idx = name_idx = None
+            if not error_found:
+                for row in reader:
+                    total_rows += 1
+                    if len(row) <= max(code_idx, name_idx):
+                        messages.error(request, f"CSV format error: Each row must have {required_headers[0]} and {required_headers[1]}.")
+                        continue
+                    dept_code = row[code_idx].strip()
+                    dept_name = row[name_idx].strip()
+                    if not dept_code or not dept_name:
+                        messages.error(request, f"{required_headers[0].replace('_', ' ').capitalize()} and {required_headers[1].replace('_', ' ')} cannot be empty.")
+                        continue
+                    if len(dept_code) > Department._meta.get_field('dept_code').max_length:
+                        messages.error(request, f"Department code '{dept_code}' is too long (max {Department._meta.get_field('dept_code').max_length}).")
+                        continue
+                    if len(dept_name) > Department._meta.get_field('dept_name').max_length:
+                        messages.error(request, f"Department name '{dept_name}' is too long (max {Department._meta.get_field('dept_name').max_length}).")
+                        continue
+                    dept_code_to_name[dept_code] = dept_name
+                    csv_rows.append((dept_code, dept_name, row))
+        # Bulk fetch all existing departments in one query
+        existing_depts = Department.objects.filter(dept_code__in=dept_code_to_name.keys())
+        existing_map = {d.dept_code: d.dept_name for d in existing_depts}
+        to_create = []
+        for dept_code, dept_name, orig_row in csv_rows:
+            if dept_code in existing_map:
+                if existing_map[dept_code] == dept_name:
+                    exact_duplicate_count += 1
+                else:
+                    mismatch_rows.append((orig_row, [dept_code, existing_map[dept_code]]))
+            else:
+                to_create.append(Department(dept_code=dept_code, dept_name=dept_name))
+                new_count += 1
+        if to_create:
+            Department.objects.bulk_create(to_create)
         default_storage.delete(file_path)
-        messages.success(request, "Departments uploaded and added successfully.")
+        if error_found:
+            return redirect("core:settings")
+        if mismatch_rows:
+            if new_count > 0:
+                messages.success(request, f"{new_count}/{total_rows} new departments added successfully before conflict.")
+            if exact_duplicate_count > 0:
+                messages.info(request, f"{exact_duplicate_count}/{total_rows} departments already exist and match exactly.")
+            request.session['dept_conflicts'] = {
+                'headers': required_headers,
+                'mismatches': mismatch_rows
+            }
+            return redirect('core:dept_conflict')
+        if new_count == 0 and exact_duplicate_count == total_rows:
+            messages.info(request, "No new data found. All the data uploaded already exists and matches exactly.")
+        elif new_count > 0 and exact_duplicate_count > 0:
+            messages.success(request, f"{new_count}/{total_rows} new departments added successfully.")
+            messages.info(request, f"{exact_duplicate_count}/{total_rows} departments already exist and match exactly.")
+        elif new_count > 0:
+            messages.success(request, f"All {new_count} departments added successfully.")
+        elif exact_duplicate_count > 0:
+            messages.info(request, f"All {exact_duplicate_count} departments already exist and match exactly.")
         return redirect("core:settings")
     messages.error(request, "No file uploaded or invalid CSV format.")
     return redirect("core:settings")
@@ -61,90 +203,176 @@ def upload_programs(request):
     if request.method == "POST" and request.FILES.get("programs_file"):
         file = request.FILES["programs_file"]
         file_path = default_storage.save("tmp/programs.csv", file)
+        error_found = False
+        new_count = 0
+        exact_duplicate_count = 0
+        mismatch_rows = []
+        total_rows = 0
+        program_code_to_name = {}
+        csv_rows = []
         with default_storage.open(file_path, mode='rb') as f:
             text = f.read().decode('utf-8-sig')
             reader = csv.reader(text.splitlines())
             header = next(reader, None)
-            for row in reader:
-                # Use correct field names: program_code, program_name
-                program_code = row[0].strip() if len(row) > 0 else ""
-                program_name = row[1].strip() if len(row) > 1 else ""
-                if not program_code or not program_name:
-                    continue
-                Program.objects.get_or_create(program_code=program_code, program_name=program_name)
+            required_headers = ["program_code", "program_name"]
+            if not header or [h.strip().lower() for h in header] != required_headers:
+                messages.error(request, f"CSV header error: Expected headers {required_headers}.")
+                error_found = True
+            else:
+                for row in reader:
+                    total_rows += 1
+                    if len(row) < 2:
+                        messages.error(request, "CSV format error: Each row must have program_code and program_name.")
+                        continue
+                    program_code = row[0].strip()
+                    program_name = row[1].strip()
+                    if not program_code or not program_name:
+                        messages.error(request, "Program code and program name cannot be empty.")
+                        continue
+                    if len(program_code) > Program._meta.get_field('program_code').max_length:
+                        messages.error(request, f"Program code '{program_code}' is too long (max {Program._meta.get_field('program_code').max_length}).")
+                        continue
+                    if len(program_name) > Program._meta.get_field('program_name').max_length:
+                        messages.error(request, f"Program name '{program_name}' is too long (max {Program._meta.get_field('program_name').max_length}).")
+                        continue
+                    program_code_to_name[program_code] = program_name
+                    csv_rows.append((program_code, program_name, row))
+        existing_programs = Program.objects.filter(program_code__in=program_code_to_name.keys())
+        existing_map = {p.program_code: p.program_name for p in existing_programs}
+        to_create = []
+        for program_code, program_name, orig_row in csv_rows:
+            if program_code in existing_map:
+                if existing_map[program_code] == program_name:
+                    exact_duplicate_count += 1
+                else:
+                    # Only pass (program_code, program_name) as row, not the full orig_row
+                    mismatch_rows.append(((program_code, program_name), [program_code, existing_map[program_code]]))
+            else:
+                to_create.append(Program(program_code=program_code, program_name=program_name))
+                new_count += 1
+        if to_create:
+            Program.objects.bulk_create(to_create)
         default_storage.delete(file_path)
-        messages.success(request, "Programs uploaded and added successfully.")
+        if error_found:
+            return redirect("core:settings")
+        if mismatch_rows:
+            if new_count > 0:
+                messages.success(request, f"{new_count}/{total_rows} new programs added successfully before conflict.")
+            if exact_duplicate_count > 0:
+                messages.info(request, f"{exact_duplicate_count}/{total_rows} programs already exist and match exactly.")
+            request.session['program_conflicts'] = {
+                'headers': required_headers,
+                'mismatches': mismatch_rows
+            }
+            return redirect('core:program_conflict')
+        if new_count == 0 and exact_duplicate_count == total_rows:
+            messages.info(request, "No new data found. All the data uploaded already exists and matches exactly.")
+        elif new_count > 0 and exact_duplicate_count > 0:
+            messages.success(request, f"{new_count}/{total_rows} new programs added successfully.")
+            messages.info(request, f"{exact_duplicate_count}/{total_rows} programs already exist and match exactly.")
+        elif new_count > 0:
+            messages.success(request, f"All {new_count} programs added successfully.")
+        elif exact_duplicate_count > 0:
+            messages.info(request, f"All {exact_duplicate_count} programs already exist and match exactly.")
         return redirect("core:settings")
-    messages.error(request, "No file uploaded.")
+    messages.error(request, "No file uploaded or invalid CSV format.")
     return redirect("core:settings")
 
 def upload_users(request):
     if request.method == "POST" and request.FILES.get("users_file"):
         file = request.FILES["users_file"]
         file_path = default_storage.save("tmp/users.csv", file)
+        error_found = False
+        new_count = 0
+        exact_duplicate_count = 0
+        mismatch_rows = []
+        total_rows = 0
+        user_map = {}
+        csv_rows = []
+        import re
+        email_regex = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
         with default_storage.open(file_path, mode='rb') as f:
             text = f.read().decode('utf-8-sig')
             reader = csv.reader(text.splitlines())
             header = next(reader, None)
-            User = get_user_model()
-            for row in reader:
-                # Expecting: username, password, first_name, last_name, email, role
-                if len(row) < 6:
-                    messages.error(request, "CSV format error: Each row must have username, password, first_name, last_name, email, role.")
-                    continue
-                username = row[0].strip()
-                password = row[1].strip()
-                first_name = row[2].strip()
-                last_name = row[3].strip()
-                email = row[4].strip()
-                role = row[5].strip().lower()
-                if not username or not password or not email:
-                    messages.error(request, "Username, password, and email cannot be empty.")
-                    continue
-
-                # Set user flags based on role
-                is_superuser = is_staff = is_active = False
-                if role == "admin":
-                    is_superuser = True
-                    is_staff = True
-                    is_active = True
-                elif role == "faculty" or role == "staff" or role == "hod" or role == "dept_exam_incharge":
-                    is_superuser = False
-                    is_staff = True
-                    is_active = True
-                elif role == "student":
-                    is_superuser = False
-                    is_staff = False
-                    is_active = True
+            required_headers = ["username", "password", "first_name", "last_name", "email", "role"]
+            allowed_roles = {"student", "faculty", "admin", "hod", "dept_exam_controller"}
+            if not header or [h.strip().lower() for h in header] != required_headers:
+                messages.error(request, f"CSV header error: Expected headers {required_headers}.")
+                error_found = True
+            else:
+                User = get_user_model()
+                for idx, row in enumerate(reader, start=2):
+                    total_rows += 1
+                    if len(row) < 6:
+                        messages.error(request, f"CSV format error: Each row must have username, password, first_name, last_name, email, role. (Row {idx})")
+                        continue
+                    username = row[0].strip()
+                    password = row[1].strip()
+                    first_name = row[2].strip()
+                    last_name = row[3].strip()
+                    email = row[4].strip()
+                    role = row[5].strip().lower()
+                    if not username or not password or not email:
+                        messages.error(request, f"Username, password, and email cannot be empty. (Row {idx}, username: {username})")
+                        continue
+                    if not email_regex.match(email):
+                        messages.error(request, f"Row {idx}: username '{username}' has invalid email id '{email}'")
+                        continue
+                    if role not in allowed_roles:
+                        messages.error(request, f"Invalid role: {role}. Allowed roles: {', '.join(allowed_roles)} (Row {idx}, username: {username})")
+                        continue
+                    user_map[username] = (email, role, row)
+                    csv_rows.append((username, email, role, row, password, first_name, last_name))
+        User = get_user_model()
+        existing_users = User.objects.filter(username__in=user_map.keys())
+        existing_map = {u.username: (u.email, getattr(u, 'role', ''), u.first_name, u.last_name) for u in existing_users}
+        to_create = []
+        for username, email, role, orig_row, password, first_name, last_name in csv_rows:
+            if username in existing_map:
+                db_email, db_role, db_first_name, db_last_name = existing_map[username]
+                if db_email == email and db_role == role and db_first_name == first_name and db_last_name == last_name:
+                    exact_duplicate_count += 1
                 else:
-                    # Default: treat as normal user
-                    is_superuser = False
-                    is_staff = False
-                    is_active = True
-
-                # Save the role field explicitly if it exists on the model
-                user, created = User.objects.get_or_create(username=username, defaults={
-                    "email": email,
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "is_superuser": is_superuser,
-                    "is_staff": is_staff,
-                    "is_active": is_active,
-                    "role": role,  # <-- ensure this line is present
-                })
-                # Always set password and update role fields if user already exists
-                user.email = email
-                user.first_name = first_name
-                user.last_name = last_name
-                user.is_superuser = is_superuser
-                user.is_staff = is_staff
-                user.is_active = is_active
-                if hasattr(user, "role"):
-                    user.role = role  # <-- update role on existing user as well
+                    mismatch_rows.append((orig_row, [username, db_email, db_role, db_first_name, db_last_name]))
+            else:
+                to_create.append(User(
+                    username=username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_superuser=(role == "admin"),
+                    is_staff=(role in {"admin", "faculty", "hod", "dept_exam_controller"}),
+                    is_active=True,
+                    role=role,
+                ))
+                new_count += 1
+        if to_create:
+            for user, (username, email, role, orig_row, password, first_name, last_name) in zip(to_create, csv_rows):
                 user.set_password(password)
-                user.save()
+            User.objects.bulk_create(to_create)
         default_storage.delete(file_path)
-        messages.success(request, "Users uploaded and added successfully.")
+        if error_found:
+            return redirect("core:settings")
+        if mismatch_rows:
+            if new_count > 0:
+                messages.success(request, f"{new_count}/{total_rows} new users added successfully before conflict.")
+            if exact_duplicate_count > 0:
+                messages.info(request, f"{exact_duplicate_count}/{total_rows} users already exist and match exactly.")
+            request.session['user_conflicts'] = {
+                'headers': required_headers,
+                'mismatches': mismatch_rows
+            }
+            return redirect('core:user_conflict')
+        if new_count == 0 and exact_duplicate_count == total_rows:
+            messages.info(request, "No new data found. All the data uploaded already exists and matches exactly.")
+        elif new_count > 0 and exact_duplicate_count > 0:
+            messages.success(request, f"{new_count}/{total_rows} new users added successfully.")
+            messages.info(request, f"{exact_duplicate_count}/{total_rows} users already exist and match exactly.")
+        elif new_count > 0:
+            messages.success(request, f"All {new_count} users added successfully.")
+        elif exact_duplicate_count > 0:
+            messages.info(request, f"All {exact_duplicate_count} users already exist and match exactly.")
         return redirect("core:settings")
     messages.error(request, "No file uploaded or invalid CSV format.")
     return redirect("core:settings")

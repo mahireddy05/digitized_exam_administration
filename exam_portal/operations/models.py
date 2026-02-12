@@ -86,7 +86,7 @@ class Exam(models.Model):
     EXAM_TYPE = (("REGULAR", "REGULAR"), ("SUPPLY", "SUPPLY"), ("IMPROVEMENT", "IMPROVEMENT"))
 
     exam_slot = models.ForeignKey(ExamSlot, on_delete=models.CASCADE, related_name="exams")
-    course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="exams")
+    course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="exams", null=True, blank=True)
     academic_year = models.CharField(max_length=9)
     semester = models.PositiveSmallIntegerField()
     exam_type = models.CharField(max_length=12, choices=EXAM_TYPE)
