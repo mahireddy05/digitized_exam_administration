@@ -1,0 +1,79 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+{% block content %}
+<div class="pages-main">
+    <h1 class="pages-main-head">Course Registration Conflicts</h1>
+    {% if messages %}
+    <div id="popup-messages">
+        {% for message in messages %}
+            <div class="popup-message popup-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <form method="post" id="conflictUpdateForm" action="{% url 'masters:coursereg_conflict_resolve' %}">
+        {% csrf_token %}
+        <table class="conflict-table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAllConflicts"></th>
+                    <th>Student ID</th>
+                    <th>Course Code</th>
+                    <th>Academic Year</th>
+                    <th>Semester</th>
+                    <th>Reason</th>
+                                <th>Old Academic Year</th>
+                                <th>Old Semester</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in conflicts %}
+                <tr>
+                    <td><input type="checkbox" name="conflict_rows" value="{{ row.student_id }}|{{ row.course_code }}|{{ row.academic_year }}|{{ row.semester }}"></td>
+                    <td>{{ row.student_id }}</td>
+                    <td>{{ row.course_code }}</td>
+                    <td>{{ row.academic_year }}</td>
+                    <td>{{ row.semester }}</td>
+                    <td>{{ row.reason }}</td>
+                    <td>{{ row.old_academic_year|default:'' }}</td>
+                    <td>{{ row.old_semester|default:'' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="control-btn">Update Selected</button>
+        <div id="conflictWarning" style="color:red;display:none;margin-top:10px;">Select at least one to update.</div>
+        <br>
+    </form>
+    <a href="{% url 'masters:coursereg' %}" class="action-link">Back</a>
+    </form>
+</div>
+<script>
+// Select all checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAllConflicts');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('input[name="conflict_rows"]').forEach(cb => {
+                cb.checked = selectAll.checked;
+            });
+        });
+    }
+    // Notification close on click
+    document.querySelectorAll('.popup-message').forEach(function(msg) {
+        msg.addEventListener('click', function(e) {
+            msg.style.display = 'none';
+            e.stopPropagation();
+        });
+    });
+    // Dismiss all notifications if clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('popup-message')) {
+            document.querySelectorAll('.popup-message').forEach(function(msg) {
+                msg.style.display = 'none';
+            });
+        }
+    });
+});
+</script>
+<script src="{% static 'js/scripts.js' %}"></script>
+{% endblock %}

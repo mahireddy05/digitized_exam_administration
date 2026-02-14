@@ -6,14 +6,13 @@ class StudentAcademicData(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="academic_records")
     academic_year = models.CharField(max_length=9)  # e.g. "2025-2026"
     year = models.PositiveSmallIntegerField()
-    semester = models.PositiveSmallIntegerField()
+    semester = models.CharField(max_length=20)
     is_current = models.BooleanField(default=False)
 
     class Meta:
         db_table = "student_academic_data"
         constraints = [
-                models.CheckConstraint(check=models.Q(year__gte=1, year__lte=4), name="chk_sad_year_1_4"),
-                models.CheckConstraint(check=models.Q(semester__gte=1, semester__lte=8), name="chk_sad_sem_1_8"),
+            models.CheckConstraint(check=models.Q(year__gte=1, year__lte=4), name="chk_sad_year_1_4"),
             models.UniqueConstraint(fields=["student", "academic_year", "year", "semester"], name="uq_sad_student_term"),
         ]
 
@@ -32,13 +31,12 @@ class StudentCourse(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="course_map")
     course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="student_map")
     academic_year = models.CharField(max_length=9)
-    semester = models.PositiveSmallIntegerField()
+    semester = models.CharField(max_length=20)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = "student_course"
         constraints = [
-            models.CheckConstraint(check=models.Q(semester__gte=1, semester__lte=8), name="chk_ss_sem_1_8"),
             models.UniqueConstraint(fields=["student", "course", "academic_year", "semester"], name="uq_student_course"),
         ]
 
@@ -47,13 +45,12 @@ class FacultyCourse(models.Model):
     faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, related_name="course_map")
     course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="faculty_map")
     academic_year = models.CharField(max_length=9)
-    semester = models.PositiveSmallIntegerField()
+    semester = models.CharField(max_length=20)
     is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = "faculty_course"
         constraints = [
-            models.CheckConstraint(check=models.Q(semester__gte=1, semester__lte=8), name="chk_fs_sem_1_8"),
             models.UniqueConstraint(fields=["faculty", "course", "academic_year", "semester"], name="uq_faculty_course"),
         ]
 
@@ -88,14 +85,12 @@ class Exam(models.Model):
     exam_slot = models.ForeignKey(ExamSlot, on_delete=models.CASCADE, related_name="exams")
     course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="exams", null=True, blank=True)
     academic_year = models.CharField(max_length=9)
-    semester = models.PositiveSmallIntegerField()
+    semester = models.CharField(max_length=20)
     exam_type = models.CharField(max_length=12, choices=EXAM_TYPE)
 
     class Meta:
         db_table = "exam"
-        constraints = [
-            models.CheckConstraint(check=models.Q(semester__gte=1, semester__lte=8), name="chk_exam_sem_1_8"),
-            ]
+        constraints = []
         indexes = [
             models.Index(fields=["academic_year", "semester", "exam_type"]),
         ]

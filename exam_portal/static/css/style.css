@@ -486,7 +486,7 @@ th {
   background-color: #1E3A5F;
   color: white;
   border: none;
-  padding: 8px 12px;
+  padding: 8px 20px;
   border-radius: 6px;
   cursor: pointer;
   font-family: 'Poppins', sans-serif;
@@ -561,7 +561,7 @@ table tbody tr td li {
   align-items: center;
 }
 
-.view-page .action-link {
+.view-page .action-link, .control-btn {
   display: inline-block;
   margin-top: 20px;
   background: #1E3A5F;

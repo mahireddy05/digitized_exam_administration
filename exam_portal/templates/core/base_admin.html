@@ -49,7 +49,7 @@ document.addEventListener('mousedown', function(event) {
                  alt="User Profile" 
                  style="width:50px; height:50px; border-radius:50%; padding:7px;">
             <p style="font-size:22px; font-family:'Times New Roman', Times, serif; color:white;">
-                {{ user.first_name }}
+                {{ user.username }}
             </p>
         </div>
 
@@ -86,16 +86,16 @@ document.addEventListener('mousedown', function(event) {
                     <a href="{% url 'masters:courses' %}" data-page="courses">Course Management</a>
                 </li>
 
-                <!-- Exam Schedule -->
-                <li>
-                    <img src="https://img.icons8.com/?size=100&id=65285&format=png&color=FFFFFF" alt="Exam Icon">
-                    <a href="{% url 'operations:exams' %}" data-page="exams">Exam Schedule</a>
-                </li>
-
                 <!-- Student Courses Data -->
                 <li>
                     <img src="https://img.icons8.com/ios-filled/50/ffffff/open-book.png" alt="Course Data Icon">
                     <a href="{% url 'masters:coursereg' %}" data-page="coursereg">Student Courses Data</a>
+                </li>
+
+                <!-- Exam Schedule -->
+                <li>
+                    <img src="https://img.icons8.com/?size=100&id=65285&format=png&color=FFFFFF" alt="Exam Icon">
+                    <a href="{% url 'operations:exams' %}" data-page="exams">Exam Schedule</a>
                 </li>
 
                 <!-- Room Allocation -->

@@ -1,3 +1,151 @@
+# Handle POST from coursereg_conflict.html to break redirect loop
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt
+def coursereg_conflict_resolve(request):
+    from django.contrib import messages
+    from operations.models import StudentCourse
+    from .models import Student, Course
+    if request.method == "POST":
+        selected = request.POST.getlist('conflict_rows')
+        from django.shortcuts import render
+        from django.conf import settings
+        conflicts = request.session.get('coursereg_conflicts')
+        if not selected:
+            messages.warning(request, "No conflicts selected for update.")
+            # Try to reload the same conflict page with the same data
+            # If conflicts are not in session, fallback to redirect
+            if conflicts:
+                return render(request, "masters/coursereg_conflict.html", {"conflicts": conflicts})
+            else:
+                return redirect('masters:coursereg')
+        success_count = 0
+        fail_count = 0
+        for val in selected:
+            try:
+                sid, ccode, ay, sem = val.split('|')
+                student = Student.objects.get(student_id=sid)
+                course = Course.objects.get(course_code=ccode)
+                # Find the old registration (conflict)
+                old_reg = StudentCourse.objects.filter(student=student, course=course).exclude(academic_year=ay, semester=sem).first()
+                # To avoid unique constraint error, delete old before creating new
+                if old_reg:
+                    old_reg.delete()
+                StudentCourse.objects.create(student=student, course=course, academic_year=ay, semester=sem, is_active=True)
+                success_count += 1
+            except Exception as e:
+                fail_count += 1
+        if success_count:
+            messages.success(request, f"{success_count} conflict(s) registered successfully.")
+        if fail_count:
+            messages.error(request, f"{fail_count} conflict(s) failed to register.")
+        # After update, remove session conflicts and redirect
+        if 'coursereg_conflicts' in request.session:
+            del request.session['coursereg_conflicts']
+        return redirect('masters:coursereg')
+# ===== FACULTY CSV UPLOAD =====
+def faculty_upload(request):
+    if request.method == "POST" and request.FILES.get("csv_file"):
+        csv_file = request.FILES["csv_file"]
+        success_count = 0
+        try:
+            decoded_file = TextIOWrapper(csv_file.file, encoding='utf-8')
+            reader = csv.DictReader(decoded_file)
+            if not reader.fieldnames:
+                messages.error(request, "CSV file is missing headers.")
+                return redirect("masters:faculty")
+            def normalize(val):
+                if not val:
+                    return ""
+                val = unicodedata.normalize("NFKC", val)
+                val = re.sub(r"[\s\u00A0\u200B\u200C\u200D\uFEFF]+", " ", val)
+                val = val.strip().lower()
+                return val
+            from .models import Department
+            from accounts.models import User
+            dept_lookup = {normalize(d.dept_name): d for d in Department.objects.all()}
+            field_map = {k.strip().lower(): k for k in reader.fieldnames}
+            dept_key = field_map.get("dept_name") or field_map.get("department")
+            mismatches = []
+            for i, row in enumerate(reader, start=2):
+                faculty_id = row.get(field_map.get("faculty_id")) if field_map.get("faculty_id") else None
+                phone_number = row.get(field_map.get("phone_number")) if field_map.get("phone_number") else None
+                designation = row.get(field_map.get("designation")) if field_map.get("designation") else None
+                status = row.get(field_map.get("status")) if field_map.get("status") else "ACTIVE"
+                dept_name = row.get(dept_key) if dept_key else None
+                name = row.get(field_map.get("faculty_name")) if field_map.get("faculty_name") else None
+                row_has_error = False
+                user = None
+                if not faculty_id:
+                    messages.error(request, f"Row {i}: faculty_id is missing in the CSV.")
+                    row_has_error = True
+                else:
+                    try:
+                        user = User.objects.get(username=faculty_id)
+                    except User.DoesNotExist:
+                        messages.error(request, f"Row {i}: User with faculty_id '{faculty_id}' not found.")
+                        row_has_error = True
+                if not name and user:
+                    name = f"{user.first_name} {user.last_name}".strip()
+                if not name:
+                    messages.error(request, f"Row {i}:'{faculty_id}' is not linked to any user.")
+                    row_has_error = True
+                if not dept_name:
+                    messages.error(request, f"Row {i}: Department name is missing in the CSV.")
+                    row_has_error = True
+                else:
+                    norm_dept_name = normalize(dept_name)
+                    dept = dept_lookup.get(norm_dept_name)
+                    if not dept:
+                        messages.error(request, f"Row {i}: Department '{dept_name}' not found.")
+                        row_has_error = True
+                if not row_has_error and faculty_id:
+                    from .models import Faculty
+                    try:
+                        faculty = Faculty.objects.get(faculty_id=faculty_id)
+                        diffs = []
+                        if faculty.faculty_name != name:
+                            diffs.append(("Name", faculty.faculty_name, name))
+                        if user and faculty.email != user.email:
+                            diffs.append(("Email", faculty.email, user.email))
+                        if faculty.phone_number != phone_number:
+                            diffs.append(("Phone Number", faculty.phone_number, phone_number))
+                        if faculty.dept != dept:
+                            diffs.append(("Department", faculty.dept.dept_name if faculty.dept else "", dept.dept_name if dept else ""))
+                        if faculty.status != status:
+                            diffs.append(("Status", faculty.status, status))
+                        if designation and faculty.designation != designation:
+                            diffs.append(("Designation", faculty.designation, designation))
+                        if not diffs:
+                            messages.warning(request, f"Faculty with ID '{faculty_id}' already exists.")
+                        else:
+                            mismatches.append({
+                                "faculty_id": faculty_id,
+                                "diffs": diffs
+                            })
+                    except Faculty.DoesNotExist:
+                        if not user:
+                            messages.error(request, f"Row {i}: No user found with username '{faculty_id}' to link as faculty.")
+                        else:
+                            Faculty.objects.create(
+                                faculty_id=faculty_id,
+                                user=user,
+                                faculty_name=name,
+                                phone_number=phone_number,
+                                dept=dept,
+                                designation=designation,
+                                status=status
+                            )
+                            success_count += 1
+            if success_count:
+                messages.success(request, f"{success_count} faculty imported successfully.")
+            if mismatches:
+                request.session['faculty_mismatches'] = mismatches
+                return redirect('masters:faculty_update_conflicts')
+        except Exception as e:
+            messages.error(request, f"Error importing CSV: {e}")
+    else:
+        messages.error(request, "No file uploaded.")
+    return redirect("masters:faculty")
 # AJAX: Edit course
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
@@ -46,9 +194,29 @@ from .models import Student, Faculty, Room
 # ===== STUDENTS =====
 def student(request):
     from .models import Department
-    students = Student.objects.all()
+    from django.core.paginator import Paginator
+    from django.db import models
+    students = Student.objects.select_related('user', 'dept').all().order_by('student_id')
     departments = Department.objects.all()
-    return render(request, "masters/student.html", {"students": students, "departments": departments})
+    search = request.GET.get('search', '').strip().lower()
+    department = request.GET.get('department', '').strip()
+    if search:
+        students = students.filter(
+            models.Q(student_id__icontains=search) |
+            models.Q(user__first_name__icontains=search) |
+            models.Q(user__last_name__icontains=search)
+        )
+    if department and department != 'all':
+        students = students.filter(dept__dept_code=department)
+    paginator = Paginator(students, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, "masters/student.html", {
+        "page_obj": page_obj,
+        "departments": departments,
+        "search": search,
+        "selected_department": department
+    })
 
 def student_content(request):
     return render(request, "masters/student_content.html")
@@ -100,9 +268,28 @@ def student_delete(request, pk):
 # ===== FACULTY =====
 def faculty(request):
     from .models import Department
+    from django.core.paginator import Paginator
     faculties = Faculty.objects.select_related('user', 'dept').all()
     departments = Department.objects.all()
-    return render(request, "masters/faculty.html", {"faculties": faculties, "departments": departments})
+    search = request.GET.get('search', '').strip().lower()
+    department = request.GET.get('department', '').strip()
+    if search:
+        faculties = faculties.filter(
+            models.Q(faculty_id__icontains=search) |
+            models.Q(user__first_name__icontains=search) |
+            models.Q(user__last_name__icontains=search)
+        )
+    if department and department != 'all':
+        faculties = faculties.filter(dept__dept_code=department)
+    paginator = Paginator(faculties, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, "masters/faculty.html", {
+        "page_obj": page_obj,
+        "departments": departments,
+        "search": search,
+        "selected_department": department
+    })
 
 def faculty_content(request):
     return render(request, "masters/faculty_content.html")
@@ -163,11 +350,34 @@ import re
 from django.shortcuts import redirect
 
 def rooms(request):
+    from django.core.paginator import Paginator
     unique_blocks = Room.objects.values_list('block', flat=True).distinct()
     rooms = Room.objects.all()
+    search = request.GET.get('search', '').strip().lower()
+    block = request.GET.get('block', '').strip()
+    capacity_min = request.GET.get('capacity_min', '').strip()
+    capacity_max = request.GET.get('capacity_max', '').strip()
+    if search:
+        rooms = rooms.filter(
+            models.Q(room_code__icontains=search) |
+            models.Q(block__icontains=search)
+        )
+    if block and block.lower() != 'all' and block:
+        rooms = rooms.filter(block=block)
+    if capacity_min.isdigit():
+        rooms = rooms.filter(capacity__gte=int(capacity_min))
+    if capacity_max.isdigit():
+        rooms = rooms.filter(capacity__lte=int(capacity_max))
+    paginator = Paginator(rooms, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     return render(request, "masters/rooms.html", {
-        "rooms": rooms,
+        "page_obj": page_obj,
         "unique_blocks": unique_blocks,
+        "search": search,
+        "selected_block": block,
+        "capacity_min": capacity_min,
+        "capacity_max": capacity_max,
     })
 
 # CSV upload view
@@ -347,10 +557,20 @@ def room_delete(request, pk):
 # ===== COURSES =====
 def courses(request):
     from .models import Course
+    from django.core.paginator import Paginator
+    search = request.GET.get('search', '').strip().lower()
     courses = Course.objects.all().order_by('course_code')
+    if search:
+        courses = courses.filter(
+            models.Q(course_code__icontains=search) |
+            models.Q(course_name__icontains=search)
+        )
+    paginator = Paginator(courses, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     # Check for session notification
     course_message = request.session.pop('course_message', None)
-    context = {"courses": courses}
+    context = {"page_obj": page_obj, "search": search}
     if course_message:
         from django.contrib import messages
         messages.success(request, course_message)
@@ -451,7 +671,144 @@ def course_upload(request):
         messages.error(request, "No file uploaded.")
     return redirect('masters:courses')
 def coursereg(request):
-    return render(request, "masters/coursereg.html")
+    from operations.models import StudentCourse
+    from .models import Course, Student
+    courseregs = StudentCourse.objects.select_related('student', 'course').all()
+    courses = Course.objects.order_by('course_code').all()
+    academic_years = sorted(set(courseregs.values_list('academic_year', flat=True)))
+    semesters = sorted(set(courseregs.values_list('semester', flat=True)), key=str)
+    return render(request, "masters/coursereg.html", {
+        "courseregs": courseregs,
+        "courses": courses,
+        "academic_years": academic_years,
+        "semesters": semesters
+    })
+
+# ===== COURSE REGISTRATION CSV UPLOAD =====
+from operations.models import StudentCourse
+from .models import Student, Course
+from django.db import transaction
+
+def coursereg_upload(request):
+    if request.method == "POST" and request.FILES.get("csv_file"):
+        import codecs
+        csv_file = request.FILES["csv_file"]
+        try:
+            # Try to decode and split lines, handle encoding errors
+            decoded = csv_file.read().decode("utf-8-sig").replace('\r','').splitlines()
+        except Exception as e:
+            messages.error(request, f"Could not read file: {e}")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+        # Try to auto-detect delimiter (tab or comma)
+        import csv as pycsv
+        sniffer = pycsv.Sniffer()
+        try:
+            dialect = sniffer.sniff('\n'.join(decoded[:2]))
+            delimiter = dialect.delimiter
+        except Exception:
+            delimiter = ','
+        reader = pycsv.DictReader(decoded, delimiter=delimiter)
+        expected_fields = ["student_id", "course_code", "academic_year", "semester"]
+        # Normalize fieldnames: strip, lower, remove extra spaces/tabs
+        def norm(s):
+            return s.strip().lower().replace(' ', '').replace('\t','')
+        normalized_header = [norm(f) for f in (reader.fieldnames or [])]
+        normalized_expected = [norm(f) for f in expected_fields]
+        if normalized_header != normalized_expected:
+            messages.error(request, f"CSV header mismatch. Expected: {', '.join(expected_fields)}. Found: {', '.join(reader.fieldnames or [])}")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        new_rows = []
+        duplicate_rows = []
+        conflict_rows = []
+        total = 0
+        for row in reader:
+            total += 1
+            # Handle missing columns or blank values
+            try:
+                sid = (row.get("student_id") or '').strip()
+                ccode = (row.get("course_code") or '').strip()
+                ay = (row.get("academic_year") or '').strip()
+                sem = (row.get("semester") or '').strip()
+            except Exception as e:
+                conflict_rows.append({"student_id": "", "course_code": "", "academic_year": "", "semester": "", "reason": f"Malformed row: {e}"})
+                continue
+            if not sid or not ccode or not ay or not sem:
+                conflict_rows.append({"student_id": sid, "course_code": ccode, "academic_year": ay, "semester": sem, "reason": "Missing required value(s)"})
+                continue
+            try:
+                student = Student.objects.get(student_id=sid)
+            except Student.DoesNotExist:
+                conflict_rows.append({"student_id": sid, "course_code": ccode, "academic_year": ay, "semester": sem, "reason": "Student not found"})
+                continue
+            try:
+                course = Course.objects.get(course_code=ccode)
+            except Course.DoesNotExist:
+                conflict_rows.append({"student_id": sid, "course_code": ccode, "academic_year": ay, "semester": sem, "reason": "Course not found"})
+                continue
+            # Check for duplicate (all fields match)
+            exists = StudentCourse.objects.filter(student=student, course=course, academic_year=ay, semester=sem).exists()
+            if exists:
+                duplicate_rows.append(row)
+                continue
+            # Check for same student, same course, but different acd_year or semester
+            conflict = StudentCourse.objects.filter(student=student, course=course).exclude(academic_year=ay, semester=sem).first()
+            if conflict:
+                conflict_rows.append({
+                    "student_id": sid,
+                    "course_code": ccode,
+                    "academic_year": ay,
+                    "semester": sem,
+                    "reason": "Student already registered for this course in another term",
+                    "old_academic_year": conflict.academic_year,
+                    "old_semester": conflict.semester
+                })
+                continue
+            new_rows.append((student, course, ay, sem))
+
+        # If the sheet is empty (no data rows), show error
+        if total == 0:
+            messages.error(request, "CSV file contains no data rows.")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        # Insert new rows
+        with transaction.atomic():
+            for student, course, ay, sem in new_rows:
+                StudentCourse.objects.create(student=student, course=course, academic_year=ay, semester=sem, is_active=True)
+
+        # Prepare messages
+        dup_count = len(duplicate_rows)
+        new_count = len(new_rows)
+        conf_count = len(conflict_rows)
+        if conf_count > 0:
+            # Show conflict page with details and use messages for notifications
+            if dup_count > 0:
+                messages.warning(request, f"{dup_count}/{total} found to be duplicate.")
+            if new_count > 0:
+                messages.success(request, f"{new_count}/{total} uploaded successfully.")
+            if conf_count > 0:
+                messages.error(request, f"{conf_count}/{total} found to have conflicts.")
+            # Store conflicts in session for resolve view fallback
+            request.session['coursereg_conflicts'] = conflict_rows
+            return render(request, "masters/coursereg_conflict.html", {
+                "conflicts": conflict_rows
+            })
+        # If all rows are duplicates (no new or conflict rows), show info message
+        if dup_count == total and total > 0:
+            messages.info(request, "No new data found. All the data uploaded already exists and matches exactly.")
+        elif new_count > 0:
+            messages.success(request, f"All {new_count} uploaded successfully.")
+        elif dup_count > 0:
+            messages.info(request, f"All {dup_count} found to be duplicate.")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+    # If not POST or no file, always return a response
+    messages.error(request, "No file uploaded or invalid request.")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+# Final fallback to ensure HttpResponse is always returned
+from django.http import HttpResponse
+def _coursereg_upload_fallback(*args, **kwargs):
+    return HttpResponse("Unexpected error: No response returned.")
 
 def display_students(request):
     students = Student.objects.all()
@@ -607,27 +964,11 @@ def student_update_conflicts(request):
                     elif field == 'Parent Phone Number':
                         student.parent_phone_number = new
                     elif field == 'Department':
-                        norm_new = normalize(new)
-                        dept = Department.objects.filter(dept_name__iexact=new).first()
-                        if not dept:
-                            dept = Department.objects.filter(dept_code__iexact=new).first()
-                        if not dept:
-                            for d in Department.objects.all():
-                                if normalize(d.dept_name) == norm_new or normalize(d.dept_code) == norm_new:
-                                    dept = d
-                                    break
+                        dept = Department.objects.filter(dept_name=new).first()
                         if dept:
                             student.dept = dept
                     elif field == 'Program':
-                        norm_new = normalize(new)
-                        program = Program.objects.filter(program_name__iexact=new).first()
-                        if not program:
-                            program = Program.objects.filter(program_code__iexact=new).first()
-                        if not program:
-                            for p in Program.objects.all():
-                                if normalize(p.program_name) == norm_new or normalize(p.program_code) == norm_new:
-                                    program = p
-                                    break
+                        program = Program.objects.filter(program_name=new).first()
                         if program:
                             student.program = program
                     elif field == 'Status':
@@ -637,7 +978,6 @@ def student_update_conflicts(request):
         if updated:
             for sid in updated:
                 messages.success(request, f"{sid} - details updated successfully")
-            # Remove session data after update
             if 'student_mismatches' in request.session:
                 del request.session['student_mismatches']
             return redirect('masters:student')
@@ -645,115 +985,6 @@ def student_update_conflicts(request):
             messages.info(request, "No selected students required updating.")
             return redirect('masters:student_update_conflicts')
     return render(request, "masters/student_update_conflicts.html", {"mismatches": mismatches})
-
-
-# ===== FACULTY CSV UPLOAD =====
-def faculty_upload(request):
-    if request.method == "POST" and request.FILES.get("csv_file"):
-        csv_file = request.FILES["csv_file"]
-        errors = []
-        success_count = 0
-        try:
-            decoded_file = TextIOWrapper(csv_file.file, encoding='utf-8')
-            reader = csv.DictReader(decoded_file)
-            def normalize(val):
-                if not val:
-                    return ""
-                val = unicodedata.normalize("NFKC", val)
-                val = re.sub(r"[\s\u00A0\u200B\u200C\u200D\uFEFF]+", " ", val)
-                val = val.strip().lower()
-                return val
-
-            from .models import Department, Faculty
-            from accounts.models import User
-            dept_lookup = {normalize(d.dept_name): d for d in Department.objects.all()}
-            field_map = {k.strip().lower(): k for k in reader.fieldnames}
-            dept_key = field_map.get("dept_name") or field_map.get("department")
-            mismatches = []
-            for i, row in enumerate(reader, start=2):
-                faculty_id = row.get(field_map.get("faculty_id"))
-                phone_number = row.get(field_map.get("phone_number"))
-                # Ignore email from CSV; always use user.email
-                email = None
-                dept_name = row.get(dept_key)
-                name = row.get(field_map.get("faculty_name"))
-                designation = row.get(field_map.get("designation")) if field_map.get("designation") else None
-                status = row.get(field_map.get("status")) or "ACTIVE"
-                row_has_error = False
-                user = None
-                if not faculty_id:
-                    messages.error(request, f"Row {i}: faculty_id is missing in the CSV.")
-                    row_has_error = True
-                else:
-                    try:
-                        from accounts.models import User
-                        user = User.objects.get(username=faculty_id)
-                    except User.DoesNotExist:
-                        user = None
-                # Use user name if faculty_name is missing
-                if not name and user:
-                    name = f"{user.first_name} {user.last_name}".strip()
-                if not name:
-                    messages.error(request, f"Row {i}:'{faculty_id}' is not linked to any user.")
-                    row_has_error = True
-                if not dept_name:
-                    messages.error(request, f"Row {i}: Department name is missing in the CSV.")
-                    row_has_error = True
-                else:
-                    norm_dept_name = normalize(dept_name)
-                    dept = dept_lookup.get(norm_dept_name)
-                    if not dept:
-                        messages.error(request, f"Row {i}: Department '{dept_name}' not found.")
-                        row_has_error = True
-                if not row_has_error and faculty_id:
-                    try:
-                        faculty = Faculty.objects.get(faculty_id=faculty_id)
-                        diffs = []
-                        if faculty.faculty_name != name:
-                            diffs.append(("Name", faculty.faculty_name, name))
-                        # Always compare to user.email, not CSV
-                        if user and faculty.email != user.email:
-                            diffs.append(("Email", faculty.email, user.email))
-                        if faculty.phone_number != phone_number:
-                            diffs.append(("Phone Number", faculty.phone_number, phone_number))
-                        if faculty.dept != dept:
-                            diffs.append(("Department", faculty.dept.dept_name if faculty.dept else "", dept.dept_name if dept else ""))
-                        if faculty.status != status:
-                            diffs.append(("Status", faculty.status, status))
-                        if designation and faculty.designation != designation:
-                            diffs.append(("Designation", faculty.designation, designation))
-                        if not diffs:
-                            messages.warning(request, f"Faculty with ID '{faculty_id}' already exists.")
-                        else:
-                            mismatches.append({
-                                "faculty_id": faculty_id,
-                                "diffs": diffs
-                            })
-                    except Faculty.DoesNotExist:
-                        if not user:
-                            messages.error(request, f"Row {i}: No user found with username '{faculty_id}' to link as faculty.")
-                        else:
-                            Faculty.objects.create(
-                                faculty_id=faculty_id,
-                                user=user,
-                                faculty_name=name,
-                                # email is property, not set from CSV
-                                phone_number=phone_number,
-                                dept=dept,
-                                designation=designation,
-                                status=status
-                            )
-                            success_count += 1
-            if success_count:
-                messages.success(request, f"{success_count} faculty imported successfully.")
-            if mismatches:
-                request.session['faculty_mismatches'] = mismatches
-                return redirect('masters:faculty_update_conflicts')
-        except Exception as e:
-            messages.error(request, f"Error importing CSV: {e}")
-    else:
-        messages.error(request, "No file uploaded.")
-    return redirect("masters:faculty")
 
 
 def faculty_update_conflicts(request):

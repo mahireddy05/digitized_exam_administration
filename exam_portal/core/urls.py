@@ -1,10 +1,18 @@
 from django.urls import path
+
+from django.shortcuts import redirect
 from . import views
 
 app_name = "core"
 
+def root_redirect(request):
+    if request.user.is_authenticated:
+        return redirect('core:dashboard')
+    return redirect('accounts:login')
+
 urlpatterns = [
-    path("", views.dashboard, name="dashboard"),
+    path("", root_redirect, name="root"),
+    path("dashboard/", views.dashboard, name="dashboard"),
     path("notifications/", views.notifications, name="notifications"),
     path("settings/", views.settings_view, name="settings"),
     path("settings/upload_departments/", views.upload_departments, name="upload_departments"),

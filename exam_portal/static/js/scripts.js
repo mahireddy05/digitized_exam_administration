@@ -1,5 +1,5 @@
-// ============ COURSE EDIT/DELETE MODALS ============
 document.addEventListener('DOMContentLoaded', function() {
+    // ============ COURSE EDIT/DELETE MODALS ============
     // Edit modal logic
     const editModal = document.getElementById('editCourseModal');
     const editForm = document.getElementById('editCourseForm');
@@ -79,8 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     alert(data.error || 'Failed to delete course.');
                 }
-            // Show notification if present in localStorage
-            document.addEventListener('DOMContentLoaded', function() {
+                // Show notification if present in localStorage
                 const msg = localStorage.getItem('course_notify');
                 if (msg) {
                     let popup = document.createElement('div');
@@ -102,121 +101,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     localStorage.removeItem('course_notify');
                 }
             });
-            });
         };
     }
-});
-// ============ COURSE FILTERS, PRINT, DOWNLOAD ============
-function initializeCourseFilters() {
-    const searchInput = document.getElementById('search');
-    const courseListBody = document.getElementById('course-list');
-    const rows = courseListBody ? Array.from(courseListBody.querySelectorAll('tr')) : [];
-    const resetBtn = document.getElementById('resetCourseFilters');
-    const printBtn = document.getElementById('printCourseBtn');
-    const downloadBtn = document.getElementById('downloadCourseBtn');
 
-    function filterRows() {
-        const search = searchInput.value.trim().toLowerCase();
-        rows.forEach(row => {
-            const cells = row.children;
-            if (cells.length < 3) {
-                row.style.display = 'none';
-                return;
-            }
-            const code = cells[1].innerText.trim().toLowerCase();
-            const name = cells[2].innerText.trim().toLowerCase();
-            const matchSearch = !search || code.includes(search) || name.includes(search);
-            row.style.display = matchSearch ? '' : 'none';
-        });
-    }
-
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            filterRows();
-        });
-    }
-
-    if (printBtn) {
-        printBtn.onclick = printCourseTable;
-    }
-    if (downloadBtn) {
-        downloadBtn.onclick = downloadCourseCSV;
-    }
-
-    if (!searchInput || !courseListBody) return;
-    searchInput.addEventListener('input', filterRows);
-    filterRows();
-}
-
-function getVisibleCourseRows() {
-    return Array.from(document.querySelectorAll('#course-list tr')).filter(row => {
-        return row.style.display !== 'none' && row.querySelectorAll('td').length >= 3 && !row.querySelector('td[colspan]');
-    });
-}
-function printCourseTable() {
-    const table = document.getElementById('course-table');
-    if (!table) return;
-    const visibleRows = getVisibleCourseRows();
-    if (!visibleRows.length) return alert('No data to print.');
-    const cloneTable = table.cloneNode(true);
-    const headerRow = cloneTable.querySelector('thead tr');
-    if (headerRow && headerRow.children.length > 0) headerRow.lastElementChild.remove();
-    const tbody = cloneTable.querySelector('tbody');
-    tbody.innerHTML = '';
-    visibleRows.forEach(row => {
-        const cloneRow = row.cloneNode(true);
-        if (cloneRow.children.length > 0) cloneRow.lastElementChild.remove();
-        tbody.appendChild(cloneRow);
-    });
-    const newWindow = window.open('', '_blank');
-    if (!newWindow) return alert('Popup blocked!');
-    newWindow.document.write(`
-        <html><head><title>Print Course Data</title>
-        <style>
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background-color: #1E3A5F; color: white; }
-        </style></head><body>
-        <h2>Course Data</h2>
-        ${cloneTable.outerHTML}
-        </body></html>
-    `);
-    newWindow.document.close();
-    newWindow.focus();
-    newWindow.print();
-}
-function downloadCourseCSV() {
-    const table = document.getElementById('course-table');
-    if (!table) return;
-    const rows = getVisibleCourseRows();
-    if (!rows.length) return alert('No data to download.');
-    const headers = Array.from(table.querySelectorAll('thead th'))
-        .slice(0, -1)
-        .map(th => `"${th.textContent.trim()}"`)
-        .join(',');
-    const data = rows.map(row => {
-        const cells = Array.from(row.querySelectorAll('td'));
-        return cells.slice(0, -1).map(td => `"${td.textContent.trim()}"`).join(',');
-    });
-    const csvContent = [headers, ...data].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'course_data.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof initializeCourseFilters === 'function') {
-        initializeCourseFilters();
-    }
-});
-// ============ PIE CHART FOR DASHBOARD ============
-document.addEventListener('DOMContentLoaded', function() {
+    // ============ PIE CHART FOR DASHBOARD ============
     const pie = document.getElementById('userPieChart');
     if (pie) {
         const adminCount = Number(pie.getAttribute('data-admin'));
@@ -229,9 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `Faculty (${facultyCount})`,
             `Students (${studentCount})`
         ];
-        // ...existing code...
         const ctx = pie.getContext('2d');
-        // Vibrant, sharp-edged pie chart with solid colors
         new Chart(ctx, {
             type: 'pie',
             data: {
@@ -330,73 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-// ============ STUDENT FUNCTIONS ============
-function initializeStudentFilters() {
-    const searchInput = document.getElementById('search');
-    const deptSelect = document.getElementById('department');
-    const studentListBody = document.getElementById('student-list'); // Get tbody reference
-    const rows = studentListBody ? Array.from(studentListBody.querySelectorAll('tr')) : []; // Get current rows
-    const resetBtn = document.getElementById('resetStudentFilters');
-    const printBtn = document.getElementById('printStudentBtn'); // Get print button
-    const downloadBtn = document.getElementById('downloadStudentBtn'); // Get download button
-
-    function filterRows() {
-        const search = searchInput.value.trim().toLowerCase();
-        const dept = deptSelect.value.trim().toLowerCase();
-
-        rows.forEach(row => {
-            const cells = row.children;
-            if (cells.length < 4) {
-                row.style.display = 'none';
-                return;
-            }
-            const studentId = cells[1].innerText.trim().toLowerCase();
-            const name = cells[2].innerText.trim().toLowerCase();
-            const departmentCell = cells[3].innerText.trim();
-            // Extract dept_code from cell (format: Name (CODE))
-            let deptCode = '';
-            const match = departmentCell.match(/\(([^)]+)\)$/);
-            if (match) {
-                deptCode = match[1].toLowerCase();
-            }
-
-            const matchSearch = !search || studentId.includes(search) || name.includes(search);
-            const matchDept = dept === 'all' || deptCode === dept;
-
-            row.style.display = (matchSearch && matchDept) ? '' : 'none';
-        });
-    }
-
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            deptSelect.value = 'all';
-            filterRows();
-        });
-    }
-
-    // --- NEW: Attach listeners for Print and Download buttons here ---
-    if (printBtn) {
-        printBtn.onclick = printStudentTable; // Use onclick to overwrite previous listeners
-    } else {
-        console.error('printStudentBtn not found after content load');
-    }
-    if (downloadBtn) {
-        downloadBtn.onclick = downloadStudentCSV; // Use onclick to overwrite previous listeners
-    } else {
-        console.error('downloadStudentBtn not found after content load');
-    }
-    // --- END NEW ---
-
-    // Ensure all elements exist before adding listeners to avoid errors
-    if (!searchInput || !deptSelect || !studentListBody) return;
-
-    searchInput.addEventListener('input', filterRows);
-    deptSelect.addEventListener('change', filterRows);
-
-    filterRows(); // Run initially
-}
-
+// ============ STUDENT PAGE EXPORT/PRINT ============
 // ============ STUDENT PAGE EXPORT/PRINT ============
 function getVisibleStudentRows() {
     return Array.from(document.querySelectorAll('#student-list tr')).filter(row => {
@@ -470,66 +290,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (printBtn) printBtn.onclick = printStudentTable;
     if (downloadBtn) downloadBtn.onclick = downloadStudentCSV;
 });
-
-// ============ FACULTY FUNCTIONS ============
-function initializeFacultyFilters() {
-    const searchInput = document.getElementById("search");
-    const deptSelect = document.getElementById("department");
-    const facultyListBody = document.getElementById("faculty-list"); // Get tbody reference
-    const rows = facultyListBody ? Array.from(facultyListBody.querySelectorAll('tr')) : []; // Get current rows
-    const resetBtn = document.getElementById('resetFacultyFilters');
-    const printBtn = document.getElementById('printFacultyBtn'); // Get print button
-    const downloadBtn = document.getElementById('downloadFacultyBtn'); // Get download button
-
-    function filterFaculty() {
-        const search = searchInput.value.trim().toLowerCase();
-        const dept = deptSelect.value.trim().toLowerCase();
-
-        rows.forEach(row => {
-            const cells = row.children;
-            if (cells.length < 4) { // Minimum cells required to perform checks
-                row.style.display = 'none';
-                return;
-            }
-            const facultyId = cells[1].innerText.trim().toLowerCase();
-            const name = cells[2].innerText.trim().toLowerCase();
-            const department = cells[3].innerText.trim().toLowerCase();
-
-            const matchesSearch = !search || facultyId.includes(search) || name.includes(search);
-            const matchesDept = dept === "all" || department.replace(/\s+/g, '').toLowerCase() === dept.replace(/\s+/g, '').toLowerCase();
-
-            row.style.display = (matchesSearch && matchesDept) ? "" : "none";
-        });
-    }
-
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            deptSelect.value = 'all';
-            filterFaculty();
-        });
-    }
-
-    // --- NEW: Attach listeners for Print and Download buttons here ---
-    if (printBtn) {
-        printBtn.onclick = printFacultyTable; // Use onclick to overwrite previous listeners
-    } else {
-        console.error('printFacultyBtn not found after content load');
-    }
-    if (downloadBtn) {
-        downloadBtn.onclick = downloadFacultyCSV; // Use onclick to overwrite previous listeners
-    } else {
-        console.error('downloadFacultyBtn not found after content load');
-    }
-    // --- END NEW ---
-
-    // Ensure all elements exist before adding listeners to avoid errors
-    if (!searchInput || !deptSelect || !facultyListBody) return;
-
-    searchInput.addEventListener("input", filterFaculty);
-    deptSelect.addEventListener("change", filterFaculty);
-    filterFaculty(); // run initially
-}
 
 
 function printFacultyTable() {

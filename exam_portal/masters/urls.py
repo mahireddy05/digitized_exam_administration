@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import ajax
 
 app_name = "masters"
 
@@ -12,6 +13,9 @@ urlpatterns = [
     path("student/<int:pk>/delete/", views.student_delete, name="student_delete"),
     path("student/upload/", views.student_upload, name="student_upload"),
     path("student/update_conflicts/", views.student_update_conflicts, name="student_update_conflicts"),
+    
+    # Central AJAX endpoint for all management pages
+    path('ajax/', ajax.ajax, name='ajax'),
 
     # FACULTY
     path("faculty/", views.faculty, name="faculty"),
@@ -41,4 +45,6 @@ urlpatterns = [
 
     # COURSE REGISTRATION
     path("coursereg/", views.coursereg, name="coursereg"),
+    path("coursereg/upload/", views.coursereg_upload, name="coursereg_upload"),
+    path("coursereg/conflict/resolve/", views.coursereg_conflict_resolve, name="coursereg_conflict_resolve"),
 ]

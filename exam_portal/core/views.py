@@ -21,7 +21,7 @@ def program_conflict(request):
         else:
             messages.info(request, "No programs were updated.")
         return redirect("core:settings")
-    return render(request, "core/program_conflict.html", context)
+    return render(request, "core/program_conflict.html", {**context, 'user': request.user})
 
 def user_conflict(request):
     context = request.session.get('user_conflicts')
@@ -35,21 +35,16 @@ def user_conflict(request):
             messages.error(request, "No users selected. Please select at least one user to update.")
             return render(request, "core/user_conflict.html", context)
         User = get_user_model()
-        for row, db_row in context['mismatches']:
-            # row is the original CSV row, db_row is [username, db_email, db_role, db_first_name, db_last_name]
-            username = row[0]
-            email = row[4] if len(row) > 4 else ''
-            role = row[5] if len(row) > 5 else ''
-            first_name = row[2] if len(row) > 2 else ''
-            last_name = row[3] if len(row) > 3 else ''
+        for username, mismatches, new_data in context['mismatches']:
+            # new_data is a dict with keys: username, first_name, last_name, email, role
             if username in selected:
                 user = User.objects.filter(username=username).first()
                 if user:
-                    user.email = email
-                    user.first_name = first_name
-                    user.last_name = last_name
+                    user.email = new_data.get('email', user.email)
+                    user.first_name = new_data.get('first_name', user.first_name)
+                    user.last_name = new_data.get('last_name', user.last_name)
                     if hasattr(user, "role"):
-                        user.role = role
+                        user.role = new_data.get('role', getattr(user, 'role', ''))
                     user.save()
                     updated.append(username)
         del request.session['user_conflicts']
@@ -58,7 +53,7 @@ def user_conflict(request):
         else:
             messages.info(request, "No users were updated.")
         return redirect("core:settings")
-    return render(request, "core/user_conflict.html", context)
+    return render(request, "core/user_conflict.html", {**context, 'user': request.user})
 from django.utils.safestring import mark_safe
 def dept_conflict(request):
     context = request.session.get('dept_conflicts')
@@ -83,14 +78,17 @@ def dept_conflict(request):
         else:
             messages.info(request, "No departments were updated.")
         return redirect("core:settings")
-    return render(request, "core/dept_conflict.html", context)
+    return render(request, "core/dept_conflict.html", {**context, 'user': request.user})
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 import csv
 from django.core.files.storage import default_storage
 from masters.models import Department, Program
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
 
+@login_required(login_url='/accounts/login/')
 def dashboard(request):
     User = get_user_model()
     admin_users = User.objects.filter(role='admin').count()
@@ -104,13 +102,16 @@ def dashboard(request):
         "student_count": student_count,
         "total_users": total_users,
         "active_users": active_users,
+        "user": request.user,
     })
 
+@login_required(login_url='/accounts/login/')
 def notifications(request):
-    return render(request, "core/notifications.html")
+    return render(request, "core/notifications.html", {'user': request.user})
 
+@login_required(login_url='/accounts/login/')
 def settings_view(request):
-    return render(request, "core/settings.html")
+    return render(request, "core/settings.html", {'user': request.user})
 
 def upload_departments(request):
     if request.method == "POST" and request.FILES.get("departments_file"):
@@ -295,7 +296,7 @@ def upload_users(request):
             text = f.read().decode('utf-8-sig')
             reader = csv.reader(text.splitlines())
             header = next(reader, None)
-            required_headers = ["username", "password", "first_name", "last_name", "email", "role"]
+            required_headers = ["username", "first_name", "last_name", "email", "role"]
             allowed_roles = {"student", "faculty", "admin", "hod", "dept_exam_controller"}
             if not header or [h.strip().lower() for h in header] != required_headers:
                 messages.error(request, f"CSV header error: Expected headers {required_headers}.")
@@ -304,17 +305,16 @@ def upload_users(request):
                 User = get_user_model()
                 for idx, row in enumerate(reader, start=2):
                     total_rows += 1
-                    if len(row) < 6:
-                        messages.error(request, f"CSV format error: Each row must have username, password, first_name, last_name, email, role. (Row {idx})")
+                    if len(row) < 5:
+                        messages.error(request, f"CSV format error: Each row must have username, first_name, last_name, email, role. (Row {idx})")
                         continue
                     username = row[0].strip()
-                    password = row[1].strip()
-                    first_name = row[2].strip()
-                    last_name = row[3].strip()
-                    email = row[4].strip()
-                    role = row[5].strip().lower()
-                    if not username or not password or not email:
-                        messages.error(request, f"Username, password, and email cannot be empty. (Row {idx}, username: {username})")
+                    first_name = row[1].strip()
+                    last_name = row[2].strip()
+                    email = row[3].strip()
+                    role = row[4].strip().lower()
+                    if not username or not email:
+                        messages.error(request, f"Username and email cannot be empty. (Row {idx}, username: {username})")
                         continue
                     if not email_regex.match(email):
                         messages.error(request, f"Row {idx}: username '{username}' has invalid email id '{email}'")
@@ -323,20 +323,43 @@ def upload_users(request):
                         messages.error(request, f"Invalid role: {role}. Allowed roles: {', '.join(allowed_roles)} (Row {idx}, username: {username})")
                         continue
                     user_map[username] = (email, role, row)
-                    csv_rows.append((username, email, role, row, password, first_name, last_name))
+                    csv_rows.append((username, email, role, row, first_name, last_name))
         User = get_user_model()
         existing_users = User.objects.filter(username__in=user_map.keys())
         existing_map = {u.username: (u.email, getattr(u, 'role', ''), u.first_name, u.last_name) for u in existing_users}
-        to_create = []
-        for username, email, role, orig_row, password, first_name, last_name in csv_rows:
+        def is_valid_mismatch_tuple(t):
+            return isinstance(t, tuple) and len(t) == 3
+
+        for username, email, role, orig_row, first_name, last_name in csv_rows:
             if username in existing_map:
                 db_email, db_role, db_first_name, db_last_name = existing_map[username]
-                if db_email == email and db_role == role and db_first_name == first_name and db_last_name == last_name:
+                db_row = [username, db_first_name, db_last_name, db_email, db_role]
+                csv_row = [username, first_name, last_name, email, role]
+                if db_row == csv_row:
                     exact_duplicate_count += 1
                 else:
-                    mismatch_rows.append((orig_row, [username, db_email, db_role, db_first_name, db_last_name]))
+                    mismatches = []
+                    fields = ["username", "first_name", "last_name", "email", "role"]
+                    for i, field in enumerate(fields):
+                        # Only append 3-element tuples
+                        if db_row[i] != csv_row[i]:
+                            tup = (field, db_row[i], csv_row[i])
+                            if is_valid_mismatch_tuple(tup):
+                                mismatches.append(tup)
+                    # Defensive: filter out any tuple not of length 3
+                    mismatches = [t for t in mismatches if is_valid_mismatch_tuple(t)]
+                    if mismatches:
+                        # Store new user data as a dict for use in update
+                        new_data = {
+                            'username': username,
+                            'first_name': first_name,
+                            'last_name': last_name,
+                            'email': email,
+                            'role': role
+                        }
+                        mismatch_rows.append((username, mismatches, new_data))
             else:
-                to_create.append(User(
+                user = User(
                     username=username,
                     email=email,
                     first_name=first_name,
@@ -345,23 +368,39 @@ def upload_users(request):
                     is_staff=(role in {"admin", "faculty", "hod", "dept_exam_controller"}),
                     is_active=True,
                     role=role,
-                ))
+                )
+                # Set default password
+                if role == "student":
+                    user.set_password("Test@123")
+                else:
+                    user.set_password(f"{username}@{username}")
+                user.save()
                 new_count += 1
-        if to_create:
-            for user, (username, email, role, orig_row, password, first_name, last_name) in zip(to_create, csv_rows):
-                user.set_password(password)
-            User.objects.bulk_create(to_create)
         default_storage.delete(file_path)
         if error_found:
             return redirect("core:settings")
         if mismatch_rows:
+            # Defensive: filter all mismatches to ensure only 3-element tuples are sent to the template
+            filtered_mismatch_rows = []
+            for entry in mismatch_rows:
+                if len(entry) == 3:
+                    username, mismatches, new_data = entry
+                else:
+                    username, mismatches = entry
+                    new_data = None
+                filtered = [t for t in mismatches if is_valid_mismatch_tuple(t)]
+                if filtered:
+                    if new_data is not None:
+                        filtered_mismatch_rows.append((username, filtered, new_data))
+                    else:
+                        filtered_mismatch_rows.append((username, filtered))
             if new_count > 0:
                 messages.success(request, f"{new_count}/{total_rows} new users added successfully before conflict.")
             if exact_duplicate_count > 0:
                 messages.info(request, f"{exact_duplicate_count}/{total_rows} users already exist and match exactly.")
             request.session['user_conflicts'] = {
                 'headers': required_headers,
-                'mismatches': mismatch_rows
+                'mismatches': filtered_mismatch_rows
             }
             return redirect('core:user_conflict')
         if new_count == 0 and exact_duplicate_count == total_rows:
