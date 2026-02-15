@@ -22,6 +22,14 @@
                     {% endfor %}
                 </select>
             </p>
+            <p>Regulation (Batch):
+                <select name="batch" required>
+                    <option value="" disabled {% if not student.batch %}selected{% endif %}>Select Regulation/Batch</option>
+                    {% for batch in batches %}
+                        <option value="{{ batch.id }}" {% if student.batch and student.batch.id == batch.id %}selected{% endif %}>{{ batch.batch_code }} ({{ batch.admission_year }}-{{ batch.grad_year }})</option>
+                    {% endfor %}
+                </select>
+            </p>
             <p>Email: <input type="email" name="email" value="{{ student.email }}" /></p>
             <p>Mobile: <input type="text" name="phone_number" value="{{ student.phone_number }}" /></p>
             <p>Parent Mobile: <input type="text" name="parent_phone_number" value="{{ student.parent_phone_number }}" /></p>

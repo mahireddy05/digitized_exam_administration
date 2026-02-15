@@ -416,7 +416,11 @@ a img {
 .controls form button,
 .controls-1 form input,
 .controls-1 form select,
-.controls-1 form button {
+.controls-1 form button,
+.users-filter-input,
+.departments-filter-input,
+.programs-filter-input,
+.batches-filter-input {
   padding: 8px 10px;
   font-size: 15px;
   border-radius: 6px;
@@ -816,24 +820,33 @@ table tbody tr td li {
 }
 
 .settings-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
   margin-top: 20px;
+  align-items: stretch;
 }
 
 .settings-card {
   display: flex;
-  flex-wrap: wrap;
-  margin-top: 20px;
-  max-width: 420px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 320px;
+  max-width: 100%;
+  min-height: 220px;
+  max-height: 280px;
+  overflow-y: auto;
   background: linear-gradient(135deg, #f8fafc 70%, #e0e7ef 100%);
   border-radius: 22px;
   box-shadow: 0 6px 32px 0 rgba(30,58,95,0.13), 0 1.5px 4px 0 rgba(30,58,95,0.04);
   padding: 32px 22px 22px 22px;
-  flex-direction: column;
-  align-items: center;
   border: 1.5px solid #e5e7eb;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow: hidden;
 }
 
 .settings-card-head {
@@ -854,24 +867,48 @@ table tbody tr td li {
 }
 
 .settings-card-link {
-  display: inline-block;
-  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
   background: #f5d36f;
-  color: #fff;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 6px;
   text-decoration: none;
-  font-family: 'Poppins', sans-serif;
   font-size: 15px;
+  font-family: 'Poppins', sans-serif;
   font-weight: 500;
   cursor: pointer;
   color: #1E3A5F;
+  transition: background 0.2s;
+  gap: 6px;
+}
+.settings-card-link img {
+  margin-right: 6px;
+  height: 20px;
+  width: 20px;
+  vertical-align: middle;
+}
+.settings-card-link:hover {
+  background: #ffe08a;
 }
 
 .setting-card-navs{
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin-top: 12px;
+  width: 100%;
+}
+.setting-card-navs > div {
+  display: flex;
+  flex-direction: row;
+  gap: 24px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
 .dashboard-cards {
@@ -1010,5 +1047,105 @@ table tbody tr td li {
 }
 #userPieChart:hover {
   transform: scale(1.025);
+}
+
+
+/* Improved Modal Pagination Styles (applies to users, batches, departments, programs) */
+#users-pagination.pagination,
+#batches-pagination.pagination,
+#departments-pagination.pagination,
+#programs-pagination.pagination {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 22px;
+  padding: 0;
+  list-style: none;
+}
+#users-pagination .page-item,
+#batches-pagination .page-item,
+#departments-pagination .page-item,
+#programs-pagination .page-item {
+  display: inline-block;
+  box-shadow: 0 2px 6px rgba(30,58,138,0.07);
+  border-radius: 8px;
+  transition: box-shadow 0.2s;
+}
+#users-pagination .page-link,
+#batches-pagination .page-link,
+#departments-pagination .page-link,
+#programs-pagination .page-link {
+  display: block;
+  min-width: 38px;
+  padding: 10px 18px;
+  background: #f3f4f6;
+  color: #2563eb;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.08rem;
+  letter-spacing: 0.01em;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+  text-align: center;
+  box-sizing: border-box;
+}
+#users-pagination .page-item.active .page-link,
+#batches-pagination .page-item.active .page-link,
+#departments-pagination .page-item.active .page-link,
+#programs-pagination .page-item.active .page-link {
+  background: linear-gradient(90deg, #2563eb 60%, #1e40af 100%);
+  color: #fff;
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.13);
+}
+#users-pagination .page-link:hover,
+#batches-pagination .page-link:hover,
+#departments-pagination .page-link:hover,
+#programs-pagination .page-link:hover {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #2563eb;
+}
+#users-pagination .page-link:active,
+#batches-pagination .page-link:active,
+#departments-pagination .page-link:active,
+#programs-pagination .page-link:active {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* Modal Close Button Style */
+.close-modal {
+  background: #fff;
+  color: #2563eb;
+  border: 2px solid #2563eb;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 2rem;
+  font-weight: bold;
+  line-height: 36px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(30,58,95,0.10);
+  transition: background 0.2s, color 0.2s, border 0.2s, box-shadow 0.2s;
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  z-index: 10;
+}
+.close-modal:hover {
+  background: #2563eb;
+  color: #fff;
+  border-color: #1e40af;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.18);
+}
+.close-modal:active {
+  background: #1e40af;
+  color: #fff;
+  border-color: #2563eb;
 }
 

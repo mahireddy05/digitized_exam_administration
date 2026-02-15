@@ -32,7 +32,14 @@
                   <option value="{{ dept.dept_code }}" {% if dept.dept_code == selected_department %}selected{% endif %}>{{ dept.dept_name }} ({{ dept.dept_code }})</option>
                 {% endfor %}
             </select>
-            <button type="submit" style="display:none"></button>
+                        <label for="batch">Regulation/Batch:</label>
+                        <select name="batch" id="batch">
+                                <option value="all" {% if selected_batch|default:'all' == 'all' %}selected{% endif %}>All Batches</option>
+                                {% for batch_obj in batches %}
+                                    <option value="{{ batch_obj.batch_code }}" {% if batch_obj.batch_code == selected_batch %}selected{% endif %}>{{ batch_obj.batch_code }} ({{ batch_obj.admission_year }}-{{ batch_obj.grad_year }})</option>
+                                {% endfor %}
+                        </select>
+                        <button type="submit" style="display:none"></button>
         </form>
     </div>
 
@@ -79,6 +86,7 @@
                     <th>Student ID</th>
                     <th>Name</th>
                     <th>Department</th>
+                    <th>Regulation</th>
                     <th>Email</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -91,6 +99,7 @@
                     <td><a href="{% url 'masters:student_detail' student.id %}" class="student-action-link">{{ student.student_id }}</a></td>
                     <td>{{ student.user.first_name }} {{ student.user.last_name }}</td>
                     <td>{{ student.dept.dept_name }}({{ student.dept.dept_code }})</td>
+                    <td>{% if student.batch %}{{ student.batch.batch_code }}{% else %}<span style="color:red">Not set</span>{% endif %}</td>
                     <td>{{ student.email }}</td>
                     <td>{{ student.status }}</td>
                     <td>
@@ -127,6 +136,7 @@
 const studentFilterForm = document.getElementById('studentFilterForm');
 const searchInput = document.getElementById('search');
 const departmentSelect = document.getElementById('department');
+const batchSelect = document.getElementById('batch');
 const studentList = document.getElementById('student-list');
 const paginationBar = document.getElementById('studentPaginationBar');
 const resetBtn = document.getElementById('resetStudentFilters');
@@ -135,7 +145,8 @@ let studentAjaxTimeout = null;
 function fetchStudentData(page = 1) {
     const search = searchInput.value;
     const department = departmentSelect.value;
-    const params = new URLSearchParams({type: 'student', search, department, page});
+    const batch = batchSelect.value;
+    const params = new URLSearchParams({type: 'student', search, department, batch, page});
     fetch('/masters/ajax/?' + params.toString(), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
         .then(r => r.json())
         .then(data => {
@@ -152,6 +163,7 @@ function instantStudentFilter() {
 
 searchInput.addEventListener('input', instantStudentFilter);
 departmentSelect.addEventListener('change', instantStudentFilter);
+batchSelect.addEventListener('change', instantStudentFilter);
 
 function attachStudentPaginationEvents() {
     paginationBar.querySelectorAll('a[data-page]').forEach(a => {
@@ -168,6 +180,7 @@ attachStudentPaginationEvents();
 resetBtn.addEventListener('click', function() {
     searchInput.value = '';
     departmentSelect.value = 'all';
+    batchSelect.value = 'all';
     fetchStudentData(1);
 });
 </script>

@@ -19,6 +19,7 @@
                         <tr><td>Name</td><td>{{ student.user.first_name }} {{ student.user.last_name }}</td></tr>
                         <tr><td>Program</td><td>{{ student.program.program_name }} ({{ student.program.program_code }})</td></tr>
                         <tr><td>Department</td><td>{{ student.dept.dept_name }} ({{ student.dept.dept_code }})</td></tr>
+                        <tr><td>Regulation</td><td>{% if student.batch %}{{ student.batch.batch_code }} ({{ student.batch.admission_year }}-{{ student.batch.grad_year }}){% else %}<span style="color:red">Not set</span>{% endif %}</td></tr>
                         <tr><td>Email</td><td>{{ student.email }}</td></tr>
                         <tr><td>Contact</td><td>{{ student.phone_number }}</td></tr>
                         <tr><td>Parent Contact</td><td>{{ student.parent_phone_number }}</td></tr>

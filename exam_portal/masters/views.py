@@ -1,3 +1,99 @@
+# Simple batch list view for redirection
+from django.shortcuts import render
+def batch_list(request):
+    from .models import Batch
+    batches = Batch.objects.all()
+    return render(request, "masters/batch_list.html", {"batches": batches})
+from io import TextIOWrapper
+import csv
+import unicodedata
+import re
+from django.contrib import messages
+from django.shortcuts import redirect
+# ===== BATCH CSV UPLOAD =====
+def batch_upload(request):
+    from .models import Batch
+    if request.method == "POST" and request.FILES.get("csv_file"):
+        csv_file = request.FILES["csv_file"]
+        success_count = 0
+        try:
+            decoded_file = TextIOWrapper(csv_file.file, encoding='utf-8')
+            reader = csv.DictReader(decoded_file)
+            if not reader.fieldnames:
+                messages.error(request, "CSV file is missing headers.")
+                return redirect("core:settings")
+            def normalize(val):
+                if not val:
+                    return ""
+                val = unicodedata.normalize("NFKC", val)
+                val = re.sub(r"[\s\u00A0\u200B\u200C\u200D\uFEFF]+", " ", val)
+                val = val.strip().lower()
+                return val
+            # Normalize headers to handle BOM, whitespace, and case
+            def norm_header(h):
+                if not h:
+                    return ""
+                h = unicodedata.normalize("NFKC", h)
+                h = re.sub(r"[\s\u00A0\u200B\u200C\u200D\uFEFF]+", "", h)
+                h = h.strip().lower()
+                return h
+
+            norm_field_map = {norm_header(k): k for k in reader.fieldnames}
+            required_fields = ["batch_code", "admission_year", "grad_year"]
+            missing_fields = [f for f in required_fields if f not in norm_field_map]
+            if missing_fields:
+                messages.error(request, f"CSV is missing required columns: {', '.join(missing_fields)}.")
+                return redirect("core:settings")
+            code_key = norm_field_map.get("batch_code") or norm_field_map.get("regulation")
+            admission_key = norm_field_map.get("admission_year")
+            grad_key = norm_field_map.get("grad_year")
+            status_key = norm_field_map.get("status")
+            for i, row in enumerate(reader, start=2):
+                batch_code = row.get(code_key) if code_key else None
+                admission_year = row.get(admission_key) if admission_key else None
+                grad_year = row.get(grad_key) if grad_key else None
+                status = row.get(status_key) if status_key else "ACTIVE"
+                row_has_error = False
+                if not batch_code:
+                    messages.error(request, f"Row {i}: batch_code/regulation is missing in the CSV.")
+                    row_has_error = True
+                if not admission_year:
+                    messages.error(request, f"Row {i}: admission_year is missing in the CSV.")
+                    row_has_error = True
+                if not grad_year:
+                    messages.error(request, f"Row {i}: grad_year is missing in the CSV.")
+                    row_has_error = True
+                if not row_has_error:
+                    batch_code_norm = normalize(batch_code)
+                    try:
+                        batch = Batch.objects.get(batch_code__iexact=batch_code_norm)
+                        # Check for differences
+                        diffs = []
+                        if str(batch.admission_year) != str(admission_year):
+                            diffs.append(("Admission Year", batch.admission_year, admission_year))
+                        if str(batch.grad_year) != str(grad_year):
+                            diffs.append(("Grad Year", batch.grad_year, grad_year))
+                        if batch.status != status:
+                            diffs.append(("Status", batch.status, status))
+                        if not diffs:
+                            messages.warning(request, f"Batch '{batch_code}' already exists.")
+                        else:
+                            messages.warning(request, f"Batch '{batch_code}' exists with differences: {diffs}")
+                    except Batch.DoesNotExist:
+                        Batch.objects.create(
+                            batch_code=batch_code,
+                            admission_year=admission_year,
+                            grad_year=grad_year,
+                            status=status
+                        )
+                        success_count += 1
+            if success_count:
+                messages.success(request, f"{success_count} batch(es) imported successfully.")
+        except Exception as e:
+            messages.error(request, f"Error processing file: {e}")
+        return redirect("core:settings")
+    messages.error(request, "No file uploaded.")
+    return redirect("core:settings")
 # Handle POST from coursereg_conflict.html to break redirect loop
 from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
@@ -193,13 +289,15 @@ from .models import Student, Faculty, Room
 
 # ===== STUDENTS =====
 def student(request):
-    from .models import Department
+    from .models import Department, Batch
     from django.core.paginator import Paginator
     from django.db import models
-    students = Student.objects.select_related('user', 'dept').all().order_by('student_id')
+    students = Student.objects.select_related('user', 'dept', 'batch').all().order_by('student_id')
     departments = Department.objects.all()
+    batches = Batch.objects.all()
     search = request.GET.get('search', '').strip().lower()
     department = request.GET.get('department', '').strip()
+    batch = request.GET.get('batch', '').strip()
     if search:
         students = students.filter(
             models.Q(student_id__icontains=search) |
@@ -208,14 +306,18 @@ def student(request):
         )
     if department and department != 'all':
         students = students.filter(dept__dept_code=department)
+    if batch and batch != 'all':
+        students = students.filter(batch__batch_code=batch)
     paginator = Paginator(students, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     return render(request, "masters/student.html", {
         "page_obj": page_obj,
         "departments": departments,
+        "batches": batches,
         "search": search,
-        "selected_department": department
+        "selected_department": department,
+        "selected_batch": batch
     })
 
 def student_content(request):
@@ -227,10 +329,11 @@ def student_detail(request, pk):
     return render(request, "masters/student_detail.html", {"student": student})
 
 def student_edit(request, pk):
-    from .models import Student, Department, Program
-    student = Student.objects.select_related('user', 'dept', 'program').get(pk=pk)
+    from .models import Student, Department, Program, Batch
+    student = Student.objects.select_related('user', 'dept', 'program', 'batch').get(pk=pk)
     departments = Department.objects.all()
     programs = Program.objects.all()
+    batches = Batch.objects.all()
     if request.method == "POST":
         user = student.user
         user.first_name = request.POST.get("first_name", user.first_name)
@@ -239,8 +342,10 @@ def student_edit(request, pk):
         user.save()
         dept_id = request.POST.get("department")
         program_id = request.POST.get("program")
+        batch_id = request.POST.get("batch")
         student.dept_id = dept_id if dept_id else student.dept_id
         student.program_id = program_id if program_id else student.program_id
+        student.batch_id = batch_id if batch_id else student.batch_id
         student.email = user.email  # keep in sync
         student.phone_number = request.POST.get("phone_number", student.phone_number)
         student.parent_phone_number = request.POST.get("parent_phone_number", student.parent_phone_number)
@@ -249,7 +354,7 @@ def student_edit(request, pk):
         from django.contrib import messages
         messages.success(request, "Student details updated successfully.")
         return redirect("masters:student_detail", pk=student.pk)
-    return render(request, "masters/student_edit.html", {"student": student, "departments": departments, "programs": programs})
+    return render(request, "masters/student_edit.html", {"student": student, "departments": departments, "programs": programs, "batches": batches})
 
 def student_delete(request, pk):
     from django.http import JsonResponse
@@ -722,9 +827,10 @@ def coursereg_upload(request):
         duplicate_rows = []
         conflict_rows = []
         total = 0
+        missing_student = []
+        missing_course = []
         for row in reader:
             total += 1
-            # Handle missing columns or blank values
             try:
                 sid = (row.get("student_id") or '').strip()
                 ccode = (row.get("course_code") or '').strip()
@@ -739,19 +845,17 @@ def coursereg_upload(request):
             try:
                 student = Student.objects.get(student_id=sid)
             except Student.DoesNotExist:
-                conflict_rows.append({"student_id": sid, "course_code": ccode, "academic_year": ay, "semester": sem, "reason": "Student not found"})
+                missing_student.append(sid)
                 continue
             try:
                 course = Course.objects.get(course_code=ccode)
             except Course.DoesNotExist:
-                conflict_rows.append({"student_id": sid, "course_code": ccode, "academic_year": ay, "semester": sem, "reason": "Course not found"})
+                missing_course.append(ccode)
                 continue
-            # Check for duplicate (all fields match)
             exists = StudentCourse.objects.filter(student=student, course=course, academic_year=ay, semester=sem).exists()
             if exists:
                 duplicate_rows.append(row)
                 continue
-            # Check for same student, same course, but different acd_year or semester
             conflict = StudentCourse.objects.filter(student=student, course=course).exclude(academic_year=ay, semester=sem).first()
             if conflict:
                 conflict_rows.append({
@@ -765,6 +869,14 @@ def coursereg_upload(request):
                 })
                 continue
             new_rows.append((student, course, ay, sem))
+
+        # If any missing students or courses, show error and redirect back
+        if missing_student:
+            messages.error(request, f"No student(s) exist with ID(s): {', '.join(missing_student)}.")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+        if missing_course:
+            messages.error(request, f"No course(s) exist with code(s): {', '.join(missing_course)}.")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
         # If the sheet is empty (no data rows), show error
         if total == 0:
@@ -832,13 +944,15 @@ def student_upload(request):
                 val = re.sub(r"[\s\u00A0\u200B\u200C\u200D\uFEFF]+", " ", val)
                 val = val.strip().lower()
                 return val
-            from .models import Department, Program
+            from .models import Department, Program, Batch
             from accounts.models import User
             dept_lookup = {normalize(d.dept_name): d for d in Department.objects.all()}
             program_lookup = {normalize(p.program_code): p for p in Program.objects.all()}
+            batch_lookup = {normalize(b.batch_code): b for b in Batch.objects.all()}
             field_map = {k.strip().lower(): k for k in reader.fieldnames}
             dept_key = field_map.get("dept_name") or field_map.get("department")
             possible_program_keys = [k for k in reader.fieldnames if k.strip().lower() in ("program", "program_name")]
+            batch_key = field_map.get("batch_code") or field_map.get("regulation")
             mismatches = []
             for i, row in enumerate(reader, start=2):
                 student_id = row.get(field_map.get("student_id")) if field_map.get("student_id") else None
@@ -850,6 +964,7 @@ def student_upload(request):
                     if row.get(k):
                         program_name = row.get(k)
                         break
+                batch_code = row.get(batch_key) if batch_key else None
                 row_has_error = False
                 if not student_id:
                     messages.error(request, f"Row {i}: student_id is missing in the CSV.")
@@ -878,6 +993,15 @@ def student_upload(request):
                     if not program:
                         messages.error(request, f"Row {i}: Program '{program_name}' not found.")
                         row_has_error = True
+                if not batch_code:
+                    messages.error(request, f"Row {i}: Regulation/Batch code is missing in the CSV. Regulation is mandatory.")
+                    row_has_error = True
+                else:
+                    norm_batch_code = normalize(batch_code)
+                    batch = batch_lookup.get(norm_batch_code)
+                    if not batch:
+                        messages.error(request, f"Row {i}: Regulation/Batch code '{batch_code}' not found in the system. Please add the batch first.")
+                        row_has_error = True
                 if not row_has_error and student_id:
                     name = f"{user.first_name} {user.last_name}".strip()
                     email = user.email
@@ -897,6 +1021,8 @@ def student_upload(request):
                             diffs.append(("Department", student.dept.dept_name if student.dept else "", dept.dept_name if dept else ""))
                         if student.program != program:
                             diffs.append(("Program", student.program.program_name if student.program else "", program.program_name if program else ""))
+                        if student.batch != batch:
+                            diffs.append(("Regulation", student.batch.batch_code if student.batch else "", batch.batch_code if batch else ""))
                         if student.status != "ACTIVE":
                             diffs.append(("Status", student.status, "ACTIVE"))
                         if not diffs:
@@ -913,6 +1039,7 @@ def student_upload(request):
                             parent_phone_number=parent_phone_number,
                             dept=dept,
                             program=program,
+                            batch=batch,
                             status="ACTIVE"
                         )
                         success_count += 1

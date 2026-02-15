@@ -20,3 +20,50 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect("accounts:login")
+
+# AJAX endpoint for paginated, filtered user data
+from django.http import JsonResponse
+from .models import User
+from django.core.paginator import Paginator
+from django.db.models import Q
+
+def ajax_users_list(request):
+
+    # Get filter params
+    filters = {}
+    search_fields = ["username", "email", "first_name", "last_name", "user_code", "role"]
+    q = Q()
+    for field in search_fields:
+        value = request.GET.get(field, "").strip()
+        if value:
+            q &= Q(**{f"{field}__icontains": value})
+
+    users = User.objects.filter(q).order_by("username")
+
+    # Pagination
+    page = int(request.GET.get("page", 1))
+    paginator = Paginator(users, 25)
+    page_obj = paginator.get_page(page)
+
+    user_list = [
+        {
+            "username": u.username,
+            "email": u.email,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
+            "user_code": u.user_code,
+            "role": u.role,
+            "is_staff": u.is_staff,
+            "is_active": u.is_active,
+            "date_joined": u.date_joined.strftime('%Y-%m-%d %H:%M'),
+            "last_login": u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else "",
+        }
+        for u in page_obj
+    ]
+
+    return JsonResponse({
+        "users": user_list,
+        "num_pages": paginator.num_pages,
+        "current_page": page_obj.number,
+        "total_count": paginator.count,
+    })

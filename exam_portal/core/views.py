@@ -1,3 +1,19 @@
+from django.views.decorators.http import require_GET
+@require_GET
+def users_modal(request):
+    return render(request, "core/users_modal.html")
+
+@require_GET
+def departments_modal(request):
+    return render(request, "core/departments_modal.html")
+
+@require_GET
+def programs_modal(request):
+    return render(request, "core/programs_modal.html")
+
+@require_GET
+def batches_modal(request):
+    return render(request, "core/batch_modal.html")
 def program_conflict(request):
     context = request.session.get('program_conflicts')
     if not context:

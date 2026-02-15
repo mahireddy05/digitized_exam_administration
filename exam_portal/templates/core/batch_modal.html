@@ -1,0 +1,26 @@
+{% load static %}
+<h5 class="pages-main-head">Batches List</h5>
+<div class="modal-body">
+    <div class="table-responsive" style="max-height: 85vh; overflow-y: auto;">
+        <table class="table table-bordered table-striped" id="batches-table">
+            <thead style="position: sticky; top: 0; z-index: 2; background: #1E3A5F;">
+                <tr>
+                    <th>Batch Code</th>
+                    <th>Admission Year</th>
+                    <th>Graduation Year</th>
+                    <th>Status</th>
+                </tr>
+                <tr id="batch-filter-row">
+                    <th><input type="text" class="batches-filter-input" data-field="batch_code" placeholder="Filter Batch Code"></th>
+                    <th><input type="text" class="batches-filter-input" data-field="admission_year" placeholder="Filter Admission Year"></th>
+                    <th><input type="text" class="batches-filter-input" data-field="grad_year" placeholder="Filter Graduation Year"></th>
+                    <th><input type="text" class="batches-filter-input" data-field="status" placeholder="Filter Status"></th>
+                </tr>
+            </thead>
+            <tbody id="batches-table-body">
+                <!-- Data will be loaded here by AJAX -->
+            </tbody>
+        </table>
+        <ul id="batches-pagination" class="pagination"></ul>
+    </div>
+</div>

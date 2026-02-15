@@ -1,0 +1,24 @@
+{% load static %}
+<h5 class="pages-main-head">Departments List</h5>
+<div class="modal-body">
+    <div class="table-responsive" style="max-height: 85vh; overflow-y: auto;">
+        <table class="table table-bordered table-striped" id="departments-table">
+            <thead style="position: sticky; top: 0; z-index: 2; background: #1E3A5F;">
+                <tr>
+                    <th>Department Code</th>
+                    <th>Department Name</th>
+                    <th>Status</th>
+                </tr>
+                <tr id="department-filter-row">
+                    <th><input type="text" class="departments-filter-input" data-field="dept_code" placeholder="Filter Dept Code"></th>
+                    <th><input type="text" class="departments-filter-input" data-field="dept_name" placeholder="Filter Dept Name"></th>
+                    <th><input type="text" class="departments-filter-input" data-field="status" placeholder="Filter Status"></th>
+                </tr>
+            </thead>
+            <tbody id="departments-table-body">
+                <!-- Data will be loaded here by AJAX -->
+            </tbody>
+        </table>
+        <ul id="departments-pagination" class="pagination"></ul>
+    </div>
+</div>

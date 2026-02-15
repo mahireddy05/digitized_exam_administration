@@ -8,15 +8,20 @@
                 <h2 class="settings-card-head">Add Users</h2>
                 <p class="setting-paragraph">Add new users to the system.</p>
                 <div class="setting-card-navs">
-                    <form action="{% url 'core:upload_users' %}" method="post" enctype="multipart/form-data" style="display:inline;">
-                        {% csrf_token %}
-                        <label for="uploadUsersFile" class="settings-card-link" style="cursor: pointer;">
-                            <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload">Upload
-                        </label>
-                        <input type="file" id="uploadUsersFile" name="users_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
-                    </form>
+                    <div>
+                        <a href="#" class="settings-card-link view-btn" data-modal="usersModal">
+                            <img src="https://img.icons8.com/?size=100&id=84710&format=png&color=2563eb" alt="view"> View
+                        </a>
+                        <form action="{% url 'core:upload_users' %}" method="post">
+                            {% csrf_token %}
+                            <label for="uploadUsersFile" class="settings-card-link">
+                                <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload"> Upload
+                            </label>
+                            <input type="file" id="uploadUsersFile" name="users_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
+                        </form>
+                    </div>
                     <a href="{% static 'samples/usersdata.csv' %}" download class="settings-card-link">
-                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download">Sample CSV
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download"> Sample CSV
                     </a>
                 </div>
             </div>
@@ -24,15 +29,20 @@
                 <h2 class="settings-card-head">Add Departments</h2>
                 <p class="setting-paragraph">Add new departments to the system.</p>
                 <div class="setting-card-navs">
-                    <form action="{% url 'core:upload_departments' %}" method="post" enctype="multipart/form-data" style="display:inline;">
-                        {% csrf_token %}
-                        <label for="uploadDepartmentsFile" class="settings-card-link" style="cursor: pointer;">
-                            <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload">Upload
-                        </label>
-                        <input type="file" id="uploadDepartmentsFile" name="departments_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
-                    </form>
+                    <div>
+                        <a href="#" class="settings-card-link view-btn" data-modal="departmentsModal">
+                            <img src="https://img.icons8.com/?size=100&id=84710&format=png&color=2563eb" alt="view"> View
+                        </a>
+                        <form action="{% url 'core:upload_departments' %}" method="post">
+                            {% csrf_token %}
+                            <label for="uploadDepartmentsFile" class="settings-card-link">
+                                <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload"> Upload
+                            </label>
+                            <input type="file" id="uploadDepartmentsFile" name="departments_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
+                        </form>
+                    </div>
                     <a href="{% static 'samples/departments.csv' %}" download class="settings-card-link">
-                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download">Sample CSV
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download"> Sample CSV
                     </a>
                 </div>
             </div>
@@ -40,17 +50,115 @@
                 <h2 class="settings-card-head">Add Programs</h2>
                 <p class="setting-paragraph">Add new programs to the system.</p>
                 <div class="setting-card-navs">
-                    <form action="{% url 'core:upload_programs' %}" method="post" enctype="multipart/form-data" style="display:inline;">
-                        {% csrf_token %}
-                        <label for="uploadProgramsFile" class="settings-card-link" style="cursor: pointer;">
-                            <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="uploadFile">Upload
-                        </label>
-                        <input type="file" id="uploadProgramsFile" name="programs_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
-                    </form>
+                    <div>
+                        <a href="#" class="settings-card-link view-btn" data-modal="programsModal">
+                            <img src="https://img.icons8.com/?size=100&id=84710&format=png&color=2563eb" alt="view"> View
+                        </a>
+                        <form action="{% url 'core:upload_programs' %}" method="post">
+                            {% csrf_token %}
+                            <label for="uploadProgramsFile" class="settings-card-link">
+                                <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload"> Upload
+                            </label>
+                            <input type="file" id="uploadProgramsFile" name="programs_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
+                        </form>
+                    </div>
                     <a href="{% static 'samples/programs.csv' %}" download class="settings-card-link">
-                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download">Sample CSV
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download"> Sample CSV
                     </a>
                 </div>
+            </div>
+            <div class="settings-card">
+                <h2 class="settings-card-head">Add batch/regulaton details</h2>
+                <p class="setting-paragraph">Add new batch details to the system.</p>
+                <div class="setting-card-navs">
+                    <div>
+                        <a href="#" class="settings-card-link view-btn" data-modal="batchesModal">
+                            <img src="https://img.icons8.com/?size=100&id=84710&format=png&color=2563eb" alt="view"> View
+                        </a>
+                        <form action="{% url 'masters:batch_upload' %}" method="post">
+                            {% csrf_token %}
+                            <label for="uploadBatchesFile" class="settings-card-link">
+                                <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload"> Upload
+                            </label>
+                            <input type="file" id="uploadBatchesFile" name="csv_file" style="display: none;" accept=".csv, .xlsx" onchange="this.form.submit();">
+                        </form>
+                    </div>
+                    <a href="{% static 'samples/batches.csv' %}" download class="settings-card-link">
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=000000" alt="download"> Sample CSV
+                    </a>
+                </div>
+            <!-- Modal structure for Users -->
+            <div id="usersModal" class="modal-popup" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);justify-content:center;align-items:center;">
+                <div class="modal-content" style="background:#fff;width:90vw;height:90vh;overflow:auto;position:relative;padding:24px;border-radius:12px;">
+                    <button class="close-modal" style="position:absolute;top:12px;right:18px;font-size:2rem;">&times;</button>
+                    <div id="users-modal-table"></div>
+                </div>
+            </div>
+            <!-- Modal structure for Departments -->
+            <div id="departmentsModal" class="modal-popup" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);justify-content:center;align-items:center;">
+                <div class="modal-content" style="background:#fff;width:90vw;height:90vh;overflow:auto;position:relative;padding:24px;border-radius:12px;">
+                    <button class="close-modal" style="position:absolute;top:12px;right:18px;font-size:2rem;">&times;</button>
+                    <div id="departments-modal-table"></div>
+                </div>
+            </div>
+            <!-- Modal structure for Programs -->
+            <div id="programsModal" class="modal-popup" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);justify-content:center;align-items:center;">
+                <div class="modal-content" style="background:#fff;width:90vw;height:90vh;overflow:auto;position:relative;padding:24px;border-radius:12px;">
+                    <button class="close-modal" style="position:absolute;top:12px;right:18px;font-size:2rem;">&times;</button>
+                    <div id="programs-modal-table"></div>
+                </div>
+            </div>
+            <!-- Modal structure for Batches -->
+            <div id="batchesModal" class="modal-popup" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.3);justify-content:center;align-items:center;">
+                <div class="modal-content" style="background:#fff;width:90vw;height:90vh;overflow:auto;position:relative;padding:24px;border-radius:12px;">
+                    <button class="close-modal" style="position:absolute;top:12px;right:18px;font-size:2rem;">&times;</button>
+                    <div id="batches-modal-table"></div>
+                </div>
+            </div>
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+            <script>
+            // Modal open/close logic
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const modalId = this.getAttribute('data-modal');
+                    const modal = document.getElementById(modalId);
+                    if (modalId === 'usersModal') {
+                        // Load users_modal.html into the modal table div
+                        $("#users-modal-table").load("{% url 'core:users_modal' %}", function() {
+                            if (window.usersTable && document.getElementById('users-table')) {
+                                usersTable.init();
+                            }
+                        });
+                    } else if (modalId === 'departmentsModal') {
+                        $("#departments-modal-table").load("{% url 'core:departments_modal' %}", function() {
+                            if (window.departmentsTable && document.getElementById('departments-table')) {
+                                departmentsTable.init();
+                            }
+                        });
+                    } else if (modalId === 'programsModal') {
+                        $("#programs-modal-table").load("{% url 'core:programs_modal' %}", function() {
+                            if (window.programsTable && document.getElementById('programs-table')) {
+                                programsTable.init();
+                            }
+                        });
+                    } else if (modalId === 'batchesModal') {
+                        $("#batches-modal-table").load("{% url 'core:batches_modal' %}", function() {
+                            if (window.batchesTable && document.getElementById('batches-table')) {
+                                batchesTable.init();
+                            }
+                        });
+                    } else {
+                        modal.style.display = 'flex';
+                    }
+                    modal.style.display = 'flex';
+                });
+            });
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.modal-popup').style.display = 'none';
+                });
+            });
+            </script>
             </div>
         </div>
     </div>

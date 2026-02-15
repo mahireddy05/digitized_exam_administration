@@ -22,7 +22,7 @@
                         <tbody>
                             {% for diff in mismatch.diffs %}
                                 <tr>
-                                    <td style="padding: 6px 12px; border: 1px solid #e5e7eb;">{{ diff.0 }}</td>
+                                    <td style="padding: 6px 12px; border: 1px solid #e5e7eb;">{% if diff.0 == 'Regulation' %}Regulation (Batch){% else %}{{ diff.0 }}{% endif %}</td>
                                     <td style="padding: 6px 12px; border: 1px solid #e5e7eb;">{{ diff.1 }}</td>
                                     <td style="padding: 6px 12px; border: 1px solid #e5e7eb; color: #ef4444;">{{ diff.2 }}</td>
                                 </tr>

@@ -1,0 +1,24 @@
+{% load static %}
+<h5 class="pages-main-head">Programs List</h5>
+<div class="modal-body">
+    <div class="table-responsive" style="max-height: 85vh; overflow-y: auto;">
+        <table class="table table-bordered table-striped" id="programs-table">
+            <thead style="position: sticky; top: 0; z-index: 2; background: #1E3A5F;">
+                <tr>
+                    <th>Program Code</th>
+                    <th>Program Name</th>
+                    <th>Status</th>
+                </tr>
+                <tr id="program-filter-row">
+                    <th><input type="text" class="programs-filter-input" data-field="program_code" placeholder="Filter Program Code"></th>
+                    <th><input type="text" class="programs-filter-input" data-field="program_name" placeholder="Filter Program Name"></th>
+                    <th><input type="text" class="programs-filter-input" data-field="status" placeholder="Filter Status"></th>
+                </tr>
+            </thead>
+            <tbody id="programs-table-body">
+                <!-- Data will be loaded here by AJAX -->
+            </tbody>
+        </table>
+        <ul id="programs-pagination" class="pagination"></ul>
+    </div>
+</div>

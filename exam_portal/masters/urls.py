@@ -5,6 +5,9 @@ from . import ajax
 app_name = "masters"
 
 urlpatterns = [
+    # BATCH
+    path("batch/upload/", views.batch_upload, name="batch_upload"),
+    path("batch/", views.batch_list, name="batch_list"),
     # STUDENT
     path("student/", views.student, name="student"),
     path("student/content/", views.student_content, name="student_content"),

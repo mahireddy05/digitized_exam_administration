@@ -64,7 +64,8 @@ def ajax(request):
         return JsonResponse({'table_html': table_html, 'pagination_html': pagination_html})
 
     if data_type == 'student':
-        queryset = Student.objects.select_related('user', 'dept').all().order_by('student_id')
+        queryset = Student.objects.select_related('user', 'dept', 'batch').all().order_by('student_id')
+        batch = request.GET.get('batch', '').strip()
         if search:
             queryset = queryset.filter(
                 models.Q(student_id__icontains=search) |
@@ -73,6 +74,8 @@ def ajax(request):
             )
         if department and department != 'all':
             queryset = queryset.filter(dept__dept_code=department)
+        if batch and batch != 'all':
+            queryset = queryset.filter(batch__batch_code=batch)
         paginator = Paginator(queryset, 25)
         page_obj = paginator.get_page(page_number)
         rows = []
@@ -83,6 +86,7 @@ def ajax(request):
                 <td><a href='/masters/student/{student.id}/detail/' class='student-action-link'>{escape(student.student_id)}</a></td>
                 <td>{escape(student.user.first_name)} {escape(student.user.last_name)}</td>
                 <td>{escape(student.dept.dept_name)}({escape(student.dept.dept_code)})</td>
+                <td>{escape(student.batch.batch_code) if student.batch else '<span style="color:red">Not set</span>'}</td>
                 <td>{escape(student.email)}</td>
                 <td>{escape(student.status)}</td>
                 <td>

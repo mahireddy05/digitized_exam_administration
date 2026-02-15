@@ -752,4 +752,370 @@ function initializeContentScripts(pageUrl) {
     // Add more conditions for other pages if they have unique JS initialization
 }
 
+// Users Table AJAX and Pagination
+window.usersTable = {
+    USERS_URL: '/ajax/users/',
+    currentPage: 1,
+    fetchUsers: function(page = 1) {
+        let params = { page };
+        $("#filter-row .users-filter-input").each(function() {
+            const field = $(this).data("field");
+            const value = $(this).val();
+            if (field && value) params[field] = value;
+        });
+        $.ajax({
+            url: this.USERS_URL,
+            data: params,
+            dataType: "json",
+            success: function(data) {
+                usersTable.renderTable(data.users);
+                usersTable.renderPagination(data.current_page, data.num_pages);
+            }
+        });
+    },
+    renderTable: function(users) {
+        let html = "";
+        users.forEach(function(u) {
+            html += `<tr>
+                <td>${u.username}</td>
+                <td>${u.email}</td>
+                <td>${u.first_name}</td>
+                <td>${u.last_name}</td>
+                <td>${u.role}</td>
+                <td>${u.last_login && u.last_login.trim() ? u.last_login : '-'}</td>
+            </tr>`;
+        });
+        $("#users-table-body").html(html);
+    },
+    renderPagination: function(current, total) {
+        let html = "";
+        let start = Math.max(1, current - 4);
+        let end = Math.min(total, start + 9);
+        if (end - start < 9) start = Math.max(1, end - 9);
+        // First page button
+        if (current > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>`;
+        }
+        // Previous page button
+        if (current > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current-1}">&laquo;</a></li>`;
+        }
+        for (let i = start; i <= end; i++) {
+            html += `<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+        }
+        // Next page button
+        if (current < total) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current+1}">&raquo;</a></li>`;
+        }
+        // Last page button
+        if (current < total) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${total}">&raquo;&raquo;</a></li>`;
+        }
+        $("#users-pagination").html(html);
+    },
+    bindEvents: function() {
+        $(document).on("keyup change", ".users-filter-input", function() {
+            usersTable.fetchUsers(1);
+        });
+        $(document).on("click", "#users-pagination .page-link", function(e) {
+            e.preventDefault();
+            const page = parseInt($(this).data("page"));
+            if (page && page !== usersTable.currentPage) {
+                usersTable.currentPage = page;
+                usersTable.fetchUsers(page);
+            }
+        });
+    },
+    init: function() {
+        usersTable.fetchUsers();
+        usersTable.bindEvents();
+    }
+};
+$(document).ready(function() {
+    if (document.getElementById('users-table')) {
+        usersTable.init();
+    }
+});
+
+// ============ STUDENTS TABLE (AJAX) ============
+window.studentsTable = {
+    STUDENTS_URL: '/masters/ajax/',
+    currentPage: 1,
+    fetchStudents: function(page = 1) {
+        let params = { type: 'student', page };
+        // Get search, department, batch (regulation) filter values
+        params['search'] = $("#search").val() || '';
+        params['department'] = $("#department").val() || 'all';
+        params['batch'] = $("#batch").val() || 'all';
+        $.ajax({
+            url: this.STUDENTS_URL,
+            data: params,
+            dataType: "json",
+            success: function(data) {
+                $("#student-list").html(data.table_html);
+                $("#studentPaginationBar").html(data.pagination_html);
+                // Re-initialize delete modal and other listeners if needed
+                if (typeof initializeContentScripts === 'function') {
+                    initializeContentScripts(window.location.pathname);
+                }
+            }
+        });
+    },
+    bindEvents: function() {
+        // On filter change
+        $(document).on("change", "#department, #batch", function() {
+            studentsTable.fetchStudents(1);
+        });
+        // On search input
+        $(document).on("input", "#search", function() {
+            studentsTable.fetchStudents(1);
+        });
+        // On pagination click
+        $(document).on("click", "#studentPaginationBar .page-arrow, #studentPaginationBar .page-num", function(e) {
+            e.preventDefault();
+            const page = parseInt($(this).data("page"));
+            if (page && page !== studentsTable.currentPage) {
+                studentsTable.currentPage = page;
+                studentsTable.fetchStudents(page);
+            }
+        });
+        // Reset filters
+        $(document).on("click", "#resetStudentFilters", function() {
+            $("#search").val("");
+            $("#department").val("all");
+            $("#batch").val("all");
+            setTimeout(function() { studentsTable.fetchStudents(1); }, 0);
+        });
+    },
+    init: function() {
+        studentsTable.fetchStudents();
+        studentsTable.bindEvents();
+    }
+};
+
+$(document).ready(function() {
+    if (document.getElementById('student-table')) {
+        studentsTable.init();
+    }
+});
+// ============ BATCHES TABLE ============
+window.batchesTable = {
+    BATCHES_URL: '/ajax/batches/',
+    currentPage: 1,
+    fetchBatches: function(page = 1) {
+        let params = { page };
+        $("#batch-filter-row .batches-filter-input").each(function() {
+            const field = $(this).data("field");
+            const value = $(this).val();
+            if (field && value) params[field] = value;
+        });
+        $.ajax({
+            url: this.BATCHES_URL,
+            data: params,
+            dataType: "json",
+            success: function(data) {
+                batchesTable.renderTable(data.batches);
+                batchesTable.renderPagination(data.current_page, data.num_pages);
+            }
+        });
+    },
+    renderTable: function(batches) {
+        let html = "";
+        batches.forEach(function(b) {
+            html += `<tr>
+                <td>${b.batch_code}</td>
+                <td>${b.admission_year}</td>
+                <td>${b.grad_year}</td>
+                <td>${b.status}</td>
+            </tr>`;
+        });
+        $("#batches-table-body").html(html);
+    },
+    renderPagination: function(current, total) {
+        let html = "";
+        let start = Math.max(1, current - 4);
+        let end = Math.min(total, start + 9);
+        if (end - start < 9) start = Math.max(1, end - 9);
+        if (current > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current-1}">&laquo;</a></li>`;
+        }
+        for (let i = start; i <= end; i++) {
+            html += `<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+        }
+        if (current < total) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current+1}">&raquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${total}">&raquo;&raquo;</a></li>`;
+        }
+        $("#batches-pagination").html(html);
+    },
+    bindEvents: function() {
+        $(document).on("keyup change", ".batches-filter-input", function() {
+            batchesTable.fetchBatches(1);
+        });
+        $(document).on("click", "#batches-pagination .page-link", function(e) {
+            e.preventDefault();
+            const page = parseInt($(this).data("page"));
+            if (page && page !== batchesTable.currentPage) {
+                batchesTable.currentPage = page;
+                batchesTable.fetchBatches(page);
+            }
+        });
+    },
+    init: function() {
+        batchesTable.fetchBatches();
+        batchesTable.bindEvents();
+    }
+};
+
+// ============ DEPARTMENTS TABLE ============
+window.departmentsTable = {
+    DEPARTMENTS_URL: '/ajax/departments/',
+    currentPage: 1,
+    fetchDepartments: function(page = 1) {
+        let params = { page };
+        $("#department-filter-row .departments-filter-input").each(function() {
+            const field = $(this).data("field");
+            const value = $(this).val();
+            if (field && value) params[field] = value;
+        });
+        $.ajax({
+            url: this.DEPARTMENTS_URL,
+            data: params,
+            dataType: "json",
+            success: function(data) {
+                departmentsTable.renderTable(data.departments);
+                departmentsTable.renderPagination(data.current_page, data.num_pages);
+            }
+        });
+    },
+    renderTable: function(departments) {
+        let html = "";
+        departments.forEach(function(d) {
+            html += `<tr>
+                <td>${d.dept_code}</td>
+                <td>${d.dept_name}</td>
+                <td>${d.is_active}</td>
+            </tr>`;
+        });
+        $("#departments-table-body").html(html);
+    },
+    renderPagination: function(current, total) {
+        let html = "";
+        let start = Math.max(1, current - 4);
+        let end = Math.min(total, start + 9);
+        if (end - start < 9) start = Math.max(1, end - 9);
+        if (current > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current-1}">&laquo;</a></li>`;
+        }
+        for (let i = start; i <= end; i++) {
+            html += `<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+        }
+        if (current < total) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current+1}">&raquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${total}">&raquo;&raquo;</a></li>`;
+        }
+        $("#departments-pagination").html(html);
+    },
+    bindEvents: function() {
+        $(document).on("keyup change", ".departments-filter-input", function() {
+            departmentsTable.fetchDepartments(1);
+        });
+        $(document).on("click", "#departments-pagination .page-link", function(e) {
+            e.preventDefault();
+            const page = parseInt($(this).data("page"));
+            if (page && page !== departmentsTable.currentPage) {
+                departmentsTable.currentPage = page;
+                departmentsTable.fetchDepartments(page);
+            }
+        });
+    },
+    init: function() {
+        departmentsTable.fetchDepartments();
+        departmentsTable.bindEvents();
+    }
+};
+
+// ============ PROGRAMS TABLE ============
+window.programsTable = {
+    PROGRAMS_URL: '/ajax/programs/',
+    currentPage: 1,
+    fetchPrograms: function(page = 1) {
+        let params = { page };
+        $("#program-filter-row .programs-filter-input").each(function() {
+            const field = $(this).data("field");
+            const value = $(this).val();
+            if (field && value) params[field] = value;
+        });
+        $.ajax({
+            url: this.PROGRAMS_URL,
+            data: params,
+            dataType: "json",
+            success: function(data) {
+                programsTable.renderTable(data.programs);
+                programsTable.renderPagination(data.current_page, data.num_pages);
+            }
+        });
+    },
+    renderTable: function(programs) {
+        let html = "";
+        programs.forEach(function(p) {
+            html += `<tr>
+                <td>${p.program_code}</td>
+                <td>${p.program_name}</td>
+                <td>${p.is_active}</td>
+            </tr>`;
+        });
+        $("#programs-table-body").html(html);
+    },
+    renderPagination: function(current, total) {
+        let html = "";
+        let start = Math.max(1, current - 4);
+        let end = Math.min(total, start + 9);
+        if (end - start < 9) start = Math.max(1, end - 9);
+        if (current > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current-1}">&laquo;</a></li>`;
+        }
+        for (let i = start; i <= end; i++) {
+            html += `<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+        }
+        if (current < total) {
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current+1}">&raquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${total}">&raquo;&raquo;</a></li>`;
+        }
+        $("#programs-pagination").html(html);
+    },
+    bindEvents: function() {
+        $(document).on("keyup change", ".programs-filter-input", function() {
+            programsTable.fetchPrograms(1);
+        });
+        $(document).on("click", "#programs-pagination .page-link", function(e) {
+            e.preventDefault();
+            const page = parseInt($(this).data("page"));
+            if (page && page !== programsTable.currentPage) {
+                programsTable.currentPage = page;
+                programsTable.fetchPrograms(page);
+            }
+        });
+    },
+    init: function() {
+        programsTable.fetchPrograms();
+        programsTable.bindEvents();
+    }
+};
+
+$(document).ready(function() {
+    if (document.getElementById('batches-table')) {
+        batchesTable.init();
+    }
+    if (document.getElementById('departments-table')) {
+        departmentsTable.init();
+    }
+    if (document.getElementById('programs-table')) {
+        programsTable.init();
+    }
+});
+
 
