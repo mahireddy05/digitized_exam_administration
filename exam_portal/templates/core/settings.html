@@ -12,7 +12,7 @@
                         <a href="#" class="settings-card-link view-btn" data-modal="usersModal">
                             <img src="https://img.icons8.com/?size=100&id=84710&format=png&color=2563eb" alt="view"> View
                         </a>
-                        <form action="{% url 'core:upload_users' %}" method="post">
+                        <form action="{% url 'core:upload_users' %}" method="post" enctype="multipart/form-data">
                             {% csrf_token %}
                             <label for="uploadUsersFile" class="settings-card-link">
                                 <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload"> Upload
@@ -33,7 +33,7 @@
                         <a href="#" class="settings-card-link view-btn" data-modal="departmentsModal">
                             <img src="https://img.icons8.com/?size=100&id=84710&format=png&color=2563eb" alt="view"> View
                         </a>
-                        <form action="{% url 'core:upload_departments' %}" method="post">
+                        <form action="{% url 'core:upload_departments' %}" method="post" enctype="multipart/form-data">
                             {% csrf_token %}
                             <label for="uploadDepartmentsFile" class="settings-card-link">
                                 <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload"> Upload
@@ -54,7 +54,7 @@
                         <a href="#" class="settings-card-link view-btn" data-modal="programsModal">
                             <img src="https://img.icons8.com/?size=100&id=84710&format=png&color=2563eb" alt="view"> View
                         </a>
-                        <form action="{% url 'core:upload_programs' %}" method="post">
+                        <form action="{% url 'core:upload_programs' %}" method="post" enctype="multipart/form-data">
                             {% csrf_token %}
                             <label for="uploadProgramsFile" class="settings-card-link">
                                 <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload"> Upload
@@ -75,7 +75,7 @@
                         <a href="#" class="settings-card-link view-btn" data-modal="batchesModal">
                             <img src="https://img.icons8.com/?size=100&id=84710&format=png&color=2563eb" alt="view"> View
                         </a>
-                        <form action="{% url 'masters:batch_upload' %}" method="post">
+                        <form action="{% url 'masters:batch_upload' %}" method="post" enctype="multipart/form-data">
                             {% csrf_token %}
                             <label for="uploadBatchesFile" class="settings-card-link">
                                 <img src="https://img.icons8.com/?size=100&id=82888&format=png&color=000000" alt="upload"> Upload

@@ -1,0 +1,112 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+{% block content %}
+        <!-- Edit Examination Modal -->
+        <div id="editExamModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
+            <div class="modal-content" style="background:#fff;padding:2em;max-width:500px;border-radius:8px;position:relative;">
+                <span id="closeEditExamModal" style="position:absolute;top:10px;right:16px;font-size:1.5em;cursor:pointer;">&times;</span>
+                <h2 style="margin-top:0;">Edit Examination</h2>
+                <form id="editExamForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="editExamId" name="exam_id">
+                    <div style="margin-bottom:1em;">
+                        <label for="edit_examname">Exam Name:</label>
+                        <input type="text" id="edit_examname" name="examname" required>
+                    </div>
+                    <div style="margin-bottom:1em;">
+                        <label for="edit_start_date">Start Date:</label>
+                        <input type="date" id="edit_start_date" name="start_date" required>
+                    </div>
+                    <div style="margin-bottom:1em;">
+                        <label for="edit_end_date">End Date:</label>
+                        <input type="date" id="edit_end_date" name="end_date" required>
+                    </div>
+                    <div style="margin-bottom:1em;">
+                        <a href="#" id="saveEditExamBtn" class="action-link">Save</a>
+                        <a href="#" id="cancelEditExamBtn" class="action-link">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    <div class="pages-main">
+        <h1 class="pages-main-head">Exam Management</h1>
+        <div class="note-text">
+            <p style="color: red;">(<strong>Note:</strong> Please provide appropriate data for all fields.)</p>
+        </div>
+        <div class="controls-1">
+            <form id="examinationForm" action="{% url 'operations:examination' %}" method="post" autocomplete="off">
+                {% csrf_token %}
+                <label for="examname">Exam Name:</label>
+                <input type="text" id="examname" name="examname" placeholder="Enter exam name" value="{{ form_data.examname|default:'' }}">
+
+                <label for="start_date">Start Date:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ form_data.start_date|default:'' }}" min="{{ today|date:'Y-m-d' }}">
+
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ form_data.end_date|default:'' }}" min="{{ form_data.start_date|default:today|date:'Y-m-d' }}">
+
+            </form>
+            <a href="#" class="action-link" onclick="clearExaminationForm(); return false;" style="margin-left:10px;">Clear</a>
+            <a href="#" class="action-link" id="createExaminationLink" onclick="document.getElementById('examinationForm').submit(); return false;">Create Exam</a>
+            <script>
+            function clearExaminationForm() {
+                document.getElementById('examinationForm').reset();
+            }
+            document.addEventListener('DOMContentLoaded', function() {
+                var startInput = document.getElementById('start_date');
+                var endInput = document.getElementById('end_date');
+                function updateEndMin() {
+                    if (startInput.value) {
+                        endInput.min = startInput.value;
+                        if (endInput.value && endInput.value < startInput.value) {
+                            endInput.value = '';
+                        }
+                    } else {
+                        endInput.min = startInput.min;
+                    }
+                }
+                startInput.addEventListener('change', updateEndMin);
+                updateEndMin();
+            });
+            </script>
+        </div>
+        <div id="examination-table-container">
+            <table id="examination-table" class="styled-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Exam</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Slots</th>
+                        <th>Exam Scheduling</th>
+                        <th>Room Allocation</th>
+                        <th>Faculty Assignment</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be loaded by JS -->
+                </tbody>
+            </table>
+            <!-- Delete Examination Modal -->
+            <div id="deleteExamModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
+                <div class="modal-content" style="background:#fff;padding:2em;max-width:500px;border-radius:8px;position:relative;">
+                    <span id="closeDeleteExamModal" style="position:absolute;top:10px;right:16px;font-size:1.5em;cursor:pointer;">&times;</span>
+                    <h2 style="margin-top:0;">Confirm Deletion</h2>
+                    <div id="deleteExamWarning" style="color:#b30000;margin-bottom:1em;"></div>
+                    <form id="deleteExamForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="deleteExamId" name="exam_id">
+                        <div id="deleteExamDetails" style="margin-bottom:1em;"></div>
+                        <a href="#" id="confirmDeleteExamLink" class="action-link">Delete</a>
+                        <a href="#" id="cancelDeleteExamBtn" class="action-link">Cancel</a>
+                    </form>
+                </div>
+            </div>
+            </table>
+            <div id="examination-pagination" class="pagination"></div>
+        </div>
+    </div>
+{% endblock %}

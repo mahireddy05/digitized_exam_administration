@@ -1,5 +1,18 @@
 from django.db import models, transaction
 from masters.models import Student, Faculty, Course, Room
+class Examinations(models.Model):
+    exam_name = models.CharField(max_length=100, null=False, blank=False)
+    start_date = models.DateField(null=False, blank=False)
+    end_date = models.DateField(null=False, blank=False)
+
+    class Meta:
+        db_table = "examinations"
+        constraints = [
+            models.CheckConstraint(check=models.Q(start_date__lt=models.F('end_date')), name="start_date_before_end_date")
+        ]
+
+    def __str__(self):
+        return self.exam_name
 
 
 class StudentAcademicData(models.Model):
@@ -32,6 +45,7 @@ class StudentCourse(models.Model):
     course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="student_map")
     academic_year = models.CharField(max_length=9)
     semester = models.CharField(max_length=20)
+    registration_type = models.CharField(max_length=20, default="regular", help_text="Type of registration (e.g., regular, supply, improvement)")
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -56,18 +70,20 @@ class FacultyCourse(models.Model):
 
 
 class ExamSlot(models.Model):
-    EXAM_TYPE = (("REGULAR", "REGULAR"), ("SUPPLY", "SUPPLY"), ("IMPROVEMENT", "IMPROVEMENT"))
-    MODE = (("THEORY", "THEORY"), ("PRACTICAL", "PRACTICAL"))
-    SLOT_CODE = (("FN", "FN"), ("AN", "AN"))
-
-    exam_name = models.CharField(max_length=50, blank=True, null=True)
-    exam_type = models.CharField(max_length=12, choices=EXAM_TYPE, blank=True, null=True)
-    mode = models.CharField(max_length=10, choices=MODE, blank=True, null=True)
+    examination = models.ForeignKey('Examinations', blank=True, null=True, on_delete=models.CASCADE, db_column='examination_id')
+    exam_type = models.CharField(max_length=12, blank=True, null=True)
+    mode = models.CharField(max_length=10, blank=True, null=True)
 
     exam_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-    slot_code = models.CharField(max_length=2, choices=SLOT_CODE, blank=True, null=True)
+    slot_code = models.CharField(max_length=2, blank=True, null=True)
+    STATUS_CHOICES = (
+        ("ACTIVE", "Active"),
+        ("INACTIVE", "Inactive"),
+        ("CANCELLED", "Cancelled"),
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="ACTIVE")
 
     class Meta:
         db_table = "exam_slot"
@@ -80,19 +96,19 @@ class ExamSlot(models.Model):
 
 
 class Exam(models.Model):
-    EXAM_TYPE = (("REGULAR", "REGULAR"), ("SUPPLY", "SUPPLY"), ("IMPROVEMENT", "IMPROVEMENT"))
-
     exam_slot = models.ForeignKey(ExamSlot, on_delete=models.CASCADE, related_name="exams")
     course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="exams", null=True, blank=True)
     academic_year = models.CharField(max_length=9)
     semester = models.CharField(max_length=20)
-    exam_type = models.CharField(max_length=12, choices=EXAM_TYPE)
+    regulation = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
         db_table = "exam"
-        constraints = []
+        constraints = [
+            models.CheckConstraint(check=models.Q(semester__isnull=False) & ~models.Q(semester=""), name="check_semester_not_empty"),
+        ]
         indexes = [
-            models.Index(fields=["academic_year", "semester", "exam_type"]),
+            models.Index(fields=["academic_year", "semester"]),
         ]
 
 

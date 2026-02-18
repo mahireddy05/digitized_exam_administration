@@ -11,7 +11,7 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect("/")   # dashboard home
+            return redirect("/dashboard/")   # dashboard home
         else:
             messages.error(request, "Invalid username or password")
 
@@ -31,7 +31,7 @@ def ajax_users_list(request):
 
     # Get filter params
     filters = {}
-    search_fields = ["username", "email", "first_name", "last_name", "user_code", "role"]
+    search_fields = ["username", "email", "first_name", "last_name", "role"]
     q = Q()
     for field in search_fields:
         value = request.GET.get(field, "").strip()
@@ -51,7 +51,6 @@ def ajax_users_list(request):
             "email": u.email,
             "first_name": u.first_name,
             "last_name": u.last_name,
-            "user_code": u.user_code,
             "role": u.role,
             "is_staff": u.is_staff,
             "is_active": u.is_active,

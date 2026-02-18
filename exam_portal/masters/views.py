@@ -1,5 +1,7 @@
+from django.contrib.auth.decorators import login_required
 # Simple batch list view for redirection
 from django.shortcuts import render
+@login_required
 def batch_list(request):
     from .models import Batch
     batches = Batch.objects.all()
@@ -11,6 +13,7 @@ import re
 from django.contrib import messages
 from django.shortcuts import redirect
 # ===== BATCH CSV UPLOAD =====
+@login_required
 def batch_upload(request):
     from .models import Batch
     if request.method == "POST" and request.FILES.get("csv_file"):
@@ -20,7 +23,7 @@ def batch_upload(request):
             decoded_file = TextIOWrapper(csv_file.file, encoding='utf-8')
             reader = csv.DictReader(decoded_file)
             if not reader.fieldnames:
-                messages.error(request, "CSV file is missing headers.")
+                messages.error(request, "CSV header error: Expected headers ['batch_code', 'admission_year', 'grad_year'].")
                 return redirect("core:settings")
             def normalize(val):
                 if not val:
@@ -42,7 +45,7 @@ def batch_upload(request):
             required_fields = ["batch_code", "admission_year", "grad_year"]
             missing_fields = [f for f in required_fields if f not in norm_field_map]
             if missing_fields:
-                messages.error(request, f"CSV is missing required columns: {', '.join(missing_fields)}.")
+                messages.error(request, f"CSV header error: Expected headers {required_fields}.")
                 return redirect("core:settings")
             code_key = norm_field_map.get("batch_code") or norm_field_map.get("regulation")
             admission_key = norm_field_map.get("admission_year")
@@ -55,13 +58,13 @@ def batch_upload(request):
                 status = row.get(status_key) if status_key else "ACTIVE"
                 row_has_error = False
                 if not batch_code:
-                    messages.error(request, f"Row {i}: batch_code/regulation is missing in the CSV.")
+                    messages.error(request, f"CSV format error: batch_code/regulation cannot be empty. (Row {i})")
                     row_has_error = True
                 if not admission_year:
-                    messages.error(request, f"Row {i}: admission_year is missing in the CSV.")
+                    messages.error(request, f"CSV format error: admission_year cannot be empty. (Row {i})")
                     row_has_error = True
                 if not grad_year:
-                    messages.error(request, f"Row {i}: grad_year is missing in the CSV.")
+                    messages.error(request, f"CSV format error: grad_year cannot be empty. (Row {i})")
                     row_has_error = True
                 if not row_has_error:
                     batch_code_norm = normalize(batch_code)
@@ -97,6 +100,7 @@ def batch_upload(request):
 # Handle POST from coursereg_conflict.html to break redirect loop
 from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
+@login_required
 def coursereg_conflict_resolve(request):
     from django.contrib import messages
     from operations.models import StudentCourse
@@ -139,6 +143,7 @@ def coursereg_conflict_resolve(request):
             del request.session['coursereg_conflicts']
         return redirect('masters:coursereg')
 # ===== FACULTY CSV UPLOAD =====
+@login_required
 def faculty_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
         csv_file = request.FILES["csv_file"]
@@ -248,6 +253,7 @@ from django.http import JsonResponse
 import json
 
 @csrf_exempt
+@login_required
 def course_edit(request, pk):
     from .models import Course
     if request.method == 'POST':
@@ -272,6 +278,7 @@ def course_edit(request, pk):
 
 # AJAX: Delete course
 @csrf_exempt
+@login_required
 def course_delete(request, pk):
     from .models import Course
     if request.method == 'POST':
@@ -288,6 +295,7 @@ from django.shortcuts import render
 from .models import Student, Faculty, Room
 
 # ===== STUDENTS =====
+@login_required
 def student(request):
     from .models import Department, Batch
     from django.core.paginator import Paginator
@@ -320,14 +328,17 @@ def student(request):
         "selected_batch": batch
     })
 
+@login_required
 def student_content(request):
     return render(request, "masters/student_content.html")
 
+@login_required
 def student_detail(request, pk):
     from .models import Student
     student = Student.objects.select_related('user', 'dept', 'program').get(pk=pk)
     return render(request, "masters/student_detail.html", {"student": student})
 
+@login_required
 def student_edit(request, pk):
     from .models import Student, Department, Program, Batch
     student = Student.objects.select_related('user', 'dept', 'program', 'batch').get(pk=pk)
@@ -356,6 +367,7 @@ def student_edit(request, pk):
         return redirect("masters:student_detail", pk=student.pk)
     return render(request, "masters/student_edit.html", {"student": student, "departments": departments, "programs": programs, "batches": batches})
 
+@login_required
 def student_delete(request, pk):
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404, redirect
@@ -371,6 +383,7 @@ def student_delete(request, pk):
     return render(request, "masters/student_delete.html", {"student": student})
 
 # ===== FACULTY =====
+@login_required
 def faculty(request):
     from .models import Department
     from django.core.paginator import Paginator
@@ -396,17 +409,21 @@ def faculty(request):
         "selected_department": department
     })
 
+@login_required
 def faculty_content(request):
     return render(request, "masters/faculty_content.html")
 
+@login_required
 def faculty_detail(request, pk):
     from django.shortcuts import get_object_or_404
     faculty = get_object_or_404(Faculty.objects.select_related('user', 'dept'), pk=pk)
     return render(request, "masters/faculty_detail.html", {"faculty": faculty})
 
+@login_required
 def faculty_detail_content(request, pk):
     return render(request, "masters/faculty_detail_content.html", {"pk": pk})
 
+@login_required
 def faculty_edit(request, pk):
     from .models import Faculty, Department
     from accounts.models import User
@@ -430,6 +447,7 @@ def faculty_edit(request, pk):
         return redirect("masters:faculty_detail", pk=faculty.pk)
     return render(request, "masters/faculty_edit.html", {"faculty": faculty, "user": user, "departments": departments})
 
+@login_required
 def faculty_delete(request, pk):
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404, redirect
@@ -454,6 +472,7 @@ import unicodedata
 import re
 from django.shortcuts import redirect
 
+@login_required
 def rooms(request):
     from django.core.paginator import Paginator
     unique_blocks = Room.objects.values_list('block', flat=True).distinct()
@@ -490,6 +509,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.utils.datastructures import MultiValueDictKeyError
 
+@login_required
 def room_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
         csv_file = request.FILES["csv_file"]
@@ -623,16 +643,20 @@ def room_upload(request):
         messages.error(request, "No file uploaded.")
     return redirect("masters:student")
 
+@login_required
 def rooms_content(request):
     return render(request, "masters/rooms_content.html")
 
+@login_required
 def room_detail(request, pk):
     room = Room.objects.get(pk=pk)
     return render(request, "masters/room_detail.html", {"room": room})
 
+@login_required
 def room_detail_content(request, pk):
     return render(request, "masters/room_detail_content.html", {"pk": pk})
 
+@login_required
 def room_edit(request, pk):
     room = Room.objects.get(pk=pk)
     if request.method == "POST":
@@ -651,6 +675,7 @@ def room_edit(request, pk):
         return redirect("masters:room_detail", pk=room.pk)
     return render(request, "masters/room_edit.html", {"room": room})
 
+@login_required
 def room_delete(request, pk):
     room = Room.objects.get(pk=pk)
     if request.method == "POST":
@@ -660,6 +685,7 @@ def room_delete(request, pk):
     return render(request, "masters/room_delete.html", {"room": room})
 
 # ===== COURSES =====
+@login_required
 def courses(request):
     from .models import Course
     from django.core.paginator import Paginator
@@ -688,6 +714,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 @csrf_exempt
 @require_POST
+@login_required
 def course_upload(request):
     from django.contrib import messages
     import csv
@@ -775,6 +802,7 @@ def course_upload(request):
     else:
         messages.error(request, "No file uploaded.")
     return redirect('masters:courses')
+@login_required
 def coursereg(request):
     from operations.models import StudentCourse
     from .models import Course, Student
@@ -794,6 +822,7 @@ from operations.models import StudentCourse
 from .models import Student, Course
 from django.db import transaction
 
+@login_required
 def coursereg_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
         import codecs
@@ -919,14 +948,17 @@ def coursereg_upload(request):
 
 # Final fallback to ensure HttpResponse is always returned
 from django.http import HttpResponse
+@login_required
 def _coursereg_upload_fallback(*args, **kwargs):
     return HttpResponse("Unexpected error: No response returned.")
 
+@login_required
 def display_students(request):
     students = Student.objects.all()
     return render(request, "masters/student.html", {"students": students})
 
 # ===== STUDENT CSV UPLOAD =====
+@login_required
 def student_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
         csv_file = request.FILES["csv_file"]
@@ -1055,6 +1087,7 @@ def student_upload(request):
     return redirect("masters:student")
 
 
+@login_required
 def student_update_conflicts(request):
     mismatches = request.session.get('student_mismatches', [])
     if request.method == 'POST':
@@ -1114,6 +1147,7 @@ def student_update_conflicts(request):
     return render(request, "masters/student_update_conflicts.html", {"mismatches": mismatches})
 
 
+@login_required
 def faculty_update_conflicts(request):
     mismatches = request.session.get('faculty_mismatches', [])
     if request.method == 'POST':
@@ -1230,6 +1264,7 @@ def room_upload(request):
     return redirect("masters:rooms")
 
 
+@login_required
 def room_update_conflicts(request):
     mismatches = request.session.get('room_mismatches', [])
     if request.method == 'POST':

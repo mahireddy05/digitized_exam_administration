@@ -7,8 +7,6 @@ from . import ajax
 app_name = "core"
 
 def root_redirect(request):
-    if request.user.is_authenticated:
-        return redirect('core:dashboard')
     return redirect('accounts:login')
 
 urlpatterns = [

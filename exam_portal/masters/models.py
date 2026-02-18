@@ -127,6 +127,7 @@ class Room(models.Model):
     columns = models.PositiveIntegerField()
     # capacity computed in Django (instead of generated column)
     capacity = models.PositiveIntegerField(editable=False)
+    room_type = models.CharField(max_length=30, blank=True, null=True, help_text="Type of room (e.g., Lecture Hall, Lab, etc.)")
     floor = models.CharField(max_length=10, blank=True, null=True)
     block = models.CharField(max_length=10, blank=True, null=True)
     is_active = models.BooleanField(default=True)

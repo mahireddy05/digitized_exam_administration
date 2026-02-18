@@ -1,19 +1,27 @@
 from django.views.decorators.http import require_GET
+from django.contrib.auth.decorators import login_required
+
+@login_required(login_url='/accounts/login/')
 @require_GET
 def users_modal(request):
     return render(request, "core/users_modal.html")
 
+@login_required(login_url='/accounts/login/')
 @require_GET
 def departments_modal(request):
     return render(request, "core/departments_modal.html")
 
+@login_required(login_url='/accounts/login/')
 @require_GET
 def programs_modal(request):
     return render(request, "core/programs_modal.html")
 
+@login_required(login_url='/accounts/login/')
 @require_GET
 def batches_modal(request):
     return render(request, "core/batch_modal.html")
+
+@login_required(login_url='/accounts/login/')
 def program_conflict(request):
     context = request.session.get('program_conflicts')
     if not context:
@@ -39,6 +47,7 @@ def program_conflict(request):
         return redirect("core:settings")
     return render(request, "core/program_conflict.html", {**context, 'user': request.user})
 
+@login_required(login_url='/accounts/login/')
 def user_conflict(request):
     context = request.session.get('user_conflicts')
     if not context:
@@ -71,6 +80,7 @@ def user_conflict(request):
         return redirect("core:settings")
     return render(request, "core/user_conflict.html", {**context, 'user': request.user})
 from django.utils.safestring import mark_safe
+@login_required(login_url='/accounts/login/')
 def dept_conflict(request):
     context = request.session.get('dept_conflicts')
     if not context:
@@ -129,6 +139,7 @@ def notifications(request):
 def settings_view(request):
     return render(request, "core/settings.html", {'user': request.user})
 
+@login_required(login_url='/accounts/login/')
 def upload_departments(request):
     if request.method == "POST" and request.FILES.get("departments_file"):
         file = request.FILES["departments_file"]
@@ -165,13 +176,13 @@ def upload_departments(request):
                     dept_code = row[code_idx].strip()
                     dept_name = row[name_idx].strip()
                     if not dept_code or not dept_name:
-                        messages.error(request, f"{required_headers[0].replace('_', ' ').capitalize()} and {required_headers[1].replace('_', ' ')} cannot be empty.")
+                        messages.error(request, f"CSV format error: {required_headers[0]} and {required_headers[1]} cannot be empty.")
                         continue
                     if len(dept_code) > Department._meta.get_field('dept_code').max_length:
-                        messages.error(request, f"Department code '{dept_code}' is too long (max {Department._meta.get_field('dept_code').max_length}).")
+                        messages.error(request, f"CSV format error: {required_headers[0]} '{dept_code}' is too long (max {Department._meta.get_field('dept_code').max_length}).")
                         continue
                     if len(dept_name) > Department._meta.get_field('dept_name').max_length:
-                        messages.error(request, f"Department name '{dept_name}' is too long (max {Department._meta.get_field('dept_name').max_length}).")
+                        messages.error(request, f"CSV format error: {required_headers[1]} '{dept_name}' is too long (max {Department._meta.get_field('dept_name').max_length}).")
                         continue
                     dept_code_to_name[dept_code] = dept_name
                     csv_rows.append((dept_code, dept_name, row))
@@ -216,6 +227,7 @@ def upload_departments(request):
     messages.error(request, "No file uploaded or invalid CSV format.")
     return redirect("core:settings")
 
+@login_required(login_url='/accounts/login/')
 def upload_programs(request):
     if request.method == "POST" and request.FILES.get("programs_file"):
         file = request.FILES["programs_file"]
@@ -295,6 +307,7 @@ def upload_programs(request):
     messages.error(request, "No file uploaded or invalid CSV format.")
     return redirect("core:settings")
 
+@login_required(login_url='/accounts/login/')
 def upload_users(request):
     if request.method == "POST" and request.FILES.get("users_file"):
         file = request.FILES["users_file"]
