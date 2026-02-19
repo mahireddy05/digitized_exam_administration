@@ -121,15 +121,26 @@
             <select name="slot_code" id="slot_code" required>
                     <option value="">Select Slot</option>
                     <option value="AM" {% if form_data.slot_code == 'AM' %}selected{% endif %}>AM</option>
-                    <option value="PM" {% if form_data.slot_code == 'PM' %}selected{% endif %}>PM</option>
                     <option value="FN" {% if form_data.slot_code == 'FN' %}selected{% endif %}>FN</option>
+                    <option value="MN" {% if form_data.slot_code == 'MN' %}selected{% endif %}>MN</option>
+                    <option value="PM" {% if form_data.slot_code == 'PM' %}selected{% endif %}>PM</option>
                     <option value="AN" {% if form_data.slot_code == 'AN' %}selected{% endif %}>AN</option>
-                    <option value="EVENING" {% if form_data.slot_code == 'EVENING' %}selected{% endif %}>EVENING</option>
+                    <option value="EV" {% if form_data.slot_code == 'EV' %}selected{% endif %}>EV</option>
             </select>
 
         </form>
         <a href="#" class="action-link" onclick="clearExamSlotForm(); return false;" style="margin-left:10px;">Clear</a>
         <a href="#" class="action-link" id="createExamSlotLink">Create Exam Slot</a>
+        <!-- Slot Course Details Modal -->
+        <div id="slotCoursesModal" class="modal" style="display:none;position:fixed;z-index:3000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);overflow:auto;">
+            <div class="modal-content" style="background:#fff;padding:2em;max-width:900px;width:90vw;max-height:90vh;overflow-y:auto;border-radius:10px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 8px 32px rgba(0,0,0,0.25);margin:0;">
+                <span id="closeSlotCoursesModal" style="position:absolute;top:10px;right:16px;font-size:2em;cursor:pointer;">&times;</span>
+                <div id="slotCoursesModalContent">
+                    <h2>Slot Courses</h2>
+                    <div>Loading...</div>
+                </div>
+            </div>
+        </div>
         <script>
             function clearExamSlotForm() {
                 document.getElementById('examSlotForm').reset();
@@ -178,7 +189,7 @@
                 fetchExamSlotsAjax();
             });
         </script>
-        <a href="javascript:history.back()" class="action-link">&larr; Back</a>
+        <a href="{% url 'operations:examination' %}" class="action-link">&larr; Back</a>
     </div>
 </div>
 {% endblock %}

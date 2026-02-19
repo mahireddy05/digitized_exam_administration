@@ -17,4 +17,5 @@ urlpatterns = [
     path("ajax/examinations/", views.ajax_examinations, name="ajax_examinations"),
     path("ajax/delete-examination/", ajax.ajax_delete_examination, name="ajax_delete_examination"),
     path("ajax/edit-examination/", ajax.ajax_edit_examination, name="ajax_edit_examination"),
+    path("ajax/slot-courses/", ajax.ajax_slot_courses, name="ajax_slot_courses"),
 ]

@@ -1,3 +1,41 @@
+from django.views.decorators.http import require_GET
+
+# AJAX endpoint to get course details for a slot
+@require_GET
+def ajax_slot_courses(request):
+    from operations.models import Exam, ExamSlot, StudentExamMap
+    from masters.models import Course
+    slot_id = request.GET.get('slot_id')
+    if not slot_id:
+        return JsonResponse({'success': False, 'error': 'Missing slot_id'})
+    try:
+        slot = ExamSlot.objects.get(id=slot_id)
+    except ExamSlot.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Slot not found'})
+    exams = Exam.objects.filter(exam_slot=slot).select_related('course')
+    course_list = []
+    for exam in exams:
+        course = exam.course
+        if not course:
+            continue
+        student_count = StudentExamMap.objects.filter(exam=exam).count()
+        course_list.append({
+            'course_code': course.course_code,
+            'course_name': course.course_name,
+            'regulation': getattr(course, 'regulation', ''),
+            'student_count': student_count,
+            'academic_year': getattr(exam, 'academic_year', ''),
+            'semester': getattr(exam, 'semester', ''),
+        })
+    slot_info = {
+        'exam_type': slot.exam_type,
+        'mode': slot.mode,
+        'exam_date': slot.exam_date.strftime('%Y-%m-%d'),
+        'start_time': slot.start_time.strftime('%H:%M'),
+        'end_time': slot.end_time.strftime('%H:%M'),
+        'slot_code': slot.slot_code,
+    }
+    return JsonResponse({'success': True, 'slot': slot_info, 'courses': course_list})
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from .models import Examinations

@@ -102,6 +102,61 @@
     }
 // ============ EXAM SLOT TABLE AJAX (operations/exams.html) ============
 function fetchExamSlotsAjax() {
+        // Slot courses badge click handler (delegated)
+        document.addEventListener('click', function(e) {
+            const badge = e.target.closest('.slot-courses-badge');
+            if (badge) {
+                e.preventDefault();
+                const slotId = badge.getAttribute('data-slot-id');
+                if (!slotId) return;
+                const modal = document.getElementById('slotCoursesModal');
+                const modalContent = document.getElementById('slotCoursesModalContent');
+                modal.style.display = 'flex';
+                modalContent.innerHTML = '<h2>Slot Courses</h2><div>Loading...</div>';
+                fetch(`/ops/ajax/slot-courses/?slot_id=${slotId}`)
+                    .then(resp => resp.json())
+                    .then(data => {
+                        if (!data.success) {
+                            modalContent.innerHTML = `<div style='color:#b30000;'>${data.error || 'Failed to load course details.'}</div>`;
+                            return;
+                        }
+                        let html = '';
+                        // Slot info
+                        html += `<div style='margin-bottom:1em;'>`;
+                        html += `<b>Exam Type:</b> ${data.slot.exam_type || ''} &nbsp; <b>Mode:</b> ${data.slot.mode || ''} &nbsp; <b>Date:</b> ${data.slot.exam_date} &nbsp; <b>Time:</b> ${data.slot.start_time}-${data.slot.end_time} &nbsp; <b>Slot Code:</b> ${data.slot.slot_code || ''}`;
+                        html += `</div>`;
+                        // Courses table
+                        if (data.courses.length === 0) {
+                            html += `<div>No courses assigned to this slot.</div>`;
+                        } else {
+                            html += `<table style='width:100%;border-collapse:collapse;'>`;
+                            html += `<thead><tr style='background:#f2f2f2;'><th>Course Code</th><th>Course Name</th><th>Regulation</th><th>Academic Year</th><th>Semester</th><th>Student Count</th></tr></thead><tbody>`;
+                            data.courses.forEach(function(course) {
+                                html += `<tr>`;
+                                html += `<td>${course.course_code}</td>`;
+                                html += `<td>${course.course_name}</td>`;
+                                html += `<td>${course.regulation || ''}</td>`;
+                                html += `<td>${course.academic_year || ''}</td>`;
+                                html += `<td>${course.semester || ''}</td>`;
+                                html += `<td>${course.student_count}</td>`;
+                                html += `</tr>`;
+                            });
+                            html += `</tbody></table>`;
+                        }
+                        modalContent.innerHTML = html;
+                    })
+                    .catch(() => {
+                        modalContent.innerHTML = `<div style='color:#b30000;'>Failed to load course details (network error).</div>`;
+                    });
+            }
+        });
+        // Close modal logic
+        document.getElementById('closeSlotCoursesModal').onclick = function() {
+            document.getElementById('slotCoursesModal').style.display = 'none';
+        };
+        document.getElementById('slotCoursesModal').onclick = function(e) {
+            if (e.target === this) this.style.display = 'none';
+        };
     // Slot edit modal logic
     document.addEventListener('click', function(e) {
         const editBtn = e.target.closest('.edit-slot-btn');
@@ -146,26 +201,53 @@ function fetchExamSlotsAjax() {
                 tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">No exam slots created yet.</td></tr>';
             } else {
                 tbody.innerHTML = '';
+                // Sort slots by exam_date, then start_time (both ascending)
+                data.slots.sort(function(a, b) {
+                    if (a.exam_date < b.exam_date) return -1;
+                    if (a.exam_date > b.exam_date) return 1;
+                    if (a.start_time < b.start_time) return -1;
+                    if (a.start_time > b.start_time) return 1;
+                    return 0;
+                });
+                // Helper to convert HH:MM to 12-hour format
+                function to12Hour(timeStr) {
+                    if (!timeStr) return '';
+                    let [h, m] = timeStr.split(":");
+                    h = parseInt(h, 10);
+                    const ampm = h >= 12 ? 'PM' : 'AM';
+                    h = h % 12;
+                    if (h === 0) h = 12;
+                    return `${h}:${m} ${ampm}`;
+                }
                 data.slots.forEach(function(slot) {
                     let statusCell = '';
                     const schedUrl = `/ops/exam-scheduling/${slot.id}/`;
                     if (slot.assignment_status === 'Assigned') {
-                        statusCell = `<td><a href="${schedUrl}" class="slot-schedule-link" style="text-decoration:none;" title="Go to scheduling"><span class=\"exam-status exam-status-available\" style=\"background:#e6f9e6;color:#1a7f1a;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;font-weight:600;cursor:pointer;\">Assigned <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=000000' alt='Assigned' style='width:1.2em;height:1.2em;vertical-align:middle;margin-left:6px;'></span></a></td>`;
+                        statusCell = `<td><a href="${schedUrl}" class="slot-schedule-link" style="text-decoration:none;" title="Go to scheduling"><span class=\"exam-status exam-status-available\" style="background:#e6f9e6;color:#1a7f1a;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;font-weight:600;cursor:pointer;">Assigned <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=000000' alt='Assigned' style='width:1.2em;height:1.2em;vertical-align:middle;margin-left:6px;'></span></a></td>`;
                     } else {
                         statusCell = `<td><a href="${schedUrl}" class="slot-schedule-link" style="text-decoration:none;" title="Go to scheduling"><span class="exam-status exam-status-pending" style="background:#fff3cd;color:#856404;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;cursor:pointer;">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=000000' alt='Pending' style='width:1.2em;height:1.2em;vertical-align:middle;margin-left:6px;'></span></a></td>`;
                     }
                     // Add edit and delete links
                     const editLink = `<a href=\"#\" class=\"edit-slot-btn\" data-slot-id=\"${slot.id}\" title=\"Edit\"><img src=\"https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000\" alt=\"Edit Slot\" style=\"width:16px;height:16px;margin-right:6px;\"></a>`;
                     const deleteLink = `<a href=\"#\" class=\"delete-slot-btn\" data-slot-id=\"${slot.id}\" data-slot-date=\"${slot.exam_date}\" data-slot-time=\"${slot.start_time}-${slot.end_time}\" data-slot-code=\"${slot.slot_code}\"><img src=\"https://img.icons8.com/?size=100&id=99971&format=png&color=000000\" alt=\"Delete Slot\" style=\"width:16px;height:16px;\"></a>`;
+                    // Badge for courses
+                    // Show badge as 'count : X', but use red for 0, green for >0
+                    let badgeBg = slot.course_count > 0 ? '#e6f9e6' : '#f8d7da';
+                    let badgeColor = slot.course_count > 0 ? '#1a7f1a' : '#721c24';
+                    courseBadge = `<a href="#" class="slot-courses-badge" data-slot-id="${slot.id}" style="text-decoration:none;">
+                        <span class="badge badge-courses" style="background:${badgeBg};color:${badgeColor};padding:2px 10px;border-radius:12px;font-weight:600;cursor:pointer;display:inline-block;min-width:2.5em;text-align:center;">
+                            count : ${slot.course_count}
+                        </span>
+                    </a>`;
                     var row = `<tr>
                         <td>${slot.exam_type || ''}</td>
                         <td>${slot.mode || ''}</td>
                         <td>${slot.exam_date || ''}</td>
-                        <td>${slot.start_time || ''}</td>
-                        <td>${slot.end_time || ''}</td>
+                        <td>${to12Hour(slot.start_time) || ''}</td>
+                        <td>${to12Hour(slot.end_time) || ''}</td>
                         <td>${slot.slot_code || ''}</td>
                         ${statusCell}
-                        <td>${slot.course_count || 0}</td>
+                        <td>${courseBadge}</td>
                         <td>${slot.student_count || 0}</td>
                         <td>${editLink}${deleteLink}</td>
                     </tr>`;
@@ -283,6 +365,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                     if (slotData.slots.length > 0) {
                                         scheduleLink.dataset.slotId = slotData.slots[0].id;
                                         scheduleLink.dataset.examLink = `/ops/exams/?exam_id=${exam.exam_id}&exam_name=${encodeURIComponent(exam.exam_name)}&start_date=${encodeURIComponent(exam.start_date)}&end_date=${encodeURIComponent(exam.end_date)}`;
+                                    }
+                                    // Check if all slots have at least one course assigned
+                                    let allAssigned = slotData.slots.length > 0 && slotData.slots.every(s => s.course_count > 0);
+                                    let totalCourses = slotData.slots.reduce((sum, s) => sum + (s.course_count || 0), 0);
+                                    if (allAssigned) {
+                                        scheduleLink.innerHTML = `<span class="exam-status exam-status-available" style="background:#e6f9e6;color:#1a7f1a;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;font-weight:600;">course : ${totalCourses}</span>`;
+                                    } else {
+                                        scheduleLink.innerHTML = pendingBadge();
                                     }
                                 }
                             });
