@@ -1,5 +1,15 @@
 from django.views.decorators.http import require_GET
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+import csv
+from django.core.files.storage import default_storage
+from masters.models import Department, Program
+from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+import re
+from django.contrib.auth.hashers import make_password
+from django.db import transaction
 
 @login_required(login_url='/accounts/login/')
 @require_GET
@@ -106,14 +116,6 @@ def dept_conflict(request):
         return redirect("core:settings")
     return render(request, "core/dept_conflict.html", {**context, 'user': request.user})
 
-from django.shortcuts import render, redirect
-from django.contrib import messages
-import csv
-from django.core.files.storage import default_storage
-from masters.models import Department, Program
-from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import login_required
-
 @login_required(login_url='/accounts/login/')
 def dashboard(request):
     User = get_user_model()
@@ -151,83 +153,139 @@ def upload_departments(request):
         total_rows = 0
         dept_code_to_name = {}
         csv_rows = []
-        with default_storage.open(file_path, mode='rb') as f:
-            text = f.read().decode('utf-8-sig')
-            reader = csv.reader(text.splitlines())
-            header = next(reader, None)
-            valid_headers = [["dept_code", "dept_name"], ["department_code", "department_name"]]
-            header_lower = [h.strip().lower() for h in header] if header else []
-            if header_lower == valid_headers[0]:
-                code_idx, name_idx = 0, 1
-                required_headers = valid_headers[0]
-            elif header_lower == valid_headers[1]:
-                code_idx, name_idx = 0, 1
-                required_headers = valid_headers[1]
-            else:
-                messages.error(request, f"CSV header error: Expected headers {valid_headers[0]} or {valid_headers[1]}.")
-                error_found = True
-                code_idx = name_idx = None
-            if not error_found:
-                for row in reader:
-                    total_rows += 1
-                    if len(row) <= max(code_idx, name_idx):
-                        messages.error(request, f"CSV format error: Each row must have {required_headers[0]} and {required_headers[1]}.")
-                        continue
-                    dept_code = row[code_idx].strip()
-                    dept_name = row[name_idx].strip()
-                    if not dept_code or not dept_name:
-                        messages.error(request, f"CSV format error: {required_headers[0]} and {required_headers[1]} cannot be empty.")
-                        continue
-                    if len(dept_code) > Department._meta.get_field('dept_code').max_length:
-                        messages.error(request, f"CSV format error: {required_headers[0]} '{dept_code}' is too long (max {Department._meta.get_field('dept_code').max_length}).")
-                        continue
-                    if len(dept_name) > Department._meta.get_field('dept_name').max_length:
-                        messages.error(request, f"CSV format error: {required_headers[1]} '{dept_name}' is too long (max {Department._meta.get_field('dept_name').max_length}).")
-                        continue
-                    dept_code_to_name[dept_code] = dept_name
-                    csv_rows.append((dept_code, dept_name, row))
-        # Bulk fetch all existing departments in one query
-        existing_depts = Department.objects.filter(dept_code__in=dept_code_to_name.keys())
-        existing_map = {d.dept_code: d.dept_name for d in existing_depts}
-        to_create = []
-        for dept_code, dept_name, orig_row in csv_rows:
-            if dept_code in existing_map:
-                if existing_map[dept_code] == dept_name:
-                    exact_duplicate_count += 1
+        required_headers = None  # will be set based on header
+        try:
+            with default_storage.open(file_path, mode="rb") as f:
+                text = f.read().decode("utf-8-sig")
+                reader = csv.reader(text.splitlines())
+                header = next(reader, None)
+                valid_headers = [
+                    ["dept_code", "dept_name"],
+                    ["department_code", "department_name"],
+                ]
+                header_lower = [h.strip().lower() for h in header] if header else []
+                if header_lower == valid_headers[0]:
+                    code_idx, name_idx = 0, 1
+                    required_headers = valid_headers[0]
+                elif header_lower == valid_headers[1]:
+                    code_idx, name_idx = 0, 1
+                    required_headers = valid_headers[1]
                 else:
-                    mismatch_rows.append((orig_row, [dept_code, existing_map[dept_code]]))
-            else:
-                to_create.append(Department(dept_code=dept_code, dept_name=dept_name))
-                new_count += 1
-        if to_create:
-            Department.objects.bulk_create(to_create)
-        default_storage.delete(file_path)
+                    messages.error(
+                        request,
+                        f"CSV header error: Expected headers {valid_headers[0]} or {valid_headers[1]}.",
+                    )
+                    error_found = True
+                    code_idx = name_idx = None
+                if not error_found:
+                    dept_code_field = Department._meta.get_field("dept_code")
+                    dept_name_field = Department._meta.get_field("dept_name")
+                    for row in reader:
+                        total_rows += 1
+                        if len(row) <= max(code_idx, name_idx):
+                            messages.error(
+                                request,
+                                f"CSV format error: Each row must have {required_headers[0]} and {required_headers[1]}.",
+                            )
+                            continue
+                        dept_code = row[code_idx].strip()
+                        dept_name = row[name_idx].strip()
+                        if not dept_code or not dept_name:
+                            messages.error(
+                                request,
+                                f"CSV format error: {required_headers[0]} and {required_headers[1]} cannot be empty.",
+                            )
+                            continue
+                        if len(dept_code) > dept_code_field.max_length:
+                            messages.error(
+                                request,
+                                f"CSV format error: {required_headers[0]} '{dept_code}' is too long (max {dept_code_field.max_length}).",
+                            )
+                            continue
+                        if len(dept_name) > dept_name_field.max_length:
+                            messages.error(
+                                request,
+                                f"CSV format error: {required_headers[1]} '{dept_name}' is too long (max {dept_name_field.max_length}).",
+                            )
+                            continue
+                        dept_code_to_name[dept_code] = dept_name
+                        csv_rows.append((dept_code, dept_name, row))
+            if error_found:
+                return redirect("core:settings")
+            # Bulk fetch all existing departments in one query
+            existing_depts = Department.objects.filter(
+                dept_code__in=dept_code_to_name.keys()
+            )
+            existing_map = {d.dept_code: d.dept_name for d in existing_depts}
+            to_create = []
+            with transaction.atomic():
+                for dept_code, dept_name, orig_row in csv_rows:
+                    if dept_code in existing_map:
+                        if existing_map[dept_code] == dept_name:
+                            exact_duplicate_count += 1
+                        else:
+                            # orig_row = original CSV row, second list = [dept_code, existing_name]
+                            mismatch_rows.append(
+                                (orig_row, [dept_code, existing_map[dept_code]])
+                            )
+                    else:
+                        to_create.append(
+                            Department(dept_code=dept_code, dept_name=dept_name)
+                        )
+                        new_count += 1
+                if to_create:
+                    Department.objects.bulk_create(to_create, batch_size=1000)
+        finally:
+            # Always remove temp file
+            default_storage.delete(file_path)
         if error_found:
             return redirect("core:settings")
         if mismatch_rows:
             if new_count > 0:
-                messages.success(request, f"{new_count}/{total_rows} new departments added successfully before conflict.")
+                messages.success(
+                    request,
+                    f"{new_count}/{total_rows} new departments added successfully before conflict.",
+                )
             if exact_duplicate_count > 0:
-                messages.info(request, f"{exact_duplicate_count}/{total_rows} departments already exist and match exactly.")
-            request.session['dept_conflicts'] = {
-                'headers': required_headers,
-                'mismatches': mismatch_rows
+                messages.info(
+                    request,
+                    f"{exact_duplicate_count}/{total_rows} departments already exist and match exactly.",
+                )
+
+            request.session["dept_conflicts"] = {
+                "headers": required_headers,
+                "mismatches": mismatch_rows,
             }
-            return redirect('core:dept_conflict')
+            return redirect("core:dept_conflict")
+
         if new_count == 0 and exact_duplicate_count == total_rows:
-            messages.info(request, "No new data found. All the data uploaded already exists and matches exactly.")
+            messages.info(
+                request,
+                "No new data found. All the data uploaded already exists and matches exactly.",
+            )
         elif new_count > 0 and exact_duplicate_count > 0:
-            messages.success(request, f"{new_count}/{total_rows} new departments added successfully.")
-            messages.info(request, f"{exact_duplicate_count}/{total_rows} departments already exist and match exactly.")
+            messages.success(
+                request,
+                f"{new_count}/{total_rows} new departments added successfully.",
+            )
+            messages.info(
+                request,
+                f"{exact_duplicate_count}/{total_rows} departments already exist and match exactly.",
+            )
         elif new_count > 0:
-            messages.success(request, f"All {new_count} departments added successfully.")
+            messages.success(
+                request, f"All {new_count} departments added successfully."
+            )
         elif exact_duplicate_count > 0:
-            messages.info(request, f"All {exact_duplicate_count} departments already exist and match exactly.")
+            messages.info(
+                request,
+                f"All {exact_duplicate_count} departments already exist and match exactly.",
+            )
         return redirect("core:settings")
     messages.error(request, "No file uploaded or invalid CSV format.")
     return redirect("core:settings")
 
-@login_required(login_url='/accounts/login/')
+@login_required(login_url="/accounts/login/")
 def upload_programs(request):
     if request.method == "POST" and request.FILES.get("programs_file"):
         file = request.FILES["programs_file"]
@@ -239,70 +297,123 @@ def upload_programs(request):
         total_rows = 0
         program_code_to_name = {}
         csv_rows = []
-        with default_storage.open(file_path, mode='rb') as f:
-            text = f.read().decode('utf-8-sig')
-            reader = csv.reader(text.splitlines())
-            header = next(reader, None)
-            required_headers = ["program_code", "program_name"]
-            if not header or [h.strip().lower() for h in header] != required_headers:
-                messages.error(request, f"CSV header error: Expected headers {required_headers}.")
-                error_found = True
-            else:
-                for row in reader:
-                    total_rows += 1
-                    if len(row) < 2:
-                        messages.error(request, "CSV format error: Each row must have program_code and program_name.")
-                        continue
-                    program_code = row[0].strip()
-                    program_name = row[1].strip()
-                    if not program_code or not program_name:
-                        messages.error(request, "Program code and program name cannot be empty.")
-                        continue
-                    if len(program_code) > Program._meta.get_field('program_code').max_length:
-                        messages.error(request, f"Program code '{program_code}' is too long (max {Program._meta.get_field('program_code').max_length}).")
-                        continue
-                    if len(program_name) > Program._meta.get_field('program_name').max_length:
-                        messages.error(request, f"Program name '{program_name}' is too long (max {Program._meta.get_field('program_name').max_length}).")
-                        continue
-                    program_code_to_name[program_code] = program_name
-                    csv_rows.append((program_code, program_name, row))
-        existing_programs = Program.objects.filter(program_code__in=program_code_to_name.keys())
-        existing_map = {p.program_code: p.program_name for p in existing_programs}
-        to_create = []
-        for program_code, program_name, orig_row in csv_rows:
-            if program_code in existing_map:
-                if existing_map[program_code] == program_name:
-                    exact_duplicate_count += 1
+        required_headers = ["program_code", "program_name"]
+        try:
+            with default_storage.open(file_path, mode="rb") as f:
+                text = f.read().decode("utf-8-sig")
+                reader = csv.reader(text.splitlines())
+                header = next(reader, None)
+                if not header or [h.strip().lower() for h in header] != required_headers:
+                    messages.error(
+                        request,
+                        f"CSV header error: Expected headers {required_headers}.",
+                    )
+                    error_found = True
                 else:
-                    # Only pass (program_code, program_name) as row, not the full orig_row
-                    mismatch_rows.append(((program_code, program_name), [program_code, existing_map[program_code]]))
-            else:
-                to_create.append(Program(program_code=program_code, program_name=program_name))
-                new_count += 1
-        if to_create:
-            Program.objects.bulk_create(to_create)
-        default_storage.delete(file_path)
+                    program_code_field = Program._meta.get_field("program_code")
+                    program_name_field = Program._meta.get_field("program_name")
+                    for row in reader:
+                        total_rows += 1
+                        if len(row) < 2:
+                            messages.error(
+                                request,
+                                "CSV format error: Each row must have program_code and program_name.",
+                            )
+                            continue
+                        program_code = row[0].strip()
+                        program_name = row[1].strip()
+                        if not program_code or not program_name:
+                            messages.error(
+                                request,
+                                "Program code and program name cannot be empty.",
+                            )
+                            continue
+                        if len(program_code) > program_code_field.max_length:
+                            messages.error(
+                                request,
+                                f"Program code '{program_code}' is too long (max {program_code_field.max_length}).",
+                            )
+                            continue
+                        if len(program_name) > program_name_field.max_length:
+                            messages.error(
+                                request,
+                                f"Program name '{program_name}' is too long (max {program_name_field.max_length}).",
+                            )
+                            continue
+                        program_code_to_name[program_code] = program_name
+                        csv_rows.append((program_code, program_name, row))
+            if error_found:
+                return redirect("core:settings")
+            existing_programs = Program.objects.filter(
+                program_code__in=program_code_to_name.keys()
+            )
+            existing_map = {p.program_code: p.program_name for p in existing_programs}
+            to_create = []
+            with transaction.atomic():
+                for program_code, program_name, orig_row in csv_rows:
+                    if program_code in existing_map:
+                        if existing_map[program_code] == program_name:
+                            exact_duplicate_count += 1
+                        else:
+                            # Keep your structure: ((program_code, program_name), [program_code, existing_name])
+                            mismatch_rows.append(
+                                (
+                                    (program_code, program_name),
+                                    [program_code, existing_map[program_code]],
+                                )
+                            )
+                    else:
+                        to_create.append(
+                            Program(
+                                program_code=program_code, program_name=program_name
+                            )
+                        )
+                        new_count += 1
+                if to_create:
+                    Program.objects.bulk_create(to_create, batch_size=1000)
+        finally:
+            default_storage.delete(file_path)
         if error_found:
             return redirect("core:settings")
         if mismatch_rows:
             if new_count > 0:
-                messages.success(request, f"{new_count}/{total_rows} new programs added successfully before conflict.")
+                messages.success(
+                    request,
+                    f"{new_count}/{total_rows} new programs added successfully before conflict.",
+                )
             if exact_duplicate_count > 0:
-                messages.info(request, f"{exact_duplicate_count}/{total_rows} programs already exist and match exactly.")
-            request.session['program_conflicts'] = {
-                'headers': required_headers,
-                'mismatches': mismatch_rows
+                messages.info(
+                    request,
+                    f"{exact_duplicate_count}/{total_rows} programs already exist and match exactly.",
+                )
+            request.session["program_conflicts"] = {
+                "headers": required_headers,
+                "mismatches": mismatch_rows,
             }
-            return redirect('core:program_conflict')
+            return redirect("core:program_conflict")
         if new_count == 0 and exact_duplicate_count == total_rows:
-            messages.info(request, "No new data found. All the data uploaded already exists and matches exactly.")
+            messages.info(
+                request,
+                "No new data found. All the data uploaded already exists and matches exactly.",
+            )
         elif new_count > 0 and exact_duplicate_count > 0:
-            messages.success(request, f"{new_count}/{total_rows} new programs added successfully.")
-            messages.info(request, f"{exact_duplicate_count}/{total_rows} programs already exist and match exactly.")
+            messages.success(
+                request,
+                f"{new_count}/{total_rows} new programs added successfully.",
+            )
+            messages.info(
+                request,
+                f"{exact_duplicate_count}/{total_rows} programs already exist and match exactly.",
+            )
         elif new_count > 0:
-            messages.success(request, f"All {new_count} programs added successfully.")
+            messages.success(
+                request, f"All {new_count} programs added successfully."
+            )
         elif exact_duplicate_count > 0:
-            messages.info(request, f"All {exact_duplicate_count} programs already exist and match exactly.")
+            messages.info(
+                request,
+                f"All {exact_duplicate_count} programs already exist and match exactly.",
+            )
         return redirect("core:settings")
     messages.error(request, "No file uploaded or invalid CSV format.")
     return redirect("core:settings")
@@ -312,6 +423,7 @@ def upload_users(request):
     if request.method == "POST" and request.FILES.get("users_file"):
         file = request.FILES["users_file"]
         file_path = default_storage.save("tmp/users.csv", file)
+
         error_found = False
         new_count = 0
         exact_duplicate_count = 0
@@ -319,97 +431,185 @@ def upload_users(request):
         total_rows = 0
         user_map = {}
         csv_rows = []
-        import re
-        email_regex = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
-        with default_storage.open(file_path, mode='rb') as f:
-            text = f.read().decode('utf-8-sig')
-            reader = csv.reader(text.splitlines())
-            header = next(reader, None)
-            required_headers = ["username", "first_name", "last_name", "email", "role"]
-            allowed_roles = {"student", "faculty", "admin", "hod", "dept_exam_controller"}
-            if not header or [h.strip().lower() for h in header] != required_headers:
-                messages.error(request, f"CSV header error: Expected headers {required_headers}.")
-                error_found = True
-            else:
-                User = get_user_model()
-                for idx, row in enumerate(reader, start=2):
-                    total_rows += 1
-                    if len(row) < 5:
-                        messages.error(request, f"CSV format error: Each row must have username, first_name, last_name, email, role. (Row {idx})")
-                        continue
-                    username = row[0].strip()
-                    first_name = row[1].strip()
-                    last_name = row[2].strip()
-                    email = row[3].strip()
-                    role = row[4].strip().lower()
-                    if not username or not email:
-                        messages.error(request, f"Username and email cannot be empty. (Row {idx}, username: {username})")
-                        continue
-                    if not email_regex.match(email):
-                        messages.error(request, f"Row {idx}: username '{username}' has invalid email id '{email}'")
-                        continue
-                    if role not in allowed_roles:
-                        messages.error(request, f"Invalid role: {role}. Allowed roles: {', '.join(allowed_roles)} (Row {idx}, username: {username})")
-                        continue
-                    user_map[username] = (email, role, row)
-                    csv_rows.append((username, email, role, row, first_name, last_name))
-        User = get_user_model()
-        existing_users = User.objects.filter(username__in=user_map.keys())
-        existing_map = {u.username: (u.email, getattr(u, 'role', ''), u.first_name, u.last_name) for u in existing_users}
-        def is_valid_mismatch_tuple(t):
-            return isinstance(t, tuple) and len(t) == 3
 
-        for username, email, role, orig_row, first_name, last_name in csv_rows:
-            if username in existing_map:
-                db_email, db_role, db_first_name, db_last_name = existing_map[username]
-                db_row = [username, db_first_name, db_last_name, db_email, db_role]
-                csv_row = [username, first_name, last_name, email, role]
-                if db_row == csv_row:
-                    exact_duplicate_count += 1
+        email_regex = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+        required_headers = ["username", "first_name", "last_name", "email", "role"]
+        allowed_roles = {"student", "faculty", "admin", "hod", "dept_exam_controller"}
+
+        try:
+            # --- Read & validate CSV ---
+            with default_storage.open(file_path, mode="rb") as f:
+                text = f.read().decode("utf-8-sig")
+                reader = csv.reader(text.splitlines())
+                header = next(reader, None)
+
+                if not header or [h.strip().lower() for h in header] != required_headers:
+                    messages.error(
+                        request,
+                        f"CSV header error: Expected headers {required_headers}.",
+                    )
+                    error_found = True
                 else:
-                    mismatches = []
-                    fields = ["username", "first_name", "last_name", "email", "role"]
-                    for i, field in enumerate(fields):
-                        # Only append 3-element tuples
-                        if db_row[i] != csv_row[i]:
-                            tup = (field, db_row[i], csv_row[i])
-                            if is_valid_mismatch_tuple(tup):
-                                mismatches.append(tup)
-                    # Defensive: filter out any tuple not of length 3
-                    mismatches = [t for t in mismatches if is_valid_mismatch_tuple(t)]
-                    if mismatches:
-                        # Store new user data as a dict for use in update
-                        new_data = {
-                            'username': username,
-                            'first_name': first_name,
-                            'last_name': last_name,
-                            'email': email,
-                            'role': role
-                        }
-                        mismatch_rows.append((username, mismatches, new_data))
-            else:
-                user = User(
-                    username=username,
-                    email=email,
-                    first_name=first_name,
-                    last_name=last_name,
-                    is_superuser=(role == "admin"),
-                    is_staff=(role in {"admin", "faculty", "hod", "dept_exam_controller"}),
-                    is_active=True,
-                    role=role,
-                )
-                # Set default password
-                if role == "student":
-                    user.set_password("Test@123")
-                else:
-                    user.set_password(f"{username}@{username}")
-                user.save()
-                new_count += 1
-        default_storage.delete(file_path)
-        if error_found:
-            return redirect("core:settings")
+                    for idx, row in enumerate(reader, start=2):
+                        total_rows += 1
+                        if len(row) < 5:
+                            messages.error(
+                                request,
+                                "CSV format error: Each row must have username, "
+                                f"first_name, last_name, email, role. (Row {idx})",
+                            )
+                            continue
+
+                        username = row[0].strip()
+                        first_name = row[1].strip()
+                        last_name = row[2].strip()
+                        email = row[3].strip()
+                        role = row[4].strip().lower()
+
+                        if not username or not email:
+                            messages.error(
+                                request,
+                                "Username and email cannot be empty. "
+                                f"(Row {idx}, username: {username})",
+                            )
+                            continue
+
+                        if not email_regex.match(email):
+                            messages.error(
+                                request,
+                                f"Row {idx}: username '{username}' has invalid "
+                                f"email id '{email}'",
+                            )
+                            continue
+
+                        if role not in allowed_roles:
+                            messages.error(
+                                request,
+                                "Invalid role: {role}. Allowed roles: "
+                                f"{', '.join(allowed_roles)} "
+                                f"(Row {idx}, username: {username})",
+                            )
+                            continue
+
+                        # For later: check if user already exists, and compare rows
+                        user_map[username] = (email, role, row)
+                        csv_rows.append(
+                            (username, email, role, row, first_name, last_name)
+                        )
+
+            User = get_user_model()
+
+            # --- If header was wrong, stop early ---
+            if error_found:
+                default_storage.delete(file_path)
+                return redirect("core:settings")
+
+            # --- Load existing users in one query ---
+            existing_users = User.objects.filter(username__in=user_map.keys())
+            existing_map = {
+                u.username: (u.email, getattr(u, "role", ""), u.first_name, u.last_name)
+                for u in existing_users
+            }
+
+            def is_valid_mismatch_tuple(t):
+                return isinstance(t, tuple) and len(t) == 3
+
+            # --- Prepare bulk list for new users ---
+            users_to_create = []
+
+            # Precompute student default password hash ONCE
+            student_default_pw_hash = make_password("Test@123")
+
+            with transaction.atomic():
+                for (
+                    username,
+                    email,
+                    role,
+                    orig_row,
+                    first_name,
+                    last_name,
+                ) in csv_rows:
+                    if username in existing_map:
+                        # Compare DB row vs CSV row
+                        db_email, db_role, db_first_name, db_last_name = existing_map[
+                            username
+                        ]
+                        db_row = [
+                            username,
+                            db_first_name,
+                            db_last_name,
+                            db_email,
+                            db_role,
+                        ]
+                        csv_row = [username, first_name, last_name, email, role]
+
+                        if db_row == csv_row:
+                            exact_duplicate_count += 1
+                        else:
+                            mismatches = []
+                            fields = [
+                                "username",
+                                "first_name",
+                                "last_name",
+                                "email",
+                                "role",
+                            ]
+                            for i, field in enumerate(fields):
+                                if db_row[i] != csv_row[i]:
+                                    tup = (field, db_row[i], csv_row[i])
+                                    if is_valid_mismatch_tuple(tup):
+                                        mismatches.append(tup)
+
+                            mismatches = [
+                                t for t in mismatches if is_valid_mismatch_tuple(t)
+                            ]
+                            if mismatches:
+                                new_data = {
+                                    "username": username,
+                                    "first_name": first_name,
+                                    "last_name": last_name,
+                                    "email": email,
+                                    "role": role,
+                                }
+                                mismatch_rows.append((username, mismatches, new_data))
+                    else:
+                        # NEW USER → don't save one-by-one, collect for bulk_create
+                        if role == "student":
+                            password_hash = student_default_pw_hash
+                        else:
+                            password_hash = make_password(f"{username}@{username}")
+
+                        user = User(
+                            username=username,
+                            email=email,
+                            first_name=first_name,
+                            last_name=last_name,
+                            is_superuser=(role == "admin"),
+                            is_staff=role
+                            in {
+                                "admin",
+                                "faculty",
+                                "hod",
+                                "dept_exam_controller",
+                            },
+                            is_active=True,
+                            role=role,
+                            password=password_hash,
+                        )
+                        users_to_create.append(user)
+                        new_count += 1
+
+                # Actually insert all new users in bulk
+                if users_to_create:
+                    User.objects.bulk_create(users_to_create, batch_size=1000)
+
+        finally:
+            # Always clean up the temp file
+            default_storage.delete(file_path)
+
+        # --- After DB work, handle conflict flow / messages ---
+
         if mismatch_rows:
-            # Defensive: filter all mismatches to ensure only 3-element tuples are sent to the template
             filtered_mismatch_rows = []
             for entry in mismatch_rows:
                 if len(entry) == 3:
@@ -423,24 +623,47 @@ def upload_users(request):
                         filtered_mismatch_rows.append((username, filtered, new_data))
                     else:
                         filtered_mismatch_rows.append((username, filtered))
+
             if new_count > 0:
-                messages.success(request, f"{new_count}/{total_rows} new users added successfully before conflict.")
+                messages.success(
+                    request,
+                    f"{new_count}/{total_rows} new users added successfully before conflict.",
+                )
             if exact_duplicate_count > 0:
-                messages.info(request, f"{exact_duplicate_count}/{total_rows} users already exist and match exactly.")
-            request.session['user_conflicts'] = {
-                'headers': required_headers,
-                'mismatches': filtered_mismatch_rows
+                messages.info(
+                    request,
+                    f"{exact_duplicate_count}/{total_rows} users already exist and match exactly.",
+                )
+
+            request.session["user_conflicts"] = {
+                "headers": required_headers,
+                "mismatches": filtered_mismatch_rows,
             }
-            return redirect('core:user_conflict')
+            return redirect("core:user_conflict")
+
+        # No conflicts → just show summary messages
         if new_count == 0 and exact_duplicate_count == total_rows:
-            messages.info(request, "No new data found. All the data uploaded already exists and matches exactly.")
+            messages.info(
+                request,
+                "No new data found. All the data uploaded already exists and matches exactly.",
+            )
         elif new_count > 0 and exact_duplicate_count > 0:
-            messages.success(request, f"{new_count}/{total_rows} new users added successfully.")
-            messages.info(request, f"{exact_duplicate_count}/{total_rows} users already exist and match exactly.")
+            messages.success(
+                request, f"{new_count}/{total_rows} new users added successfully."
+            )
+            messages.info(
+                request,
+                f"{exact_duplicate_count}/{total_rows} users already exist and match exactly.",
+            )
         elif new_count > 0:
             messages.success(request, f"All {new_count} users added successfully.")
         elif exact_duplicate_count > 0:
-            messages.info(request, f"All {exact_duplicate_count} users already exist and match exactly.")
+            messages.info(
+                request,
+                f"All {exact_duplicate_count} users already exist and match exactly.",
+            )
+
         return redirect("core:settings")
+
     messages.error(request, "No file uploaded or invalid CSV format.")
     return redirect("core:settings")
