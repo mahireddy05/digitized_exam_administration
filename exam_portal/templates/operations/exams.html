@@ -90,20 +90,20 @@
                 value="{{ examname|default:form_data.examname|default:''|default_if_none:'' }}" readonly style="background:#f5f5f5;">
             <label for="examtype">Exam Type:</label>
             <select name="examtype" id="examtype" required>
-                <option value="">Select Exam Type</option>
-                <option value="Theoretical" {% if form_data.examtype == 'Theoretical' %}selected{% endif %}>Theoretical</option>
-                <option value="Practical" {% if form_data.examtype == 'Practical' %}selected{% endif %}>Practical</option>
-                <option value="Viva" {% if form_data.examtype == 'Viva' %}selected{% endif %}>Viva</option>
-                <option value="Quiz" {% if form_data.examtype == 'Quiz' %}selected{% endif %}>Quiz</option>
-                <option value="Assignment" {% if form_data.examtype == 'Assignment' %}selected{% endif %}>Assignment</option>
+                 <option value="">Select Exam Type</option>
+                 <option value="Regular" {% if form_data.examtype == 'Regular' %}selected{% endif %}>Regular</option>
+                 <option value="Supplementary" {% if form_data.examtype == 'Supplementary' %}selected{% endif %}>Supplementary</option>
+                 <option value="Improvement" {% if form_data.examtype == 'Improvement' %}selected{% endif %}>Improvement</option>
             </select>
 
             <label for="mode">Mode:</label>
             <select name="mode" id="mode" required>
-                <option value="">Select Mode</option>
-                <option value="Offline" {% if form_data.mode == 'Offline' %}selected{% endif %}>Offline</option>
-                <option value="Online" {% if form_data.mode == 'Online' %}selected{% endif %}>Online</option>
-                <option value="Hybrid" {% if form_data.mode == 'Hybrid' %}selected{% endif %}>Hybrid</option>
+                 <option value="">Select Mode</option>
+                 <option value="Theoretical" {% if form_data.mode == 'Theoretical' %}selected{% endif %}>Theoretical</option>
+                 <option value="Practical" {% if form_data.mode == 'Practical' %}selected{% endif %}>Practical</option>
+                 <option value="Viva" {% if form_data.mode == 'Viva' %}selected{% endif %}>Viva</option>
+                 <option value="Quiz" {% if form_data.mode == 'Quiz' %}selected{% endif %}>Quiz</option>
+                 <option value="Assignment" {% if form_data.mode == 'Assignment' %}selected{% endif %}>Assignment</option>
             </select>
 
             {% with q_start_date=q_start_date q_end_date=q_end_date %}

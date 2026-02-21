@@ -13,19 +13,28 @@ def ajax_slot_courses(request):
     except ExamSlot.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Slot not found'})
     exams = Exam.objects.filter(exam_slot=slot).select_related('course')
+    # Get academic_year and semester from slot.examination
+    academic_year = slot.examination.academic_year if slot.examination else ''
+    semester = slot.examination.semester if slot.examination else ''
     course_list = []
     for exam in exams:
         course = exam.course
         if not course:
             continue
         student_count = StudentExamMap.objects.filter(exam=exam).count()
+        # Try to get regulation from course's batch if available, else from exam.regulation, else 'N/A'
+        regulation = 'N/A'
+        if hasattr(course, 'batch') and course.batch:
+            regulation = course.batch.batch_code
+        elif getattr(exam, 'regulation', None):
+            regulation = exam.regulation
         course_list.append({
             'course_code': course.course_code,
             'course_name': course.course_name,
-            'regulation': getattr(course, 'regulation', ''),
+            'regulation': regulation,
             'student_count': student_count,
-            'academic_year': getattr(exam, 'academic_year', ''),
-            'semester': getattr(exam, 'semester', ''),
+            'academic_year': academic_year,
+            'semester': semester,
         })
     slot_info = {
         'exam_type': slot.exam_type,
@@ -169,78 +178,83 @@ from masters.models import Course
 from django.db.models import Count
 
 def ajax_exam_scheduling_groups(request):
-    academic_year = request.GET.get('academic_year', '')
-    semester = request.GET.get('semester', '')
-    regulation = request.GET.get('regulation', '')
     slot_id = request.GET.get('slot_id', '')
-    from operations.models import Exam, StudentExamMap, ExamSlot
-    reg_qs = StudentCourse.objects.select_related('student', 'course')
+    academic_year = ''
+    semester = ''
+    if slot_id:
+        from operations.models import ExamSlot
+        slot = ExamSlot.objects.filter(id=slot_id).select_related('examination').first()
+        if slot and slot.examination:
+            academic_year = slot.examination.academic_year
+            semester = slot.examination.semester
+    # Debug log for resolved values
+    import logging
+    logging.info(f"Resolved slot_id={slot_id}, academic_year={academic_year}, semester={semester}")
+    from django.db.models import Count, F
+    reg_qs = StudentCourse.objects.all()
     if academic_year:
         reg_qs = reg_qs.filter(academic_year=academic_year)
     if semester:
-        reg_qs = reg_qs.filter(semester=semester)
-    if regulation:
-        reg_qs = reg_qs.filter(student__batch__batch_code=regulation)
-    groups = {}
-    slot = None
+        reg_qs = reg_qs.filter(semester__iexact=semester)
+
+    # Get examination date range for the current slot
+    exam_date_range = None
+    if slot and slot.examination:
+        exam_date_range = (slot.examination.start_date, slot.examination.end_date)
+
+    # Find all exams scheduled in any slot between start_date and end_date (inclusive)
     scheduled_courses = set()
-    if slot_id:
-        try:
-            slot = ExamSlot.objects.get(id=slot_id)
-            # Get all courses already scheduled for any slot in the same examination
-            from operations.models import Exam
-            all_slots = ExamSlot.objects.filter(examination=slot.examination)
-            scheduled_courses = set(Exam.objects.filter(exam_slot__in=all_slots).values_list('course__course_code', flat=True))
-        except:
-            slot = None
-    for reg in reg_qs:
-        batch = getattr(reg.student.batch, 'batch_code', 'N/A')
-        key = (reg.course.course_code, batch, reg.academic_year, reg.semester)
-        # Skip if course is already scheduled for this slot
-        if reg.course.course_code in scheduled_courses:
+    if exam_date_range:
+        from operations.models import ExamSlot, Exam
+        slots_in_range = ExamSlot.objects.filter(
+            examination=slot.examination,
+            exam_date__gte=exam_date_range[0],
+            exam_date__lte=exam_date_range[1]
+        )
+        exams_in_range = Exam.objects.filter(exam_slot__in=slots_in_range)
+        for exam in exams_in_range:
+            if exam.course:
+                scheduled_courses.add((exam.course.course_code, exam.course.course_name))
+
+    groups = reg_qs.values(
+        'course__course_code',
+        'course__course_name',
+        'student__batch__batch_code',
+        'academic_year',
+        'semester',
+        'student_id'
+    )
+    from collections import defaultdict
+    group_map = defaultdict(lambda: {'student_ids': []})
+    for reg in groups:
+        key = (
+            reg['course__course_code'],
+            reg['course__course_name'],
+            reg['student__batch__batch_code'],
+            reg['academic_year'],
+            reg['semester']
+        )
+        # Skip group if course is already scheduled in any slot in the exam date range
+        if (reg['course__course_code'], reg['course__course_name']) in scheduled_courses:
             continue
-        if key not in groups:
-            groups[key] = {
-                'course_code': reg.course.course_code,
-                'course_name': reg.course.course_name,
-                'regulation': batch,
-                'academic_year': reg.academic_year,
-                'semester': reg.semester,
-                'student_count': 0,
-                'clash': False,
-                'student_ids': []
-            }
-        groups[key]['student_count'] += 1
-        groups[key]['student_ids'].append(reg.student_id)
-    # Detect clashes: if any student in group has another exam in same slot
-    if slot:
-        # Build a set of all students already scheduled in this slot
-        from operations.models import StudentExamMap, Exam
-        exams_in_slot = Exam.objects.filter(exam_slot=slot)
-        scheduled_students = set(StudentExamMap.objects.filter(exam__in=exams_in_slot).values_list('student_id', flat=True))
-        # Remove groups where any student would clash
-        filtered_groups = []
-        for group in groups.values():
-            course_code = group['course_code']
-            regulation = group['regulation']
-            academic_year = group['academic_year']
-            semester = group['semester']
-            students = StudentCourse.objects.filter(
-                course__course_code=course_code,
-                academic_year=academic_year,
-                semester=semester,
-                student__batch__batch_code=regulation
-            ).values_list('student_id', flat=True)
-            # If any student in this group is already scheduled in this slot, skip this group
-            if any(s in scheduled_students for s in students):
-                continue
-            filtered_groups.append(group)
-        return JsonResponse({'groups': filtered_groups})
-    return JsonResponse({'groups': list(groups.values())})
+        group = group_map[key]
+        group['course_code'] = reg['course__course_code']
+        group['course_name'] = reg['course__course_name']
+        group['regulation'] = reg['student__batch__batch_code'] or 'N/A'
+        group['academic_year'] = reg['academic_year']
+        group['semester'] = reg['semester']
+        group['student_ids'].append(str(reg['student_id']))
+    result = []
+    for group in group_map.values():
+        group['student_count'] = len(group['student_ids'])
+        group['clash'] = False
+        result.append(group)
+    result.sort(key=lambda g: g['student_count'], reverse=True)
+    return JsonResponse({'groups': result})
 
 def ajax_exam_filters(request):
-    courseregs = StudentCourse.objects.all()
-    academic_years = sorted(set(courseregs.values_list('academic_year', flat=True)))
-    semesters = sorted(set(courseregs.values_list('semester', flat=True)), key=str)
-    regulations = sorted(set(courseregs.values_list('student__batch__batch_code', flat=True)))
+    exams = Examinations.objects.all()
+    academic_years = sorted(set(exams.values_list('academic_year', flat=True)))
+    semesters = sorted(set(exams.values_list('semester', flat=True)), key=str)
+    regulations = []  # Not needed for exam scheduling filters
     return JsonResponse({'academic_years': academic_years, 'semesters': semesters, 'regulations': regulations})

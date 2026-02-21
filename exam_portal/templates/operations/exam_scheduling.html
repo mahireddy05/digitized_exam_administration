@@ -11,45 +11,16 @@
             <div class="readonly-field" style="min-width: 220px;"><label>Start Time:</label> <span>{{ slot.start_time }}</span></div>
             <div class="readonly-field" style="min-width: 220px;"><label>End Time:</label> <span>{{ slot.end_time }}</span></div>
             <div class="readonly-field" style="min-width: 220px;"><label>Slot Code:</label> <span>{{ slot.slot_code }}</span></div>
+            <div class="readonly-field" style="min-width: 220px;"><label>Academic Year:</label> <span>{{ slot.examination.academic_year }}</span></div>
+            <div class="readonly-field" style="min-width: 220px;"><label>Semester:</label> <span>{{ slot.examination.semester }}</span></div>
         </div>
 
-        <div class="controls-1">
-            <form id="examScheduleFilterForm" method="get" style="margin-top: 10px;">
-                <div>
-                    <label for="filterYear">Academic Year:</label>
-                    <select id="filterYear" name="academic_year">
-                        <option value="">All Years</option>
-                        {% for year in academic_years %}
-                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label for="filterSem">Semester:</label>
-                    <select id="filterSem" name="semester">
-                        <option value="">All Semesters</option>
-                        {% for sem in semesters %}
-                        <option value="{{ sem }}" {% if sem == selected_semester %}selected{% endif %}>{{ sem }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label for="filterRegulation">Regulation:</label>
-                    <select id="filterRegulation" name="regulation">
-                        <option value="">All Regulations</option>
-                        {% for reg in regulations %}
-                        <option value="{{ reg }}" {% if reg == selected_regulation %}selected{% endif %}>{{ reg }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="button" id="fetchCoursesBtn" class="control-btn" style="margin-top: 0px;">Fetch Courses</button>
-            </form>
-        </div>
-        <form id="examScheduleGroupsForm" method="post" action="" data-slot-id="{{ slot.id }}" style="display:none;">
+        <!-- Filters removed. Data will be auto-fetched based on academic year and semester from examinations table. -->
+        <form id="examScheduleGroupsForm" method="post" action="" data-slot-id="{{ slot.id }}" data-academic-year="{{ slot.examination.academic_year }}" data-semester="{{ slot.examination.semester }}" data-regulation="{{ slot.regulation|default:'' }}">
             {% csrf_token %}
-            <div class="table-responsive" style="overflow-x:auto; max-width:100%; margin-bottom:18px;">
-                <div style="max-height:410px; overflow-y:auto;">
-                    <table id="exam-schedule-groups-table" style="min-width:900px; width:100%;">
+            <div class="table-responsive" style="overflow-x:auto;">
+                <div style="max-height:65vh; overflow-y:auto;">
+                    <table id="exam-schedule-groups-table">
                         <thead style="position:sticky; top:0; background:#f8fafc; z-index:2;">
                             <tr>
                                 <th><input type="checkbox" id="selectAllGroups"></th>

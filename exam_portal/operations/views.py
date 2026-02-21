@@ -194,29 +194,17 @@ def exams(request):
             return render(request, "operations/exams.html", {
                 'form_data': request.POST
             })
-        # Map frontend values to model choices
+        # Direct assignment for exam_type, mode, and slot_code
+        # Map exam type to short code to fit DB column
         exam_type_map = {
-            "Theoretical": "REGULAR",
-            "Practical": "SUPPLY",
-            "Viva": "IMPROVEMENT",
-            "Quiz": "REGULAR",
-            "Assignment": "SUPPLY"
-        }
-        mode_map = {
-            "Offline": "THEORY",
-            "Online": "PRACTICAL",
-            "Hybrid": "THEORY"
-        }
-        slot_code_map = {
-            "FN": "FN",
-            "AN": "AN",
-            "AM": "FN",
-            "PM": "AN",
-            "EVENING": "AN"
+            "Regular": "REGULAR",
+            "Supplementary": "SUPPLY",
+            "Improvement": "IMPROVE",
+            "Backlog": "BACKLOG"
         }
         exam_type_db = exam_type_map.get(exam_type, "REGULAR")
-        mode_db = mode_map.get(mode, "THEORY")
-        slot_code_db = slot_code_map.get(slot_code, "FN")
+        mode_db = mode
+        slot_code_db = slot_code
         try:
             from .models import Examinations
             exam_obj = None
@@ -270,26 +258,34 @@ def exam_scheduling(request, slot_id):
     # Handle POST for scheduling selected groups
     if request.method == "POST":
         selected = request.POST.getlist('selected_groups')
+        # Get filter values from POST
+        # Always use slot/examination context for filters
+        filter_academic_year = slot.examination.academic_year if slot.examination else ''
+        filter_semester = slot.examination.semester if slot.examination else ''
+        filter_regulation = slot.regulation if hasattr(slot, 'regulation') else ''
         created = 0
         from operations.models import StudentExamMap, StudentCourse
         for group in selected:
             # group format: course_code|regulation|academic_year|semester
             try:
                 course_code, regulation, academic_year, semester = group.split('|')
+                     # Only schedule if matches slot/examination context
+                if (filter_academic_year and academic_year != filter_academic_year) or \
+                    (filter_semester and semester != filter_semester) or \
+                    (filter_regulation and regulation != filter_regulation):
+                    continue
                 course = Course.objects.get(course_code=course_code)
+                # Always use slot/examination context for regulation, academic_year, semester
                 exam = Exam.objects.create(
                     exam_slot=slot,
                     course=course,
-                    academic_year=academic_year,
-                    semester=semester,
-                    regulation=regulation
+                    regulation=filter_regulation
                 )
-                # Find students registered for this course, regulation, year, semester
                 students = StudentCourse.objects.filter(
                     course=course,
-                    academic_year=academic_year,
-                    semester=semester,
-                    student__batch__batch_code=regulation
+                    academic_year=filter_academic_year,
+                    semester=filter_semester,
+                    student__batch__batch_code=filter_regulation
                 ).select_related('student')
                 for reg in students:
                     StudentExamMap.objects.create(

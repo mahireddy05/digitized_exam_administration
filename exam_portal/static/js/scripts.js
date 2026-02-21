@@ -867,11 +867,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function fetchGroups() {
-        const year = document.getElementById('filterYear').value;
-        const sem = document.getElementById('filterSem').value;
-        const reg = document.getElementById('filterRegulation').value;
+        // Only send slot_id; backend will use it to fetch academic_year and semester
         const slotId = window.examSlotId || document.getElementById('examScheduleGroupsForm').dataset.slotId;
-        const params = new URLSearchParams({ academic_year: year, semester: sem, regulation: reg, slot_id: slotId });
+        const params = new URLSearchParams({ slot_id: slotId });
         fetch('/ops/ajax/exam-scheduling/groups/?' + params.toString())
             .then(resp => resp.json())
             .then(data => {
@@ -909,44 +907,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial load
     fetchFilters();
-    // Hide table/form on load
-    document.getElementById('examScheduleGroupsForm').style.display = 'none';
+    // Do not hide table/form on load; let fetchGroups control visibility
 
-    // Clear table and hide form on filter change
-    document.getElementById('filterYear').addEventListener('change', function() {
-        document.querySelector('#exam-schedule-groups-table tbody').innerHTML = '';
-        document.getElementById('examScheduleGroupsForm').style.display = 'none';
-    });
-    document.getElementById('filterSem').addEventListener('change', function() {
-        document.querySelector('#exam-schedule-groups-table tbody').innerHTML = '';
-        document.getElementById('examScheduleGroupsForm').style.display = 'none';
-    });
-    document.getElementById('filterRegulation').addEventListener('change', function() {
-        document.querySelector('#exam-schedule-groups-table tbody').innerHTML = '';
-        document.getElementById('examScheduleGroupsForm').style.display = 'none';
-    });
-
-
-    // Fetch courses only on button click
-    const fetchBtn = document.getElementById('fetchCoursesBtn');
-    const form = document.getElementById('examScheduleGroupsForm');
-    if (fetchBtn) {
-        fetchBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            fetchGroups();
-        });
-    }
+    // Filter event listeners and fetch button removed since filters are no longer present.
 
     // Show/hide confirm button based on selection
-    if (form) {
-        form.addEventListener('change', function(e) {
+    var examScheduleGroupsFormElem = document.getElementById('examScheduleGroupsForm');
+    if (examScheduleGroupsFormElem) {
+        examScheduleGroupsFormElem.addEventListener('change', function(e) {
             const confirmBtn = document.getElementById('confirmScheduleBtn');
-            const checked = form.querySelectorAll('input[name="selected_groups"]:checked');
+            const checked = examScheduleGroupsFormElem.querySelectorAll('input[name="selected_groups"]:checked');
             if (confirmBtn) confirmBtn.style.display = checked.length ? '' : 'none';
         });
         // Prevent form submit if no group is selected
-        form.addEventListener('submit', function(e) {
-            const checked = form.querySelectorAll('input[name="selected_groups"]:checked');
+        examScheduleGroupsFormElem.addEventListener('submit', function(e) {
+            const checked = examScheduleGroupsFormElem.querySelectorAll('input[name="selected_groups"]:checked');
             if (!checked.length) {
                 e.preventDefault();
                 alert('Please select at least one group to schedule.');
@@ -954,6 +929,59 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Auto-fetch exam scheduling data on page load
+    fetch('/ops/ajax/exam-scheduling/filters/')
+        .then(resp => resp.json())
+        .then(data => {
+            // Use the first available academic_year and semester
+            let year = Array.isArray(data.academic_years) && data.academic_years.length ? data.academic_years[0] : '';
+            let sem = Array.isArray(data.semesters) && data.semesters.length ? data.semesters[0] : '';
+            let reg = Array.isArray(data.regulations) && data.regulations.length ? data.regulations[0] : '';
+            if (typeof fetchGroups === 'function') {
+                fetchGroups(year, sem, reg);
+            }
+        });
+
+function fetchGroups(year, sem, reg) {
+    year = year || '';
+    sem = sem || '';
+    reg = reg || '';
+    const slotId = window.examSlotId || document.getElementById('examScheduleGroupsForm').dataset.slotId;
+    const params = new URLSearchParams({ academic_year: year, semester: sem, regulation: reg, slot_id: slotId });
+    fetch('/ops/ajax/exam-scheduling/groups/?' + params.toString())
+        .then(resp => resp.json())
+        .then(data => {
+            const tbody = document.querySelector('#exam-schedule-groups-table tbody');
+            const form = document.getElementById('examScheduleGroupsForm');
+            if (!tbody || !form) return;
+            const confirmBtn = document.getElementById('confirmScheduleBtn');
+            if (data.groups && data.groups.length) {
+                tbody.innerHTML = data.groups.map(group => {
+                    const disabled = group.clash ? 'disabled' : '';
+                    const clashStyle = group.clash ? 'background:#ffe6e6;color:#b30000;' : '';
+                    const clashMsg = group.clash ? '<div style="color:#b30000;font-size:0.9em;">Clash: Student has another exam in this slot</div>' : '';
+                    const studentIds = group.student_ids ? group.student_ids.join(',') : '';
+                    return `
+                    <tr style="${clashStyle}">
+                        <td><input type="checkbox" name="selected_groups" value="${group.course_code}|${group.regulation}|${group.academic_year}|${group.semester}" ${disabled} ${group.clash ? 'tabindex="-1" aria-disabled="true"' : ''}></td>
+                        <td>${group.course_code}</td>
+                        <td>${group.course_name}</td>
+                        <td>${group.regulation}</td>
+                        <td>${group.academic_year}</td>
+                        <td>${group.semester}</td>
+                        <td data-students="${studentIds}">${group.student_count}${clashMsg}</td>
+                    </tr>
+                    `;
+                }).join('');
+                form.style.display = '';
+                if (confirmBtn) confirmBtn.style.display = '';
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No course registrations found for the selected filters.</td></tr>';
+                form.style.display = '';
+                if (confirmBtn) confirmBtn.style.display = 'none';
+            }
+        });
+}
     // Select all groups checkbox (re-bind after table update)
     document.addEventListener('change', function(e) {
         if (e.target && e.target.id === 'selectAllGroups') {
@@ -961,39 +989,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 cb.checked = e.target.checked;
             });
         }
-        // Real-time clash detection
+        // Real-time clash detection (optimized)
         if (e.target && e.target.name === 'selected_groups') {
-            // Get all checked groups
-            const checked = Array.from(document.querySelectorAll('input[name="selected_groups"]:checked'));
-            // Collect selected group info
-            const selectedGroups = checked.map(cb => {
-                const row = cb.closest('tr');
-                return {
-                    course_code: row.children[1].textContent,
-                    regulation: row.children[3].textContent,
-                    academic_year: row.children[4].textContent,
-                    semester: row.children[5].textContent,
-                    students: row.children[6].dataset.students ? row.children[6].dataset.students.split(',') : []
-                };
-            });
-            // For each checkbox, check if its students overlap with any selected group
-            document.querySelectorAll('input[name="selected_groups"]').forEach(cb => {
+            // Cache student lists for each row
+            const allCheckboxes = Array.from(document.querySelectorAll('input[name="selected_groups"]'));
+            const rowStudentMap = new Map();
+            allCheckboxes.forEach(cb => {
                 const row = cb.closest('tr');
                 const students = row.children[6].dataset.students ? row.children[6].dataset.students.split(',') : [];
-                let clash = false;
-                selectedGroups.forEach(sel => {
-                    if (sel.students.some(s => students.includes(s)) && !cb.checked) {
-                        clash = true;
+                rowStudentMap.set(cb, students);
+            });
+            // Build a Set of all selected student IDs
+            const checked = allCheckboxes.filter(cb => cb.checked);
+            const selectedStudentSet = new Set();
+            checked.forEach(cb => {
+                rowStudentMap.get(cb).forEach(sid => selectedStudentSet.add(sid));
+            });
+            // For each checkbox, check if its students overlap with selectedStudentSet
+            allCheckboxes.forEach(cb => {
+                if (!cb.checked) {
+                    const students = rowStudentMap.get(cb);
+                    const clash = students.some(sid => selectedStudentSet.has(sid));
+                    const row = cb.closest('tr');
+                    if (clash) {
+                        cb.disabled = true;
+                        row.style.background = '#ffe6e6';
+                        row.style.color = '#b30000';
+                    } else {
+                        cb.disabled = false;
+                        row.style.background = '';
+                        row.style.color = '';
                     }
-                });
-                if (clash) {
-                    cb.disabled = true;
-                    row.style.background = '#ffe6e6';
-                    row.style.color = '#b30000';
-                } else if (!cb.checked) {
-                    cb.disabled = false;
-                    row.style.background = '';
-                    row.style.color = '';
                 }
             });
         }

@@ -55,6 +55,13 @@ class StudentCourse(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["student", "course", "academic_year", "semester"], name="uq_student_course"),
         ]
+        indexes = [
+            models.Index(fields=["academic_year"]),
+            models.Index(fields=["semester"]),
+            models.Index(fields=["course"]),
+            models.Index(fields=["student"]),
+            models.Index(fields=["student", "academic_year", "semester"]),
+        ]
 
 
 class FacultyCourse(models.Model):
@@ -73,13 +80,13 @@ class FacultyCourse(models.Model):
 
 class ExamSlot(models.Model):
     examination = models.ForeignKey('Examinations', blank=True, null=True, on_delete=models.CASCADE, db_column='examination_id')
-    exam_type = models.CharField(max_length=12, blank=True, null=True)
-    mode = models.CharField(max_length=10, blank=True, null=True)
+    exam_type = models.CharField(max_length=25, blank=True, null=True)
+    mode = models.CharField(max_length=25, blank=True, null=True)
 
     exam_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
-    slot_code = models.CharField(max_length=2, blank=True, null=True)
+    slot_code = models.CharField(max_length=10, blank=True, null=True)
     STATUS_CHOICES = (
         ("ACTIVE", "Active"),
         ("INACTIVE", "Inactive"),

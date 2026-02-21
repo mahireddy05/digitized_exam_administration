@@ -114,8 +114,8 @@
                 <input type="date" id="end_date" name="end_date" value="{{ form_data.end_date|default:'' }}" min="{{ form_data.start_date|default:today|date:'Y-m-d' }}">
 
             </form>
-            <a href="#" class="action-link" onclick="clearExaminationForm(); return false;" style="margin-left:10px;">Clear</a>
             <a href="#" class="action-link" id="createExaminationLink" onclick="document.getElementById('examinationForm').submit(); return false;">Create Exam</a>
+            <a href="#" class="action-link" onclick="clearExaminationForm(); return false;" style="margin-left:10px;">Clear</a>
             <script>
             function clearExaminationForm() {
                 var form = document.getElementById('examinationForm');
