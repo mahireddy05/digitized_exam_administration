@@ -15,6 +15,8 @@ def ajax_examinations(request):
             'number': idx,
             'exam_id': exam.id,
             'exam_name': exam.exam_name,
+            'academic_year': getattr(exam, 'academic_year', ''),
+            'semester': getattr(exam, 'semester', ''),
             'start_date': exam.start_date.strftime('%Y-%m-%d'),
             'end_date': exam.end_date.strftime('%Y-%m-%d'),
         })
@@ -29,50 +31,65 @@ def examination(request):
     from .models import Examinations
     import datetime
     today = datetime.date.today()
+    from .models import StudentCourse
+    acd_years = StudentCourse.objects.values_list('academic_year', flat=True).distinct().order_by('academic_year')
+    semesters = StudentCourse.objects.values_list('semester', flat=True).distinct().order_by('semester')
     if request.method == "POST":
         exam_name = request.POST.get("examname", "").strip()
+        academic_year = request.POST.get("academic_year", "").strip()
+        semester = request.POST.get("semester", "").strip()
         start_date = request.POST.get("start_date", "").strip()
         end_date = request.POST.get("end_date", "").strip()
         form_data = {
             'examname': exam_name,
+            'academic_year': academic_year,
+            'semester': semester,
             'start_date': start_date,
             'end_date': end_date
         }
         # Validate all fields present
-        if not exam_name or not start_date or not end_date:
+        if not exam_name or not academic_year or not semester or not start_date or not end_date:
             messages.error(request, "Provide all fields.")
-            return render(request, "operations/examination.html", {"form_data": form_data, "today": today})
+            return render(request, "operations/examination.html", {"form_data": form_data, "today": today, "acd_years": acd_years, "semesters": semesters})
         # Validate date order
         try:
             start_dt = datetime.datetime.strptime(start_date, "%Y-%m-%d").date()
             end_dt = datetime.datetime.strptime(end_date, "%Y-%m-%d").date()
         except Exception:
             messages.error(request, "Invalid date format.")
-            return render(request, "operations/examination.html", {"form_data": form_data, "today": today})
+            return render(request, "operations/examination.html", {"form_data": form_data, "today": today, "acd_years": acd_years, "semesters": semesters})
         if start_dt < today:
             messages.error(request, "Start date must be today or a future date.")
-            return render(request, "operations/examination.html", {"form_data": form_data, "today": today})
+            return render(request, "operations/examination.html", {"form_data": form_data, "today": today, "acd_years": acd_years, "semesters": semesters})
         if start_dt >= end_dt:
             messages.error(request, "Start date must be before end date.")
-            return render(request, "operations/examination.html", {"form_data": form_data, "today": today})
-        # Check for duplicate exam name (case-insensitive) with same dates
+            return render(request, "operations/examination.html", {"form_data": form_data, "today": today, "acd_years": acd_years, "semesters": semesters})
+        # Check for duplicate exam name (case-insensitive) with same dates and academic year/semester
         existing_exam = Examinations.objects.filter(
             exam_name__iexact=exam_name,
+            academic_year=academic_year,
+            semester=semester,
             start_date=start_date,
             end_date=end_date
         ).first()
         if existing_exam:
-            messages.error(request, "An exam with the same name and dates already exists.")
-            return render(request, "operations/examination.html", {"form_data": form_data, "today": today})
+            messages.error(request, "An exam with the same name, academic year, semester, and dates already exists.")
+            return render(request, "operations/examination.html", {"form_data": form_data, "today": today, "acd_years": acd_years, "semesters": semesters})
         # Save to DB
         try:
-            Examinations.objects.create(exam_name=exam_name, start_date=start_date, end_date=end_date)
+            Examinations.objects.create(
+                exam_name=exam_name,
+                academic_year=academic_year,
+                semester=semester,
+                start_date=start_date,
+                end_date=end_date
+            )
             messages.success(request, "Exam dates declared successfully.")
-            return render(request, "operations/examination.html", {"form_data": {}, "today": today})
+            return render(request, "operations/examination.html", {"form_data": {}, "today": today, "acd_years": acd_years, "semesters": semesters})
         except Exception as e:
             messages.error(request, f"Error saving examination: {e}")
             return render(request, "operations/examination.html", {"form_data": form_data, "today": today})
-    return render(request, "operations/examination.html", {"form_data": {}, "today": today})
+    return render(request, "operations/examination.html", {"form_data": {}, "today": today, "acd_years": acd_years, "semesters": semesters})
 from django.shortcuts import render
 from django.contrib import messages
 from .models import ExamSlot, Exam

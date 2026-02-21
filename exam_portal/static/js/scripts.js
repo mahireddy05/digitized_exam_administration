@@ -1,3 +1,21 @@
+// Clear Examination Form utility
+    function clearExaminationForm() {
+        var form = document.getElementById('examinationForm');
+        if (!form) return;
+        form.reset();
+        // Reset selects to first option
+        var selects = form.querySelectorAll('select');
+        selects.forEach(function(sel) { sel.selectedIndex = 0; });
+        // Clear text/date inputs explicitly
+        var inputs = form.querySelectorAll('input[type="text"], input[type="date"]');
+        inputs.forEach(function(inp) { inp.value = ''; });
+        // Reset min for end date
+        var startInput = document.getElementById('start_date');
+        var endInput = document.getElementById('end_date');
+        if (endInput && startInput) {
+            endInput.min = startInput.min;
+        }
+    }
     // Save Examination Edit AJAX
     var saveEditExamBtn = document.getElementById('saveEditExamBtn');
     if (saveEditExamBtn) {
@@ -5,8 +23,16 @@
             e.preventDefault();
             const examId = document.getElementById('editExamId').value;
             const examName = document.getElementById('edit_examname').value.trim();
+            const academicYear = document.getElementById('edit_academic_year').value;
+            const semester = document.getElementById('edit_semester').value;
             const startDate = document.getElementById('edit_start_date').value;
             const endDate = document.getElementById('edit_end_date').value;
+            // Validate fields
+            if (!examName || !academicYear || !semester || !startDate || !endDate) {
+                alert('Please fill all fields.');
+                return;
+            }
+            // Send AJAX request to update exam
             fetch('/ops/ajax/edit-examination/', {
                 method: 'POST',
                 headers: {
@@ -16,6 +42,8 @@
                 body: JSON.stringify({
                     exam_id: examId,
                     examname: examName,
+                    academic_year: academicYear,
+                    semester: semester,
                     start_date: startDate,
                     end_date: endDate
                 })
@@ -23,34 +51,146 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('editExamModal').style.display = 'none';
                     alert('Examination updated successfully.');
+                    document.getElementById('editExamModal').style.display = 'none';
                     fetchExaminations();
                 } else {
-                    alert('Failed to update examination: ' + (data.error || 'Unknown error'));
+                    alert(data.error || 'Failed to update examination.');
                 }
             })
             .catch(() => {
-                alert('Failed to update examination due to network error.');
+                alert('Network error. Please try again.');
             });
         };
     }
-    // ============ EXAMINATION EDIT MODAL LOGIC ============
-    document.addEventListener('click', function(e) {
-        const editBtn = e.target.closest('.edit-exam-btn');
-        if (editBtn) {
-            e.preventDefault();
-            // Find the row for this exam
-            const row = editBtn.closest('tr');
-            if (!row) return;
-            // Fill modal fields from row
-            document.getElementById('editExamId').value = editBtn.dataset.examId;
-            document.getElementById('edit_examname').value = row.children[1].textContent.trim();
-            document.getElementById('edit_start_date').value = row.children[2].textContent.trim();
-            document.getElementById('edit_end_date').value = row.children[3].textContent.trim();
-            document.getElementById('editExamModal').style.display = 'flex';
+    // --- Student ID Autocomplete and Search ---
+        var studentIdList = [];
+        var selectedStudentId = '';
+
+        function fetchStudentIdAutocomplete(query) {
+            if (!query) {
+                document.getElementById('studentIdAutocomplete').style.display = 'none';
+                return;
+            }
+            fetch(`/masters/ajax/student-id-autocomplete/?q=${encodeURIComponent(query)}`)
+                .then(resp => resp.json())
+                .then(data => {
+                    studentIdList = data.results || [];
+                    const listDiv = document.getElementById('studentIdAutocomplete');
+                    if (!studentIdList.length) {
+                        listDiv.style.display = 'none';
+                        return;
+                    }
+                    listDiv.innerHTML = studentIdList.map((item, idx) => `<div class="autocomplete-item" data-id="${item.id}" data-idx="${idx}" tabindex="0">${item.id} - ${item.name}</div>`).join('');
+                    listDiv.style.display = 'block';
+                });
         }
-    });
+
+        var searchStudentIdElem = document.getElementById('searchStudentId');
+        if (searchStudentIdElem) {
+            searchStudentIdElem.addEventListener('input', function(e) {
+                fetchStudentIdAutocomplete(this.value);
+                selectedStudentId = '';
+            });
+            searchStudentIdElem.addEventListener('keydown', function(e) {
+                const listDiv = document.getElementById('studentIdAutocomplete');
+                if (listDiv.style.display !== 'block') return;
+            const items = Array.from(listDiv.querySelectorAll('.autocomplete-item'));
+            let idx = items.findIndex(item => item.classList.contains('selected'));
+            if (e.key === 'ArrowDown') {
+                if (idx < items.length - 1) idx++;
+                else idx = 0;
+                items.forEach(item => item.classList.remove('selected'));
+                items[idx].classList.add('selected');
+                items[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'ArrowUp') {
+                if (idx > 0) idx--;
+                else idx = items.length - 1;
+                items.forEach(item => item.classList.remove('selected'));
+                items[idx].classList.add('selected');
+                items[idx].focus();
+                e.preventDefault();
+            } else if (e.key === 'Enter') {
+                if (idx >= 0) {
+                    selectedStudentId = items[idx].dataset.id;
+                    this.value = items[idx].textContent.split(' - ')[0];
+                    listDiv.style.display = 'none';
+                    e.preventDefault();
+                }
+            }
+        });
+
+        }
+
+        var studentIdAutocompleteElem = document.getElementById('studentIdAutocomplete');
+        if (studentIdAutocompleteElem) {
+            studentIdAutocompleteElem.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('autocomplete-item')) {
+                    selectedStudentId = e.target.dataset.id;
+                    if (searchStudentIdElem) {
+                        searchStudentIdElem.value = e.target.textContent.split(' - ')[0];
+                    }
+                    this.style.display = 'none';
+                }
+            });
+        }
+
+        var searchStudentBtnElem = document.getElementById('searchStudentBtn');
+        if (searchStudentBtnElem) {
+            searchStudentBtnElem.addEventListener('click', function() {
+                const studentId = selectedStudentId || (searchStudentIdElem ? searchStudentIdElem.value.trim() : '');
+                if (!studentId) {
+                    alert('Please enter or select a student ID.');
+                    return;
+                }
+                fetch(`/masters/ajax/student-coursereg/?student_id=${encodeURIComponent(studentId)}`)
+                    .then(resp => resp.json())
+                    .then(data => {
+                        document.getElementById('coursereg-list').innerHTML = data.table_html;
+                        document.getElementById('courseregTableContainer').style.display = '';
+                    });
+            });
+        }
+
+        var resetStudentSearchBtnElem = document.getElementById('resetStudentSearchBtn');
+        if (resetStudentSearchBtnElem) {
+            resetStudentSearchBtnElem.addEventListener('click', function() {
+                if (searchStudentIdElem) searchStudentIdElem.value = '';
+                if (studentIdAutocompleteElem) studentIdAutocompleteElem.style.display = 'none';
+                selectedStudentId = '';
+                var courseregTableContainerElem = document.getElementById('courseregTableContainer');
+                if (courseregTableContainerElem) courseregTableContainerElem.style.display = 'none';
+            });
+        }
+        // Fix ReferenceError: define startDateRaw and endDateRaw before using them
+        var startDateRaw = '';
+        var endDateRaw = '';
+        // Optionally, fetch values from a triggering element or another source
+        var editStartDateElem = document.getElementById('edit_start_date');
+        var editEndDateElem = document.getElementById('edit_end_date');
+        if (editStartDateElem) {
+            editStartDateElem.value = startDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? startDateRaw : '';
+        }
+        if (editEndDateElem) {
+            editEndDateElem.value = endDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? endDateRaw : '';
+        }
+        // Only open edit modal when triggered by a user action (e.g., click)
+        // Remove automatic opening here
+        // To open modal, use a dedicated function or event handler
+        // Example:
+        // function openEditExamModal(startDateRaw, endDateRaw) {
+        //   var editStartDateElem = document.getElementById('edit_start_date');
+        //   var editEndDateElem = document.getElementById('edit_end_date');
+        //   if (editStartDateElem) editStartDateElem.value = startDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? startDateRaw : '';
+        //   if (editEndDateElem) editEndDateElem.value = endDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? endDateRaw : '';
+        //   var editExamModalElem = document.getElementById('editExamModal');
+        //   if (editExamModalElem) editExamModalElem.style.display = 'flex';
+        // }
+        // var editExamModalElem = document.getElementById('editExamModal');
+        // if (editExamModalElem) {
+        //     editExamModalElem.style.display = 'flex';
+        // }
     var closeEditExamModal = document.getElementById('closeEditExamModal');
     if (closeEditExamModal) {
         closeEditExamModal.onclick = function() {
@@ -324,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Available : ${count}
         </span>`;
     }
-    function fetchExaminations(page=1) {
+    window.fetchExaminations = function fetchExaminations(page=1) {
         fetch(`/ops/ajax/examinations/?page=${page}`)
             .then(resp => resp.json())
             .then(data => {
@@ -340,16 +480,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         tbody.innerHTML += `<tr id="${rowId}">
                             <td>${exam.number}</td>
                             <td>${exam.exam_name}</td>
-                            <td>${exam.start_date}</td>
-                            <td>${exam.end_date}</td>
+                            <td>${exam.academic_year || ''}</td>
+                            <td>${exam.semester || ''}</td>
+                            <td data-raw="${exam.start_date}">${formatDateDMY(exam.start_date)}</td>
+                            <td data-raw="${exam.end_date}">${formatDateDMY(exam.end_date)}</td>
                             <td id="slot-badge-${exam.exam_id}"><a href="${slotLink}" class="slot-link" data-exam-name="${encodeURIComponent(exam.exam_name)}">${pendingBadge()}</a></td>
-                            <td id="schedule-badge-${exam.exam_id}"><a href="#" class="exam-schedule-link" data-exam-id="${exam.exam_id}" data-slot-link="${slotLink}" style="text-decoration:none;">${pendingBadge()}</a></td>
-                            <td>${pendingBadge()}</td>
-                            <td>${pendingBadge()}</td>
                             <td>${pendingBadge()}</td>
                             <td>
-                                <a href=\"#\" class=\"edit-exam-btn\" data-exam-id=\"${exam.exam_id}\" title=\"Edit\"><img src=\"https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000\" alt=\"Edit Exam\" style=\"width:16px;height:16px;margin-right:6px;\"></a>
-                                <a href=\"#\" class=\"delete-exam-btn\" data-exam-id=\"${exam.exam_id}\" data-exam-name=\"${exam.exam_name}\"><img src=\"https://img.icons8.com/?size=100&id=99971&format=png&color=000000\" alt=\"Delete Exam\" style=\"width:16px;height:16px;\"></a>
+                                <a href="#" class="edit-exam-btn" data-exam-id="${exam.exam_id}" title="Edit"><img src="https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000" alt="Edit Exam" style="width:16px;height:16px;margin-right:6px;"></a>
+                                <a href="#" class="delete-exam-btn" data-exam-id="${exam.exam_id}" data-exam-name="${exam.exam_name}"><img src="https://img.icons8.com/?size=100&id=99971&format=png&color=000000" alt="Delete Exam" style="width:16px;height:16px;"></a>
                             </td>
                         </tr>`;
                         fetch(`/ops/ajax_exam_slots/?exam_id=${exam.exam_id}`)
@@ -1762,4 +1901,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Add event handler for edit-exam-btn
+$(document).on('click', '.edit-exam-btn', function(e) {
+    e.preventDefault();
+    var row = $(this).closest('tr');
+    var examId = $(this).data('exam-id');
+    var examName = row.find('td').eq(1).text().trim();
+    var academicYear = row.find('td').eq(2).text().trim();
+    var semester = row.find('td').eq(3).text().trim();
+    var startDateRaw = row.find('td[data-raw]').eq(0).data('raw') || '';
+    var endDateRaw = row.find('td[data-raw]').eq(1).data('raw') || '';
+
+    // Fill modal fields
+    $('#editExamId').val(examId);
+    $('#edit_examname').val(examName);
+    $('#edit_academic_year').val(academicYear);
+    $('#edit_semester').val(semester);
+    $('#edit_start_date').val(startDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? startDateRaw : '');
+    $('#edit_end_date').val(endDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? endDateRaw : '');
+    // Set date constraints
+    var todayStr = (function() {
+        var d = new Date();
+        var m = (d.getMonth()+1).toString().padStart(2,'0');
+        var day = d.getDate().toString().padStart(2,'0');
+        return d.getFullYear() + '-' + m + '-' + day;
+    })();
+    var editStartDateElem = document.getElementById('edit_start_date');
+    var editEndDateElem = document.getElementById('edit_end_date');
+    if (editStartDateElem) editStartDateElem.min = todayStr;
+    if (editEndDateElem && editStartDateElem) editEndDateElem.min = editStartDateElem.value;
+    // Remove previous event listeners to avoid stacking
+    if (editStartDateElem && editEndDateElem) {
+        editStartDateElem.onchange = function() {
+            editEndDateElem.min = editStartDateElem.value;
+            if (editEndDateElem.value && editEndDateElem.value < editStartDateElem.value) {
+                editEndDateElem.value = '';
+            }
+        };
+    }
+    $('#editExamModal').css('display', 'flex');
+    
+});
 

@@ -49,10 +49,16 @@ def ajax_edit_examination(request):
     try:
         data = json.loads(request.body.decode('utf-8'))
         exam_id = data.get('exam_id')
+        try:
+            exam_id = int(exam_id)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'error': 'Invalid exam ID.'})
         exam_name = data.get('examname', '').strip()
+        academic_year = data.get('academic_year', '').strip()
+        semester = data.get('semester', '').strip()
         start_date = data.get('start_date', '').strip()
         end_date = data.get('end_date', '').strip()
-        if not exam_id or not exam_name or not start_date or not end_date:
+        if not exam_id or not exam_name or not academic_year or not semester or not start_date or not end_date:
             return JsonResponse({'success': False, 'error': 'All fields are required.'})
         exam = Examinations.objects.filter(id=exam_id).first()
         if not exam:
@@ -66,15 +72,19 @@ def ajax_edit_examination(request):
             return JsonResponse({'success': False, 'error': 'Invalid date format.'})
         if start_dt >= end_dt:
             return JsonResponse({'success': False, 'error': 'Start date must be before end date.'})
-        # Check for duplicate exam name (case-insensitive) with same dates (excluding self)
+        # Check for duplicate exam name (case-insensitive) with same dates, academic_year, and semester (excluding self)
         exists = Examinations.objects.filter(
             exam_name__iexact=exam_name,
+            academic_year=academic_year,
+            semester=semester,
             start_date=start_date,
             end_date=end_date
         ).exclude(id=exam_id).exists()
         if exists:
-            return JsonResponse({'success': False, 'error': 'Another examination with this name and dates exists.'})
+            return JsonResponse({'success': False, 'error': 'Another examination with this name, academic year, semester, and dates exists.'})
         exam.exam_name = exam_name
+        exam.academic_year = academic_year
+        exam.semester = semester
         exam.start_date = start_date
         exam.end_date = end_date
         exam.save()

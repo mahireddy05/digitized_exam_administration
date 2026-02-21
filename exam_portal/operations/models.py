@@ -4,6 +4,8 @@ class Examinations(models.Model):
     exam_name = models.CharField(max_length=100, null=False, blank=False)
     start_date = models.DateField(null=False, blank=False)
     end_date = models.DateField(null=False, blank=False)
+    academic_year = models.CharField(max_length=9, null=True, blank=False)
+    semester = models.CharField(max_length=20, null=True, blank=False)
 
     class Meta:
         db_table = "examinations"
@@ -98,18 +100,10 @@ class ExamSlot(models.Model):
 class Exam(models.Model):
     exam_slot = models.ForeignKey(ExamSlot, on_delete=models.CASCADE, related_name="exams")
     course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name="exams", null=True, blank=True)
-    academic_year = models.CharField(max_length=9)
-    semester = models.CharField(max_length=20)
     regulation = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
         db_table = "exam"
-        constraints = [
-            models.CheckConstraint(check=models.Q(semester__isnull=False) & ~models.Q(semester=""), name="check_semester_not_empty"),
-        ]
-        indexes = [
-            models.Index(fields=["academic_year", "semester"]),
-        ]
 
 
 class StudentExamMap(models.Model):

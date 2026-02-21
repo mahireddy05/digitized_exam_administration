@@ -3,31 +3,81 @@
 {% block content %}
         <!-- Edit Examination Modal -->
         <div id="editExamModal" class="modal" style="display:none;position:fixed;z-index:1000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
-            <div class="modal-content" style="background:#fff;padding:2em;max-width:500px;border-radius:8px;position:relative;">
+            <div class="edit-form" style="position:relative;">
                 <span id="closeEditExamModal" style="position:absolute;top:10px;right:16px;font-size:1.5em;cursor:pointer;">&times;</span>
-                <h2 style="margin-top:0;">Edit Examination</h2>
+                <h2>Edit Examination</h2>
                 <form id="editExamForm">
                     {% csrf_token %}
                     <input type="hidden" id="editExamId" name="exam_id">
-                    <div style="margin-bottom:1em;">
-                        <label for="edit_examname">Exam Name:</label>
-                        <input type="text" id="edit_examname" name="examname" required>
+                    <label for="edit_examname">Exam Name:</label>
+                    <input type="text" id="edit_examname" name="examname" class="form-control" required>
+
+                    <label for="edit_academic_year">Academic Year:</label>
+                    <select id="edit_academic_year" name="academic_year" class="form-control">
+                        <option value="">Select Academic Year</option>
+                        {% for year in acd_years %}
+                            <option value="{{ year }}">{{ year }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label for="edit_semester">Semester:</label>
+                    <select id="edit_semester" name="semester" class="form-control">
+                        <option value="">Select Semester</option>
+                        {% for sem in semesters %}
+                            <option value="{{ sem }}">{{ sem }}</option>
+                        {% endfor %}
+                    </select>
+
+
+                    <div style="display: flex; gap: 18px; align-items: flex-end; margin-bottom: 16px;">
+                        <div style="flex:1;">
+                            <label for="edit_start_date" style="display:block;">Start Date:</label>
+                            <input type="date" id="edit_start_date" name="start_date" class="form-control" style="width:100%; min-width:120px; padding:10px 14px; border:1.5px solid #2C4C70; border-radius:8px; font-size:1rem; background:#f5f7fa; margin-top:4px; margin-bottom:0;" required>
+                        </div>
+                        <div style="flex:1;">
+                            <label for="edit_end_date" style="display:block;">End Date:</label>
+                            <input type="date" id="edit_end_date" name="end_date" class="form-control" style="width:100%; min-width:120px; padding:10px 14px; border:1.5px solid #2C4C70; border-radius:8px; font-size:1rem; background:#f5f7fa; margin-top:4px; margin-bottom:0;" required>
+                        </div>
                     </div>
-                    <div style="margin-bottom:1em;">
-                        <label for="edit_start_date">Start Date:</label>
-                        <input type="date" id="edit_start_date" name="start_date" required>
-                    </div>
-                    <div style="margin-bottom:1em;">
-                        <label for="edit_end_date">End Date:</label>
-                        <input type="date" id="edit_end_date" name="end_date" required>
-                    </div>
-                    <div style="margin-bottom:1em;">
-                        <a href="#" id="saveEditExamBtn" class="action-link">Save</a>
-                        <a href="#" id="cancelEditExamBtn" class="action-link">Cancel</a>
-                    </div>
+
+                    <button type="submit" id="saveEditExamBtn">Save</button>
+                    <a href="#" id="cancelEditExamBtn" class="action-link">Cancel</a>
                 </form>
             </div>
         </div>
+    <script>
+    // Edit modal: enforce date rules as in creation form
+    document.addEventListener('DOMContentLoaded', function() {
+        var editStartInput = document.getElementById('edit_start_date');
+        var editEndInput = document.getElementById('edit_end_date');
+        // Set min for start date as today
+        var todayStr = (function() {
+            var d = new Date();
+            var m = (d.getMonth()+1).toString().padStart(2,'0');
+            var day = d.getDate().toString().padStart(2,'0');
+            return d.getFullYear() + '-' + m + '-' + day;
+        })();
+        if (editStartInput) {
+            editStartInput.min = todayStr;
+        }
+        function updateEditEndMin() {
+            if (editStartInput && editEndInput) {
+                if (editStartInput.value) {
+                    editEndInput.min = editStartInput.value;
+                    if (editEndInput.value && editEndInput.value < editStartInput.value) {
+                        editEndInput.value = '';
+                    }
+                } else {
+                    editEndInput.min = todayStr;
+                }
+            }
+        }
+        if (editStartInput) {
+            editStartInput.addEventListener('change', updateEditEndMin);
+            updateEditEndMin();
+        }
+    });
+    </script>
     <div class="pages-main">
         <h1 class="pages-main-head">Exam Management</h1>
         <div class="note-text">
@@ -36,8 +86,26 @@
         <div class="controls-1">
             <form id="examinationForm" action="{% url 'operations:examination' %}" method="post" autocomplete="off">
                 {% csrf_token %}
+
+
                 <label for="examname">Exam Name:</label>
                 <input type="text" id="examname" name="examname" placeholder="Enter exam name" value="{{ form_data.examname|default:'' }}">
+
+                <label for="academic_year">Academic Year:</label>
+                <select id="academic_year" name="academic_year">
+                    <option value="">Select Academic Year</option>
+                    {% for year in acd_years %}
+                        <option value="{{ year }}" {% if form_data.academic_year == year %}selected{% endif %}>{{ year }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="semester">Semester:</label>
+                <select id="semester" name="semester">
+                    <option value="">Select Semester</option>
+                    {% for sem in semesters %}
+                        <option value="{{ sem }}" {% if form_data.semester == sem %}selected{% endif %}>{{ sem }}</option>
+                    {% endfor %}
+                </select>
 
                 <label for="start_date">Start Date:</label>
                 <input type="date" id="start_date" name="start_date" value="{{ form_data.start_date|default:'' }}" min="{{ today|date:'Y-m-d' }}">
@@ -50,7 +118,17 @@
             <a href="#" class="action-link" id="createExaminationLink" onclick="document.getElementById('examinationForm').submit(); return false;">Create Exam</a>
             <script>
             function clearExaminationForm() {
-                document.getElementById('examinationForm').reset();
+                var form = document.getElementById('examinationForm');
+                form.reset();
+                // Reset selects to first option
+                var selects = form.querySelectorAll('select');
+                selects.forEach(function(sel) { sel.selectedIndex = 0; });
+                // Reset min for end date
+                var startInput = document.getElementById('start_date');
+                var endInput = document.getElementById('end_date');
+                if (endInput && startInput) {
+                    endInput.min = startInput.min;
+                }
             }
             document.addEventListener('DOMContentLoaded', function() {
                 var startInput = document.getElementById('start_date');
@@ -76,12 +154,11 @@
                     <tr>
                         <th>#</th>
                         <th>Exam</th>
+                        <th>Academic Year</th>
+                        <th>Semester</th>
                         <th>Start Date</th>
                         <th>End Date</th>
                         <th>Slots</th>
-                        <th>Exam Scheduling</th>
-                        <th>Room Allocation</th>
-                        <th>Faculty Assignment</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
@@ -108,5 +185,16 @@
             </table>
             <div id="examination-pagination" class="pagination"></div>
         </div>
+            <script>
+            // Helper to format date as date-month(short)-year
+            function formatDateDMY(dateStr) {
+                if (!dateStr) return '';
+                const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                const d = new Date(dateStr);
+                if (isNaN(d)) return dateStr;
+                return `${d.getDate().toString().padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
+            }
+            // Patch your JS table rendering to use formatDateDMY for start_date and end_date columns
+            </script>
     </div>
 {% endblock %}
