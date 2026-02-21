@@ -17,48 +17,25 @@
             <a href="{% static 'samples/student_reg_courses.csv' %}" download class="control-btn">Download Sample CSV</a>
         </div>
     </div>
-
-    <div class="controls">
-        <form id="filterForm" onsubmit="return false;">
-            <label for="search">Search:</label>
-            <input type="text" id="search" name="search" placeholder="Student ID, Course Code, or Name">
-
-            <label for="filterCourse">Course:</label>
-            <select id="filterCourse">
-                <option value="">All Courses</option>
-                {% for course in courses %}
-                <option value="{{ course.course_code }}">{{ course.course_code }} - {{ course.course_name }}</option>
-                {% endfor %}
-            </select>
-
-            <label for="filterYear">Academic Year:</label>
-            <select id="filterYear">
-                <option value="">All Years</option>
-                {% for year in academic_years %}
-                <option value="{{ year }}">{{ year }}</option>
-                {% endfor %}
-            </select>
-
-            <label for="filterSem">Semester:</label>
-            <select id="filterSem">
-                <option value="">All Semesters</option>
-                {% for sem in semesters %}
-                <option value="{{ sem }}">{{ sem }}</option>
-                {% endfor %}
-            </select>
+    <div class="controls" style="padding: 6px 0;">
+        <form id="searchForm" onsubmit="return false;" style="display: flex; align-items: center; gap: 8px;">
+            <label for="studentSearch" style="font-size: 0.98rem;">Student ID:</label>
+            <input type="text" id="studentSearch" name="studentSearch" placeholder="Enter Student ID" autocomplete="off" style="min-width: 160px; font-size: 0.98rem; padding: 6px 10px; border-radius: 5px;">
+            <a href="#" id="searchStudentLink" class="control-btn search-btn" style="margin-top: 0px;">Search</a>
+            <a href="#" id="resetStudentSearchLink" class="control-btn reset-btn" style="background: #f1f5f9; color: #1E3A5F; border: 1px solid #cbd5e1; margin-top: 0px;">Reset</a>
         </form>
+        <div id="autocomplete-list" class="autocomplete-items" style="position: absolute; z-index: 99;"></div>
     </div>
-
-    <div class="actions" style="display: flex; align-items: center; gap: 16px;">
-        <div class="pagination-bar" style="flex:1;" id="courseregPaginationBar">
+    <div class="coursereg-actions-bar" id="courseregActionsBar" style="display:none; margin-top: 16px; justify-content: space-between; align-items: center; gap: 16px;">
+        <div class="pagination-bar" id="courseregPaginationBar" style="display:flex;">
             <div id="coursereg-pagination"></div>
         </div>
-        <button type="button" id="resetCourseRegFilters"><img src="https://img.icons8.com/?size=100&id=12494&format=png&color=ffffff" alt="Reset_img">Reset</button>
-        <button type="button" id="printCourseRegBtn"><img src="https://img.icons8.com/?size=100&id=85372&format=png&color=ffffff" alt="Print_img">Print</button>
-        <button type="button" id="downloadCourseRegBtn"><img src="https://img.icons8.com/?size=100&id=83159&format=png&color=ffffff" alt="Download_img">Download Data</button>
+        <div class="actions" id="courseregActions" style="display:flex; align-items: center; gap: 16px;">
+            <button type="button" id="printCourseRegBtn"><img src="https://img.icons8.com/?size=100&id=85372&format=png&color=ffffff" alt="Print_img">Print</button>
+            <button type="button" id="downloadCourseRegBtn"><img src="https://img.icons8.com/?size=100&id=83159&format=png&color=ffffff" alt="Download_img">Download Data</button>
+        </div>
     </div>
-
-    <div class="table">
+    <div class="table" id="courseregTableContainer" style="display:none; margin-top: 24px;">
         <table id="coursereg-table">
             <thead>
                 <tr>
@@ -78,92 +55,4 @@
         </table>
     </div>
 </div>
-
-<!-- Edit/Delete Modals for Course Registration (to be implemented in JS) -->
-<div id="courseregEditModal" class="modal" style="display:none;"></div>
-<div id="courseregDeleteModal" class="modal" style="display:none;"></div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="{% static 'js/scripts.js' %}"></script>
-<script>
-// --- AJAX Filtering, Pagination, Reset, Print, Download for Course Registrations ---
-function loadCourseRegData(page=1) {
-    const search = document.getElementById('search').value.trim();
-    const course = document.getElementById('filterCourse').value;
-    const year = document.getElementById('filterYear').value;
-    const semester = document.getElementById('filterSem').value;
-    const params = new URLSearchParams({
-        type: 'coursereg',
-        page: page,
-        search: search,
-        course: course,
-        year: year,
-        semester: semester
-    });
-    fetch(`/masters/ajax/?${params.toString()}`)
-        .then(resp => resp.json())
-        .then(data => {
-            document.getElementById('coursereg-list').innerHTML = data.table_html;
-            document.getElementById('coursereg-pagination').innerHTML = data.pagination_html;
-        });
-}
-
-// Event listeners for filters
-['search', 'filterCourse', 'filterYear', 'filterSem'].forEach(id => {
-    document.getElementById(id).addEventListener('input', () => loadCourseRegData(1));
-});
-
-// Pagination click
-document.getElementById('coursereg-pagination').addEventListener('click', function(e) {
-    if (e.target.classList.contains('page-num') || e.target.classList.contains('page-arrow')) {
-        e.preventDefault();
-        const page = e.target.getAttribute('data-page');
-        if (page) loadCourseRegData(page);
-    }
-});
-
-// Reset button
-document.getElementById('resetCourseRegFilters').addEventListener('click', function() {
-    document.getElementById('search').value = '';
-    document.getElementById('filterCourse').value = '';
-    document.getElementById('filterYear').value = '';
-    document.getElementById('filterSem').value = '';
-    loadCourseRegData(1);
-});
-
-// Print button
-document.getElementById('printCourseRegBtn').addEventListener('click', function() {
-    const table = document.getElementById('coursereg-table').outerHTML;
-    const win = window.open('', '', 'width=900,height=700');
-    win.document.write('<html><head><title>Print Course Registrations</title>');
-    win.document.write('<link rel="stylesheet" href="/static/css/style.css">');
-    win.document.write('</head><body>');
-    win.document.write(table);
-    win.document.write('</body></html>');
-    win.document.close();
-    win.print();
-});
-
-// Download button
-document.getElementById('downloadCourseRegBtn').addEventListener('click', function() {
-    let csv = 'Student ID,Student Name,Course Code,Course Name,Academic Year,Semester\n';
-    document.querySelectorAll('#coursereg-list tr').forEach(row => {
-        let cols = Array.from(row.querySelectorAll('td')).slice(1, 7).map(td => '"' + td.innerText.replace(/"/g, '""') + '"');
-        if (cols.length) csv += cols.join(',') + '\n';
-    });
-    const blob = new Blob([csv], {type: 'text/csv'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'course_registrations.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-});
-
-// Initial load
-document.addEventListener('DOMContentLoaded', function() {
-    loadCourseRegData(1);
-});
-</script>
 {% endblock %}

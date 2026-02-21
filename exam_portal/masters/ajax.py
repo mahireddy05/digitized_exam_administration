@@ -8,6 +8,17 @@ def ajax(request):
     data_type = request.GET.get('type')
     page_number = request.GET.get('page')
     search = request.GET.get('search', '').strip().lower()
+    # --- Student ID Autocomplete AJAX ---
+    if data_type == 'student-id-autocomplete':
+        query = request.GET.get('q', '').strip()
+        students = Student.objects.all()
+        if query:
+            students = students.filter(student_id__icontains=query) | students.filter(std_name__icontains=query)
+        results = [
+            {'id': s.student_id, 'name': getattr(s, 'std_name', getattr(s, 'user', None) and s.user.get_full_name() or '')}
+            for s in students[:20]
+        ]
+        return JsonResponse({'results': results})
     department = request.GET.get('department', '').strip()
     # For rooms
     block = request.GET.get('block', '').strip()
@@ -24,7 +35,10 @@ def ajax(request):
         course_code = request.GET.get('course', '').strip()
         academic_year = request.GET.get('year', '').strip()
         semester = request.GET.get('semester', '').strip()
-        if search:
+        student_id = request.GET.get('student_id', '').strip()
+        if student_id:
+            queryset = queryset.filter(student__student_id__iexact=student_id)
+        elif search:
             queryset = queryset.filter(
                 models.Q(student__student_id__icontains=search) |
                 models.Q(student__std_name__icontains=search) |

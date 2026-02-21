@@ -1,3 +1,194 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Course Registration Search, Autocomplete, Table, Print, Download, Pagination ---
+    let courseregStudentIdList = [];
+    function courseregFetchStudentIdAutocomplete(query) {
+        fetch(`/masters/ajax/?type=student-id-autocomplete&q=${encodeURIComponent(query)}`)
+            .then(resp => resp.json())
+            .then(data => {
+                courseregStudentIdList = (data.results || []).map(item => `${item.id} - ${item.name}`);
+                // Sort suggestions by ID (smallest to largest)
+                courseregStudentIdList.sort((a, b) => {
+                    const idA = a.split(' - ')[0];
+                    const idB = b.split(' - ')[0];
+                    // Numeric sort if IDs are numbers, otherwise string sort
+                    if (!isNaN(idA) && !isNaN(idB)) {
+                        return Number(idA) - Number(idB);
+                    }
+                    return idA.localeCompare(idB);
+                });
+                courseregShowAutocompleteList(courseregStudentIdList, query);
+            });
+    }
+    function courseregShowAutocompleteList(arr, query) {
+        const inp = document.getElementById('studentSearch');
+        const list = document.getElementById('autocomplete-list');
+        courseregCloseAllLists();
+        if (!inp || !inp.value || !list) return false;
+        list.innerHTML = '';
+        arr.forEach(item => {
+            if (item.toLowerCase().includes(query.toLowerCase())) {
+                let div = document.createElement('div');
+                div.innerHTML = item;
+                div.className = 'autocomplete-item';
+                div.tabIndex = 0;
+                div.addEventListener('click', function() {
+                    inp.value = item; // Fill input with full suggestion text
+                    courseregCloseAllLists();
+                });
+                list.appendChild(div);
+            }
+        });
+        if (list && list.children.length > 0) {
+            list.style.display = 'block';
+            let currentFocus = -1;
+            inp.onkeydown = function(e) {
+                let items = list.getElementsByClassName('autocomplete-item');
+                if (!items.length) return;
+                if (e.key === 'ArrowDown') {
+                    currentFocus++;
+                    if (currentFocus >= items.length) currentFocus = 0;
+                    setActive(items, currentFocus);
+                } else if (e.key === 'ArrowUp') {
+                    currentFocus--;
+                    if (currentFocus < 0) currentFocus = items.length - 1;
+                    setActive(items, currentFocus);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        items[currentFocus].click();
+                    }
+                }
+            };
+            function setActive(items, idx) {
+                for (let i = 0; i < items.length; i++) {
+                    items[i].classList.remove('active');
+                }
+                if (items[idx]) {
+                    items[idx].classList.add('active');
+                    items[idx].scrollIntoView({block: 'nearest'});
+                }
+            }
+        } else {
+            list.style.display = 'none';
+        }
+    }
+    function courseregCloseAllLists() {
+        const list = document.getElementById('autocomplete-list');
+        if (list) {
+            list.innerHTML = '';
+            list.style.display = 'none';
+        }
+    }
+    document.addEventListener('mousedown', function(e) {
+        const list = document.getElementById('autocomplete-list');
+        if (list && !list.contains(e.target) && e.target.id !== 'studentSearch') {
+            courseregCloseAllLists();
+        }
+    });
+    function courseregLoadCourseRegDataByStudentId(studentId, page=1) {
+        const params = new URLSearchParams({
+            type: 'coursereg',
+            student_id: studentId,
+            page: page
+        });
+        fetch(`/masters/ajax/?${params.toString()}`)
+            .then(resp => resp.json())
+            .then(data => {
+                document.getElementById('coursereg-list').innerHTML = data.table_html;
+                document.getElementById('courseregTableContainer').style.display = 'block';
+                // Hide old containers if present
+                if (document.getElementById('courseregActions')) document.getElementById('courseregActions').style.display = 'none';
+                if (document.getElementById('courseregPaginationBar')) document.getElementById('courseregPaginationBar').style.display = 'none';
+                // Show new flex container
+                if (document.getElementById('courseregActionsBar')) document.getElementById('courseregActionsBar').style.display = 'flex';
+                // Show inner containers
+                if (document.getElementById('courseregActions')) document.getElementById('courseregActions').style.display = 'flex';
+                if (document.getElementById('courseregPaginationBar')) document.getElementById('courseregPaginationBar').style.display = 'flex';
+                // Update pagination HTML
+                if (document.getElementById('coursereg-pagination')) document.getElementById('coursereg-pagination').innerHTML = data.pagination_html || '';
+            });
+    }
+    const studentSearchElem = document.getElementById('studentSearch');
+    const searchStudentLinkElem = document.getElementById('searchStudentLink');
+    const resetStudentSearchLinkElem = document.getElementById('resetStudentSearchLink');
+    const courseregPaginationElem = document.getElementById('coursereg-pagination');
+    const printCourseRegBtnElem = document.getElementById('printCourseRegBtn');
+    const downloadCourseRegBtnElem = document.getElementById('downloadCourseRegBtn');
+    if (studentSearchElem) {
+        studentSearchElem.addEventListener('input', function() {
+            courseregFetchStudentIdAutocomplete(this.value);
+        });
+    }
+    if (searchStudentLinkElem) {
+        searchStudentLinkElem.addEventListener('click', function(e) {
+            e.preventDefault();
+            const inputValue = studentSearchElem.value.trim();
+            // Accept either 'id - name' or just id
+            let studentId = inputValue;
+            if (inputValue.includes(' - ')) {
+                studentId = inputValue.split(' - ')[0].trim();
+            }
+            if (studentId) {
+                courseregLoadCourseRegDataByStudentId(studentId);
+            }
+        });
+    }
+    if (resetStudentSearchLinkElem) {
+        resetStudentSearchLinkElem.addEventListener('click', function(e) {
+            e.preventDefault();
+            studentSearchElem.value = '';
+            document.getElementById('courseregTableContainer').style.display = 'none';
+            if (document.getElementById('courseregActionsBar')) document.getElementById('courseregActionsBar').style.display = 'none';
+            if (document.getElementById('courseregActions')) document.getElementById('courseregActions').style.display = 'none';
+            if (document.getElementById('courseregPaginationBar')) document.getElementById('courseregPaginationBar').style.display = 'none';
+        });
+    }
+    if (courseregPaginationElem) {
+        courseregPaginationElem.addEventListener('click', function(e) {
+            if (e.target.classList.contains('page-num') || e.target.classList.contains('page-arrow')) {
+                e.preventDefault();
+                const page = e.target.getAttribute('data-page');
+                let inputValue = studentSearchElem.value.trim();
+                let studentId = inputValue;
+                if (inputValue.includes(' - ')) {
+                    studentId = inputValue.split(' - ')[0].trim();
+                }
+                if (page && studentId) courseregLoadCourseRegDataByStudentId(studentId, page);
+            }
+        });
+    }
+    if (printCourseRegBtnElem) {
+        printCourseRegBtnElem.addEventListener('click', function() {
+            const table = document.getElementById('coursereg-table').outerHTML;
+            const win = window.open('', '', 'width=900,height=700');
+            win.document.write('<html><head><title>Print Course Registrations</title>');
+            win.document.write('<link rel="stylesheet" href="/static/css/style.css">');
+            win.document.write('</head><body>');
+            win.document.write(table);
+            win.document.write('</body></html>');
+            win.document.close();
+            win.print();
+        });
+    }
+    if (downloadCourseRegBtnElem) {
+        downloadCourseRegBtnElem.addEventListener('click', function() {
+            let csv = 'Student ID,Student Name,Course Code,Course Name,Academic Year,Semester\n';
+            document.querySelectorAll('#coursereg-list tr').forEach(row => {
+                let cols = Array.from(row.querySelectorAll('td')).slice(1, 7).map(td => '"' + td.innerText.replace(/"/g, '""') + '"');
+                if (cols.length) csv += cols.join(',') + '\n';
+            });
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'course_registrations.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+});
 // Clear Examination Form utility
     function clearExaminationForm() {
         var form = document.getElementById('examinationForm');
@@ -72,7 +263,7 @@
                 document.getElementById('studentIdAutocomplete').style.display = 'none';
                 return;
             }
-            fetch(`/masters/ajax/student-id-autocomplete/?q=${encodeURIComponent(query)}`)
+            fetch(`/masters/ajax/?type=student-id-autocomplete&q=${encodeURIComponent(query)}`)
                 .then(resp => resp.json())
                 .then(data => {
                     studentIdList = data.results || [];
@@ -144,7 +335,7 @@
                     alert('Please enter or select a student ID.');
                     return;
                 }
-                fetch(`/masters/ajax/student-coursereg/?student_id=${encodeURIComponent(studentId)}`)
+                fetch(`/masters/ajax/?type=coursereg&student_id=${encodeURIComponent(studentId)}`)
                     .then(resp => resp.json())
                     .then(data => {
                         document.getElementById('coursereg-list').innerHTML = data.table_html;
@@ -1940,6 +2131,7 @@ $(document).on('click', '.edit-exam-btn', function(e) {
         };
     }
     $('#editExamModal').css('display', 'flex');
-    
 });
+
+// Add missing closing brace for file
 
