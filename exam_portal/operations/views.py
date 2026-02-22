@@ -127,6 +127,8 @@ def exams(request):
         exam_name = request.POST.get("examname", "").strip()
         exam_type = request.POST.get("examtype", "")
         mode = request.POST.get("mode", "")
+        if mode and len(mode) > 25:
+            mode = mode[:25]
         exam_date = request.POST.get("exam_date", "")
         start_time = request.POST.get("starttime", "")
         end_time = request.POST.get("endtime", "")
@@ -265,28 +267,46 @@ def exam_scheduling(request, slot_id):
         filter_regulation = slot.regulation if hasattr(slot, 'regulation') else ''
         created = 0
         from operations.models import StudentExamMap, StudentCourse
+        import logging
+        logging.info(f"Scheduling POST: filter_academic_year={filter_academic_year}, filter_semester={filter_semester}, filter_regulation={filter_regulation}")
         for group in selected:
             # group format: course_code|regulation|academic_year|semester
             try:
+                logging.info(f"Raw group value: {group}")
                 course_code, regulation, academic_year, semester = group.split('|')
-                     # Only schedule if matches slot/examination context
+                logging.info(f"Parsed group: course_code={course_code}, regulation={regulation}, academic_year={academic_year}, semester={semester}")
+                # Only schedule if matches slot/examination context
                 if (filter_academic_year and academic_year != filter_academic_year) or \
                     (filter_semester and semester != filter_semester) or \
                     (filter_regulation and regulation != filter_regulation):
+                    logging.info("Group skipped due to filter mismatch.")
                     continue
                 course = Course.objects.get(course_code=course_code)
-                # Always use slot/examination context for regulation, academic_year, semester
+                # Check if Exam for this group and slot already exists
+                from operations.models import Exam
+                existing_exam = Exam.objects.filter(
+                    exam_slot=slot,
+                    course=course,
+                    regulation=regulation
+                ).first()
+                if existing_exam:
+                    logging.info(f"Exam already exists for group {group} in slot {slot_id}, skipping.")
+                    continue
+                # Create new Exam
                 exam = Exam.objects.create(
                     exam_slot=slot,
                     course=course,
-                    regulation=filter_regulation
+                    regulation=regulation
                 )
                 students = StudentCourse.objects.filter(
                     course=course,
                     academic_year=filter_academic_year,
                     semester=filter_semester,
-                    student__batch__batch_code=filter_regulation
+                    student__batch__batch_code=regulation
                 ).select_related('student')
+                logging.info(f"StudentCourse Query: course={course_code}, academic_year={filter_academic_year}, semester={filter_semester}, batch_code={regulation}")
+                logging.info(f"Scheduling group {group}: Found {students.count()} students.")
+                logging.info(f"Student IDs: {[reg.student.id for reg in students]}")
                 for reg in students:
                     StudentExamMap.objects.create(
                         exam=exam,

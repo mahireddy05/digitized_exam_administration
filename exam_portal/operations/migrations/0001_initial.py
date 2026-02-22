@@ -18,8 +18,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('exam_name', models.CharField(blank=True, max_length=50, null=True)),
-                ('exam_type', models.CharField(blank=True, choices=[('REGULAR', 'REGULAR'), ('SUPPLY', 'SUPPLY'), ('IMPROVEMENT', 'IMPROVEMENT')], max_length=12, null=True)),
-                ('mode', models.CharField(blank=True, choices=[('THEORY', 'THEORY'), ('PRACTICAL', 'PRACTICAL')], max_length=10, null=True)),
+                ('exam_type', models.CharField(blank=True, choices=[('REGULAR', 'REGULAR'), ('SUPPLY', 'SUPPLY'), ('IMPROVEMENT', 'IMPROVEMENT')], max_length=25, null=True)),
+                ('mode', models.CharField(blank=True, choices=[('THEORY', 'THEORY'), ('PRACTICAL', 'PRACTICAL')], max_length=25, null=True)),
                 ('exam_date', models.DateField()),
                 ('start_time', models.TimeField()),
                 ('end_time', models.TimeField()),

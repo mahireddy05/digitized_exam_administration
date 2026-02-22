@@ -244,10 +244,26 @@ def ajax_exam_scheduling_groups(request):
         group['academic_year'] = reg['academic_year']
         group['semester'] = reg['semester']
         group['student_ids'].append(str(reg['student_id']))
+    # Find all students already scheduled for an exam in this slot
+    scheduled_student_ids = set()
+    if slot:
+        from operations.models import Exam, StudentExamMap
+        exams_in_slot = Exam.objects.filter(exam_slot=slot)
+        student_exam_maps = StudentExamMap.objects.filter(exam__in=exams_in_slot)
+        # Ensure all IDs are strings for comparison
+        scheduled_student_ids = set(str(sid) for sid in student_exam_maps.values_list('student_id', flat=True))
+
+    seen_keys = set()
     result = []
     for group in group_map.values():
         group['student_count'] = len(group['student_ids'])
-        group['clash'] = False
+        group_key = (group['course_code'], group['regulation'], group['academic_year'], group['semester'])
+        # Exclude group if any student is already scheduled in this slot or if group is duplicate
+        if any(str(sid) in scheduled_student_ids for sid in group['student_ids']):
+            continue
+        if group_key in seen_keys:
+            continue
+        seen_keys.add(group_key)
         result.append(group)
     result.sort(key=lambda g: g['student_count'], reverse=True)
     return JsonResponse({'groups': result})
