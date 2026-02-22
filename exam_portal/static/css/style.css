@@ -456,7 +456,9 @@ a img {
 .users-filter-input,
 .departments-filter-input,
 .programs-filter-input,
-.batches-filter-input {
+.batches-filter-input,
+.time,
+.date {
   padding: 8px 10px;
   font-size: 15px;
   border-radius: 6px;

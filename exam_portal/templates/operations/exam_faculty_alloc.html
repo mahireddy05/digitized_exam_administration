@@ -1,0 +1,46 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+{% block content %}
+<div class="pages-main">
+	<h1 class="pages-main-head">Faculty Assignment Details</h1>
+	<div class="note-text">
+		<p style="color: #2C4C70;">Faculty assignment details for selected exam slot.</p>
+	</div>
+	<div class="controls-1" style="display: flex; flex-wrap: wrap; gap: 20px; background: #f8fafc; border-radius: 12px;margin-bottom: 5px;">
+		<div class="readonly-field" style="min-width: 220px;"><label>Exam Name:</label> <span>{{ slot.examination.exam_name }}</span></div>
+		<div class="readonly-field" style="min-width: 220px;"><label>Exam Type:</label> <span>{{ slot.exam_type }}</span></div>
+		<div class="readonly-field" style="min-width: 220px;"><label>Mode:</label> <span>{{ slot.mode }}</span></div>
+		<div class="readonly-field" style="min-width: 220px;"><label>Exam Date:</label> <span>{{ slot.exam_date }}</span></div>
+		<div class="readonly-field" style="min-width: 220px;"><label>Start Time:</label> <span>{{ slot.start_time }}</span></div>
+		<div class="readonly-field" style="min-width: 220px;"><label>End Time:</label> <span>{{ slot.end_time }}</span></div>
+		<div class="readonly-field" style="min-width: 220px;"><label>Slot Code:</label> <span>{{ slot.slot_code }}</span></div>
+		<div class="readonly-field" style="min-width: 220px;"><label>Academic Year:</label> <span>{{ slot.examination.academic_year }}</span></div>
+		<div class="readonly-field" style="min-width: 220px;"><label>Semester:</label> <span>{{ slot.examination.semester }}</span></div>
+	</div>
+	<div class="faculty-assigned">
+		<h3>Faculty Assigned</h3>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>Faculty Name</th>
+					<th>Department</th>
+					<th>Course</th>
+					<th>Role</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for faculty in faculties %}
+				<tr>
+					<td>{{ faculty.name }}</td>
+					<td>{{ faculty.department }}</td>
+					<td>{{ faculty.course }}</td>
+					<td>{{ faculty.role }}</td>
+				</tr>
+				{% empty %}
+				<tr><td colspan="4" style="text-align:center;">No faculty assigned.</td></tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
+{% endblock %}

@@ -1,3 +1,56 @@
+from django.shortcuts import render
+from .models import ExamSlot, Exam, StudentCourse
+from masters.models import Course, Room
+
+def exam_rooms_alloc(request):
+    slot_id = request.GET.get('slot_id')
+    slot = None
+    student_count = 0
+    rooms = Room.objects.filter(is_active=True)
+    allocated_room_ids = []
+    if slot_id:
+        try:
+            slot = ExamSlot.objects.get(id=slot_id)
+            exams = Exam.objects.filter(exam_slot=slot)
+            for exam in exams:
+                course = exam.course
+                regulation = exam.regulation
+                academic_year = slot.examination.academic_year if slot.examination else ''
+                semester = slot.examination.semester if slot.examination else ''
+                students = StudentCourse.objects.filter(course=course, academic_year=academic_year, semester=semester, student__batch__batch_code=regulation)
+                student_count += students.count()
+        except ExamSlot.DoesNotExist:
+            slot = None
+    return render(request, "operations/exam_rooms_alloc.html", {
+        'slot': slot,
+        'rooms': rooms,
+        'allocated_room_ids': allocated_room_ids,
+        'student_count': student_count
+    })
+
+def exam_faculty_alloc(request):
+    slot_id = request.GET.get('slot_id')
+    slot = None
+    faculties = []
+    if slot_id:
+        try:
+            slot = ExamSlot.objects.get(id=slot_id)
+            exams = Exam.objects.filter(exam_slot=slot)
+            for exam in exams:
+                # Example: faculty assignment logic
+                # Replace with actual faculty assignment model/query
+                faculties.append({
+                    'name': getattr(exam, 'faculty_name', 'N/A'),
+                    'department': getattr(exam, 'faculty_department', 'N/A'),
+                    'course': exam.course.course_name,
+                    'role': getattr(exam, 'faculty_role', 'N/A')
+                })
+        except ExamSlot.DoesNotExist:
+            slot = None
+    return render(request, "operations/exam_faculty_alloc.html", {
+        'slot': slot,
+        'faculties': faculties
+    })
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required

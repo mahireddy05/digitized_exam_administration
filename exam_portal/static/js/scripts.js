@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // --- Course Registration Search, Autocomplete, Table, Print, Download, Pagination ---
     let courseregStudentIdList = [];
     function courseregFetchStudentIdAutocomplete(query) {
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 div.innerHTML = item;
                 div.className = 'autocomplete-item';
                 div.tabIndex = 0;
-                div.addEventListener('click', function() {
+                div.addEventListener('click', function () {
                     inp.value = item; // Fill input with full suggestion text
                     courseregCloseAllLists();
                 });
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (list && list.children.length > 0) {
             list.style.display = 'block';
             let currentFocus = -1;
-            inp.onkeydown = function(e) {
+            inp.onkeydown = function (e) {
                 let items = list.getElementsByClassName('autocomplete-item');
                 if (!items.length) return;
                 if (e.key === 'ArrowDown') {
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (items[idx]) {
                     items[idx].classList.add('active');
-                    items[idx].scrollIntoView({block: 'nearest'});
+                    items[idx].scrollIntoView({ block: 'nearest' });
                 }
             }
         } else {
@@ -79,13 +79,13 @@ document.addEventListener('DOMContentLoaded', function() {
             list.style.display = 'none';
         }
     }
-    document.addEventListener('mousedown', function(e) {
+    document.addEventListener('mousedown', function (e) {
         const list = document.getElementById('autocomplete-list');
         if (list && !list.contains(e.target) && e.target.id !== 'studentSearch') {
             courseregCloseAllLists();
         }
     });
-    function courseregLoadCourseRegDataByStudentId(studentId, page=1) {
+    function courseregLoadCourseRegDataByStudentId(studentId, page = 1) {
         const params = new URLSearchParams({
             type: 'coursereg',
             student_id: studentId,
@@ -115,12 +115,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const printCourseRegBtnElem = document.getElementById('printCourseRegBtn');
     const downloadCourseRegBtnElem = document.getElementById('downloadCourseRegBtn');
     if (studentSearchElem) {
-        studentSearchElem.addEventListener('input', function() {
+        studentSearchElem.addEventListener('input', function () {
             courseregFetchStudentIdAutocomplete(this.value);
         });
     }
     if (searchStudentLinkElem) {
-        searchStudentLinkElem.addEventListener('click', function(e) {
+        searchStudentLinkElem.addEventListener('click', function (e) {
             e.preventDefault();
             const inputValue = studentSearchElem.value.trim();
             // Accept either 'id - name' or just id
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     if (resetStudentSearchLinkElem) {
-        resetStudentSearchLinkElem.addEventListener('click', function(e) {
+        resetStudentSearchLinkElem.addEventListener('click', function (e) {
             e.preventDefault();
             studentSearchElem.value = '';
             document.getElementById('courseregTableContainer').style.display = 'none';
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     if (courseregPaginationElem) {
-        courseregPaginationElem.addEventListener('click', function(e) {
+        courseregPaginationElem.addEventListener('click', function (e) {
             if (e.target.classList.contains('page-num') || e.target.classList.contains('page-arrow')) {
                 e.preventDefault();
                 const page = e.target.getAttribute('data-page');
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     if (printCourseRegBtnElem) {
-        printCourseRegBtnElem.addEventListener('click', function() {
+        printCourseRegBtnElem.addEventListener('click', function () {
             const table = document.getElementById('coursereg-table').outerHTML;
             const win = window.open('', '', 'width=900,height=700');
             win.document.write('<html><head><title>Print Course Registrations</title>');
@@ -171,13 +171,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     if (downloadCourseRegBtnElem) {
-        downloadCourseRegBtnElem.addEventListener('click', function() {
+        downloadCourseRegBtnElem.addEventListener('click', function () {
             let csv = 'Student ID,Student Name,Course Code,Course Name,Academic Year,Semester\n';
             document.querySelectorAll('#coursereg-list tr').forEach(row => {
                 let cols = Array.from(row.querySelectorAll('td')).slice(1, 7).map(td => '"' + td.innerText.replace(/"/g, '""') + '"');
                 if (cols.length) csv += cols.join(',') + '\n';
             });
-            const blob = new Blob([csv], {type: 'text/csv'});
+            const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -190,55 +190,55 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 // Clear Examination Form utility
-    function clearExaminationForm() {
-        var form = document.getElementById('examinationForm');
-        if (!form) return;
-        form.reset();
-        // Reset selects to first option
-        var selects = form.querySelectorAll('select');
-        selects.forEach(function(sel) { sel.selectedIndex = 0; });
-        // Clear text/date inputs explicitly
-        var inputs = form.querySelectorAll('input[type="text"], input[type="date"]');
-        inputs.forEach(function(inp) { inp.value = ''; });
-        // Reset min for end date
-        var startInput = document.getElementById('start_date');
-        var endInput = document.getElementById('end_date');
-        if (endInput && startInput) {
-            endInput.min = startInput.min;
-        }
+function clearExaminationForm() {
+    var form = document.getElementById('examinationForm');
+    if (!form) return;
+    form.reset();
+    // Reset selects to first option
+    var selects = form.querySelectorAll('select');
+    selects.forEach(function (sel) { sel.selectedIndex = 0; });
+    // Clear text/date inputs explicitly
+    var inputs = form.querySelectorAll('input[type="text"], input[type="date"]');
+    inputs.forEach(function (inp) { inp.value = ''; });
+    // Reset min for end date
+    var startInput = document.getElementById('start_date');
+    var endInput = document.getElementById('end_date');
+    if (endInput && startInput) {
+        endInput.min = startInput.min;
     }
-    // Save Examination Edit AJAX
-    var saveEditExamBtn = document.getElementById('saveEditExamBtn');
-    if (saveEditExamBtn) {
-        saveEditExamBtn.onclick = function(e) {
-            e.preventDefault();
-            const examId = document.getElementById('editExamId').value;
-            const examName = document.getElementById('edit_examname').value.trim();
-            const academicYear = document.getElementById('edit_academic_year').value;
-            const semester = document.getElementById('edit_semester').value;
-            const startDate = document.getElementById('edit_start_date').value;
-            const endDate = document.getElementById('edit_end_date').value;
-            // Validate fields
-            if (!examName || !academicYear || !semester || !startDate || !endDate) {
-                alert('Please fill all fields.');
-                return;
-            }
-            // Send AJAX request to update exam
-            fetch('/ops/ajax/edit-examination/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({
-                    exam_id: examId,
-                    examname: examName,
-                    academic_year: academicYear,
-                    semester: semester,
-                    start_date: startDate,
-                    end_date: endDate
-                })
+}
+// Save Examination Edit AJAX
+var saveEditExamBtn = document.getElementById('saveEditExamBtn');
+if (saveEditExamBtn) {
+    saveEditExamBtn.onclick = function (e) {
+        e.preventDefault();
+        const examId = document.getElementById('editExamId').value;
+        const examName = document.getElementById('edit_examname').value.trim();
+        const academicYear = document.getElementById('edit_academic_year').value;
+        const semester = document.getElementById('edit_semester').value;
+        const startDate = document.getElementById('edit_start_date').value;
+        const endDate = document.getElementById('edit_end_date').value;
+        // Validate fields
+        if (!examName || !academicYear || !semester || !startDate || !endDate) {
+            alert('Please fill all fields.');
+            return;
+        }
+        // Send AJAX request to update exam
+        fetch('/ops/ajax/edit-examination/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                exam_id: examId,
+                examname: examName,
+                academic_year: academicYear,
+                semester: semester,
+                start_date: startDate,
+                end_date: endDate
             })
+        })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -252,169 +252,153 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(() => {
                 alert('Network error. Please try again.');
             });
-        };
-    }
-    // --- Student ID Autocomplete and Search ---
-        var studentIdList = [];
-        var selectedStudentId = '';
+    };
+}
+// --- Student ID Autocomplete and Search ---
+var studentIdList = [];
+var selectedStudentId = '';
 
-        function fetchStudentIdAutocomplete(query) {
-            if (!query) {
-                document.getElementById('studentIdAutocomplete').style.display = 'none';
+function fetchStudentIdAutocomplete(query) {
+    if (!query) {
+        document.getElementById('studentIdAutocomplete').style.display = 'none';
+        return;
+    }
+    fetch(`/masters/ajax/?type=student-id-autocomplete&q=${encodeURIComponent(query)}`)
+        .then(resp => resp.json())
+        .then(data => {
+            studentIdList = data.results || [];
+            const listDiv = document.getElementById('studentIdAutocomplete');
+            if (!studentIdList.length) {
+                listDiv.style.display = 'none';
                 return;
             }
-            fetch(`/masters/ajax/?type=student-id-autocomplete&q=${encodeURIComponent(query)}`)
-                .then(resp => resp.json())
-                .then(data => {
-                    studentIdList = data.results || [];
-                    const listDiv = document.getElementById('studentIdAutocomplete');
-                    if (!studentIdList.length) {
-                        listDiv.style.display = 'none';
-                        return;
-                    }
-                    listDiv.innerHTML = studentIdList.map((item, idx) => `<div class="autocomplete-item" data-id="${item.id}" data-idx="${idx}" tabindex="0">${item.id} - ${item.name}</div>`).join('');
-                    listDiv.style.display = 'block';
-                });
-        }
-
-        var searchStudentIdElem = document.getElementById('searchStudentId');
-        if (searchStudentIdElem) {
-            searchStudentIdElem.addEventListener('input', function(e) {
-                fetchStudentIdAutocomplete(this.value);
-                selectedStudentId = '';
-            });
-            searchStudentIdElem.addEventListener('keydown', function(e) {
-                const listDiv = document.getElementById('studentIdAutocomplete');
-                if (listDiv.style.display !== 'block') return;
-            const items = Array.from(listDiv.querySelectorAll('.autocomplete-item'));
-            let idx = items.findIndex(item => item.classList.contains('selected'));
-            if (e.key === 'ArrowDown') {
-                if (idx < items.length - 1) idx++;
-                else idx = 0;
-                items.forEach(item => item.classList.remove('selected'));
-                items[idx].classList.add('selected');
-                items[idx].focus();
-                e.preventDefault();
-            } else if (e.key === 'ArrowUp') {
-                if (idx > 0) idx--;
-                else idx = items.length - 1;
-                items.forEach(item => item.classList.remove('selected'));
-                items[idx].classList.add('selected');
-                items[idx].focus();
-                e.preventDefault();
-            } else if (e.key === 'Enter') {
-                if (idx >= 0) {
-                    selectedStudentId = items[idx].dataset.id;
-                    this.value = items[idx].textContent.split(' - ')[0];
-                    listDiv.style.display = 'none';
-                    e.preventDefault();
-                }
-            }
+            listDiv.innerHTML = studentIdList.map((item, idx) => `<div class="autocomplete-item" data-id="${item.id}" data-idx="${idx}" tabindex="0">${item.id} - ${item.name}</div>`).join('');
+            listDiv.style.display = 'block';
         });
+}
 
-        }
-
-        var studentIdAutocompleteElem = document.getElementById('studentIdAutocomplete');
-        if (studentIdAutocompleteElem) {
-            studentIdAutocompleteElem.addEventListener('mousedown', function(e) {
-                if (e.target.classList.contains('autocomplete-item')) {
-                    selectedStudentId = e.target.dataset.id;
-                    if (searchStudentIdElem) {
-                        searchStudentIdElem.value = e.target.textContent.split(' - ')[0];
-                    }
-                    this.style.display = 'none';
-                }
-            });
-        }
-
-        var searchStudentBtnElem = document.getElementById('searchStudentBtn');
-        if (searchStudentBtnElem) {
-            searchStudentBtnElem.addEventListener('click', function() {
-                const studentId = selectedStudentId || (searchStudentIdElem ? searchStudentIdElem.value.trim() : '');
-                if (!studentId) {
-                    alert('Please enter or select a student ID.');
-                    return;
-                }
-                fetch(`/masters/ajax/?type=coursereg&student_id=${encodeURIComponent(studentId)}`)
-                    .then(resp => resp.json())
-                    .then(data => {
-                        document.getElementById('coursereg-list').innerHTML = data.table_html;
-                        document.getElementById('courseregTableContainer').style.display = '';
-                    });
-            });
-        }
-
-        var resetStudentSearchBtnElem = document.getElementById('resetStudentSearchBtn');
-        if (resetStudentSearchBtnElem) {
-            resetStudentSearchBtnElem.addEventListener('click', function() {
-                if (searchStudentIdElem) searchStudentIdElem.value = '';
-                if (studentIdAutocompleteElem) studentIdAutocompleteElem.style.display = 'none';
-                selectedStudentId = '';
-                var courseregTableContainerElem = document.getElementById('courseregTableContainer');
-                if (courseregTableContainerElem) courseregTableContainerElem.style.display = 'none';
-            });
-        }
-        // Fix ReferenceError: define startDateRaw and endDateRaw before using them
-        var startDateRaw = '';
-        var endDateRaw = '';
-        // Optionally, fetch values from a triggering element or another source
-        var editStartDateElem = document.getElementById('edit_start_date');
-        var editEndDateElem = document.getElementById('edit_end_date');
-        if (editStartDateElem) {
-            editStartDateElem.value = startDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? startDateRaw : '';
-        }
-        if (editEndDateElem) {
-            editEndDateElem.value = endDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? endDateRaw : '';
-        }
-        // Only open edit modal when triggered by a user action (e.g., click)
-        // Remove automatic opening here
-        // To open modal, use a dedicated function or event handler
-        // Example:
-        // function openEditExamModal(startDateRaw, endDateRaw) {
-        //   var editStartDateElem = document.getElementById('edit_start_date');
-        //   var editEndDateElem = document.getElementById('edit_end_date');
-        //   if (editStartDateElem) editStartDateElem.value = startDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? startDateRaw : '';
-        //   if (editEndDateElem) editEndDateElem.value = endDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? endDateRaw : '';
-        //   var editExamModalElem = document.getElementById('editExamModal');
-        //   if (editExamModalElem) editExamModalElem.style.display = 'flex';
-        // }
-        // var editExamModalElem = document.getElementById('editExamModal');
-        // if (editExamModalElem) {
-        //     editExamModalElem.style.display = 'flex';
-        // }
-    var closeEditExamModal = document.getElementById('closeEditExamModal');
-    if (closeEditExamModal) {
-        closeEditExamModal.onclick = function() {
-            document.getElementById('editExamModal').style.display = 'none';
-        };
-    }
-    var cancelEditExamBtn = document.getElementById('cancelEditExamBtn');
-    if (cancelEditExamBtn) {
-        cancelEditExamBtn.onclick = function(e) {
+var searchStudentIdElem = document.getElementById('searchStudentId');
+if (searchStudentIdElem) {
+    searchStudentIdElem.addEventListener('input', function (e) {
+        fetchStudentIdAutocomplete(this.value);
+        selectedStudentId = '';
+    });
+    searchStudentIdElem.addEventListener('keydown', function (e) {
+        const listDiv = document.getElementById('studentIdAutocomplete');
+        if (listDiv.style.display !== 'block') return;
+        const items = Array.from(listDiv.querySelectorAll('.autocomplete-item'));
+        let idx = items.findIndex(item => item.classList.contains('selected'));
+        if (e.key === 'ArrowDown') {
+            if (idx < items.length - 1) idx++;
+            else idx = 0;
+            items.forEach(item => item.classList.remove('selected'));
+            items[idx].classList.add('selected');
+            items[idx].focus();
             e.preventDefault();
-            document.getElementById('editExamModal').style.display = 'none';
-        };
-    }
-    var editExamModal = document.getElementById('editExamModal');
-    if (editExamModal) {
-        editExamModal.onclick = function(e) {
-            if (e.target === this) this.style.display = 'none';
-        };
-    }
-    // Delete Exam AJAX submit
-    var deleteExamForm = document.getElementById('deleteExamForm');
-    if (deleteExamForm) {
-        deleteExamForm.onsubmit = function(e) {
+        } else if (e.key === 'ArrowUp') {
+            if (idx > 0) idx--;
+            else idx = items.length - 1;
+            items.forEach(item => item.classList.remove('selected'));
+            items[idx].classList.add('selected');
+            items[idx].focus();
             e.preventDefault();
-            const examId = document.getElementById('deleteExamId').value;
-            fetch('/ops/ajax/delete-examination/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({ exam_id: examId })
-            })
+        } else if (e.key === 'Enter') {
+            if (idx >= 0) {
+                selectedStudentId = items[idx].dataset.id;
+                this.value = items[idx].textContent.split(' - ')[0];
+                listDiv.style.display = 'none';
+                e.preventDefault();
+            }
+        }
+    });
+
+}
+
+var studentIdAutocompleteElem = document.getElementById('studentIdAutocomplete');
+if (studentIdAutocompleteElem) {
+    studentIdAutocompleteElem.addEventListener('mousedown', function (e) {
+        if (e.target.classList.contains('autocomplete-item')) {
+            selectedStudentId = e.target.dataset.id;
+            if (searchStudentIdElem) {
+                searchStudentIdElem.value = e.target.textContent.split(' - ')[0];
+            }
+            this.style.display = 'none';
+        }
+    });
+}
+
+var searchStudentBtnElem = document.getElementById('searchStudentBtn');
+if (searchStudentBtnElem) {
+    searchStudentBtnElem.addEventListener('click', function () {
+        const studentId = selectedStudentId || (searchStudentIdElem ? searchStudentIdElem.value.trim() : '');
+        if (!studentId) {
+            alert('Please enter or select a student ID.');
+            return;
+        }
+        fetch(`/masters/ajax/?type=coursereg&student_id=${encodeURIComponent(studentId)}`)
+            .then(resp => resp.json())
+            .then(data => {
+                document.getElementById('coursereg-list').innerHTML = data.table_html;
+                document.getElementById('courseregTableContainer').style.display = '';
+            });
+    });
+}
+
+var resetStudentSearchBtnElem = document.getElementById('resetStudentSearchBtn');
+if (resetStudentSearchBtnElem) {
+    resetStudentSearchBtnElem.addEventListener('click', function () {
+        if (searchStudentIdElem) searchStudentIdElem.value = '';
+        if (studentIdAutocompleteElem) studentIdAutocompleteElem.style.display = 'none';
+        selectedStudentId = '';
+        var courseregTableContainerElem = document.getElementById('courseregTableContainer');
+        if (courseregTableContainerElem) courseregTableContainerElem.style.display = 'none';
+    });
+}
+// Fix ReferenceError: define startDateRaw and endDateRaw before using them
+var startDateRaw = '';
+var endDateRaw = '';
+// Optionally, fetch values from a triggering element or another source
+var editStartDateElem = document.getElementById('edit_start_date');
+var editEndDateElem = document.getElementById('edit_end_date');
+if (editStartDateElem) {
+    editStartDateElem.value = startDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? startDateRaw : '';
+}
+if (editEndDateElem) {
+    editEndDateElem.value = endDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? endDateRaw : '';
+}
+var closeEditExamModal = document.getElementById('closeEditExamModal');
+if (closeEditExamModal) {
+    closeEditExamModal.onclick = function () {
+        document.getElementById('editExamModal').style.display = 'none';
+    };
+}
+var cancelEditExamBtn = document.getElementById('cancelEditExamBtn');
+if (cancelEditExamBtn) {
+    cancelEditExamBtn.onclick = function (e) {
+        e.preventDefault();
+        document.getElementById('editExamModal').style.display = 'none';
+    };
+}
+var editExamModal = document.getElementById('editExamModal');
+if (editExamModal) {
+    editExamModal.onclick = function (e) {
+        if (e.target === this) this.style.display = 'none';
+    };
+}
+// Delete Exam AJAX submit
+var deleteExamForm = document.getElementById('deleteExamForm');
+if (deleteExamForm) {
+    deleteExamForm.onsubmit = function (e) {
+        e.preventDefault();
+        const examId = document.getElementById('deleteExamId').value;
+        fetch('/ops/ajax/delete-examination/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ exam_id: examId })
+        })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
@@ -429,67 +413,67 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(() => {
                 alert('Failed to delete examination due to network error.');
             });
-        };
-    }
+    };
+}
 // ============ EXAM SLOT TABLE AJAX (operations/exams.html) ============
 function fetchExamSlotsAjax() {
-        // Slot courses badge click handler (delegated)
-        document.addEventListener('click', function(e) {
-            const badge = e.target.closest('.slot-courses-badge');
-            if (badge) {
-                e.preventDefault();
-                const slotId = badge.getAttribute('data-slot-id');
-                if (!slotId) return;
-                const modal = document.getElementById('slotCoursesModal');
-                const modalContent = document.getElementById('slotCoursesModalContent');
-                modal.style.display = 'flex';
-                modalContent.innerHTML = '<h2>Slot Courses</h2><div>Loading...</div>';
-                fetch(`/ops/ajax/slot-courses/?slot_id=${slotId}`)
-                    .then(resp => resp.json())
-                    .then(data => {
-                        if (!data.success) {
-                            modalContent.innerHTML = `<div style='color:#b30000;'>${data.error || 'Failed to load course details.'}</div>`;
-                            return;
-                        }
-                        let html = '';
-                        // Slot info
-                        html += `<div style='margin-bottom:1em;'>`;
-                        html += `<b>Exam Type:</b> ${data.slot.exam_type || ''} &nbsp; <b>Mode:</b> ${data.slot.mode || ''} &nbsp; <b>Date:</b> ${data.slot.exam_date} &nbsp; <b>Time:</b> ${data.slot.start_time}-${data.slot.end_time} &nbsp; <b>Slot Code:</b> ${data.slot.slot_code || ''}`;
-                        html += `</div>`;
-                        // Courses table
-                        if (data.courses.length === 0) {
-                            html += `<div>No courses assigned to this slot.</div>`;
-                        } else {
-                            html += `<table style='width:100%;border-collapse:collapse;'>`;
-                            html += `<thead><tr style='background:#f2f2f2;'><th>Course Code</th><th>Course Name</th><th>Regulation</th><th>Academic Year</th><th>Semester</th><th>Student Count</th></tr></thead><tbody>`;
-                            data.courses.forEach(function(course) {
-                                html += `<tr>`;
-                                html += `<td>${course.course_code}</td>`;
-                                html += `<td>${course.course_name}</td>`;
-                                html += `<td>${course.regulation || ''}</td>`;
-                                html += `<td>${course.academic_year || ''}</td>`;
-                                html += `<td>${course.semester || ''}</td>`;
-                                html += `<td>${course.student_count}</td>`;
-                                html += `</tr>`;
-                            });
-                            html += `</tbody></table>`;
-                        }
-                        modalContent.innerHTML = html;
-                    })
-                    .catch(() => {
-                        modalContent.innerHTML = `<div style='color:#b30000;'>Failed to load course details (network error).</div>`;
-                    });
-            }
-        });
-        // Close modal logic
-        document.getElementById('closeSlotCoursesModal').onclick = function() {
-            document.getElementById('slotCoursesModal').style.display = 'none';
-        };
-        document.getElementById('slotCoursesModal').onclick = function(e) {
-            if (e.target === this) this.style.display = 'none';
-        };
+    // Slot courses badge click handler (delegated)
+    document.addEventListener('click', function (e) {
+        const badge = e.target.closest('.slot-courses-badge');
+        if (badge) {
+            e.preventDefault();
+            const slotId = badge.getAttribute('data-slot-id');
+            if (!slotId) return;
+            const modal = document.getElementById('slotCoursesModal');
+            const modalContent = document.getElementById('slotCoursesModalContent');
+            modal.style.display = 'flex';
+            modalContent.innerHTML = '<h2>Slot Courses</h2><div>Loading...</div>';
+            fetch(`/ops/ajax/slot-courses/?slot_id=${slotId}`)
+                .then(resp => resp.json())
+                .then(data => {
+                    if (!data.success) {
+                        modalContent.innerHTML = `<div style='color:#b30000;'>${data.error || 'Failed to load course details.'}</div>`;
+                        return;
+                    }
+                    let html = '';
+                    // Slot info
+                    html += `<div style='margin-bottom:1em;'>`;
+                    html += `<b>Exam Type:</b> ${data.slot.exam_type || ''} &nbsp; <b>Mode:</b> ${data.slot.mode || ''} &nbsp; <b>Date:</b> ${data.slot.exam_date} &nbsp; <b>Time:</b> ${data.slot.start_time}-${data.slot.end_time} &nbsp; <b>Slot Code:</b> ${data.slot.slot_code || ''}`;
+                    html += `</div>`;
+                    // Courses table
+                    if (data.courses.length === 0) {
+                        html += `<div>No courses assigned to this slot.</div>`;
+                    } else {
+                        html += `<table style='width:100%;border-collapse:collapse;'>`;
+                        html += `<thead><tr style='background:#f2f2f2;'><th>Course Code</th><th>Course Name</th><th>Regulation</th><th>Academic Year</th><th>Semester</th><th>Student Count</th></tr></thead><tbody>`;
+                        data.courses.forEach(function (course) {
+                            html += `<tr>`;
+                            html += `<td>${course.course_code}</td>`;
+                            html += `<td>${course.course_name}</td>`;
+                            html += `<td>${course.regulation || ''}</td>`;
+                            html += `<td>${course.academic_year || ''}</td>`;
+                            html += `<td>${course.semester || ''}</td>`;
+                            html += `<td>${course.student_count}</td>`;
+                            html += `</tr>`;
+                        });
+                        html += `</tbody></table>`;
+                    }
+                    modalContent.innerHTML = html;
+                })
+                .catch(() => {
+                    modalContent.innerHTML = `<div style='color:#b30000;'>Failed to load course details (network error).</div>`;
+                });
+        }
+    });
+    // Close modal logic
+    document.getElementById('closeSlotCoursesModal').onclick = function () {
+        document.getElementById('slotCoursesModal').style.display = 'none';
+    };
+    document.getElementById('slotCoursesModal').onclick = function (e) {
+        if (e.target === this) this.style.display = 'none';
+    };
     // Slot edit modal logic
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const editBtn = e.target.closest('.edit-slot-btn');
         if (editBtn) {
             e.preventDefault();
@@ -508,21 +492,21 @@ function fetchExamSlotsAjax() {
             document.getElementById('editSlotModal').style.display = 'flex';
         }
     });
-    document.getElementById('closeEditSlotModal').onclick = function() {
+    document.getElementById('closeEditSlotModal').onclick = function () {
         document.getElementById('editSlotModal').style.display = 'none';
     };
-    document.getElementById('cancelEditSlotBtn').onclick = function(e) {
+    document.getElementById('cancelEditSlotBtn').onclick = function (e) {
         e.preventDefault();
         document.getElementById('editSlotModal').style.display = 'none';
     };
-    document.getElementById('editSlotModal').onclick = function(e) {
+    document.getElementById('editSlotModal').onclick = function (e) {
         if (e.target === this) this.style.display = 'none';
     };
     var examId = window.examIdForSlots || '';
     var tbody = document.getElementById('exam-slots-list');
     if (!tbody) return;
     if (!examId) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">No exam selected.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;">No exam selected.</td></tr>';
         return;
     }
     fetch('/ops/ajax_exam_slots/?exam_id=' + encodeURIComponent(examId))
@@ -533,7 +517,7 @@ function fetchExamSlotsAjax() {
             } else {
                 tbody.innerHTML = '';
                 // Sort slots by exam_date, then start_time (both ascending)
-                data.slots.sort(function(a, b) {
+                data.slots.sort(function (a, b) {
                     if (a.exam_date < b.exam_date) return -1;
                     if (a.exam_date > b.exam_date) return 1;
                     if (a.start_time < b.start_time) return -1;
@@ -550,7 +534,7 @@ function fetchExamSlotsAjax() {
                     if (h === 0) h = 12;
                     return `${h}:${m} ${ampm}`;
                 }
-                data.slots.forEach(function(slot) {
+                data.slots.forEach(function (slot) {
                     let statusCell = '';
                     const schedUrl = `/ops/exam-scheduling/${slot.id}/`;
                     if (slot.assignment_status === 'Assigned') {
@@ -570,6 +554,20 @@ function fetchExamSlotsAjax() {
                             count : ${slot.course_count}
                         </span>
                     </a>`;
+                    // Room allocation badge
+                    let roomBadge = '';
+                    if (slot.room_status === 'Allocated') {
+                        roomBadge = `<span class="exam-status exam-status-available" style="background:#e6f9e6;color:#1a7f1a;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;font-weight:600;">Allocated <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=000000' alt='Allocated' style='width:1.2em;height:1.2em;vertical-align:middle;margin-left:6px;'></span>`;
+                    } else {
+                        roomBadge = `<span class="exam-status exam-status-pending" style="background:#fff3cd;color:#856404;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=000000' alt='Pending' style='width:1.2em;height:1.2em;vertical-align:middle;margin-left:6px;'></span>`;
+                    }
+                    // Faculty assignment badge
+                    let facultyBadge = '';
+                    if (slot.faculty_status === 'Assigned') {
+                        facultyBadge = `<span class="exam-status exam-status-available" style="background:#e6f9e6;color:#1a7f1a;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;font-weight:600;">Assigned <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=000000' alt='Assigned' style='width:1.2em;height:1.2em;vertical-align:middle;margin-left:6px;'></span>`;
+                    } else {
+                        facultyBadge = `<span class="exam-status exam-status-pending" style="background:#fff3cd;color:#856404;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=000000' alt='Pending' style='width:1.2em;height:1.2em;vertical-align:middle;margin-left:6px;'></span>`;
+                    }
                     var row = `<tr>
                         <td>${slot.exam_type || ''}</td>
                         <td>${slot.mode || ''}</td>
@@ -580,6 +578,8 @@ function fetchExamSlotsAjax() {
                         ${statusCell}
                         <td>${courseBadge}</td>
                         <td>${slot.student_count || 0}</td>
+                        <td><a href="/ops/exam_rooms_alloc/?slot_id=${slot.id}" style="text-decoration:none;">${roomBadge}</a></td>
+                        <td><a href="/ops/exam_faculty_alloc/?slot_id=${slot.id}" style="text-decoration:none;">${facultyBadge}</a></td>
                         <td>${editLink}${deleteLink}</td>
                     </tr>`;
                     tbody.innerHTML += row;
@@ -589,59 +589,112 @@ function fetchExamSlotsAjax() {
         .catch(() => {
             tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Error loading slots.</td></tr>';
         });
-// Slot delete modal and AJAX logic
-document.addEventListener('click', function(e) {
-    const delBtn = e.target.closest('.delete-slot-btn');
-    if (delBtn) {
-        e.preventDefault();
-        const slotId = delBtn.dataset.slotId;
-        const slotDate = delBtn.dataset.slotDate;
-        const slotTime = delBtn.dataset.slotTime;
-        const slotCode = delBtn.dataset.slotCode;
-        document.getElementById('deleteSlotWarning').innerHTML = `Are you sure you want to delete this slot?<br><b>Date:</b> ${slotDate} <b>Time:</b> ${slotTime} <b>Code:</b> ${slotCode}<br>This will <b>permanently delete</b> all exams scheduled under this slot.`;
-        document.getElementById('deleteSlotId').value = slotId;
-        document.getElementById('deleteSlotModal').style.display = 'flex';
-    }
-});
-document.getElementById('closeDeleteSlotModal').onclick = function() {
-    document.getElementById('deleteSlotModal').style.display = 'none';
-};
-document.getElementById('cancelDeleteSlotBtn').onclick = function(e) {
-    e.preventDefault();
-    document.getElementById('deleteSlotModal').style.display = 'none';
-};
-document.getElementById('deleteSlotModal').onclick = function(e) {
-    if (e.target === this) this.style.display = 'none';
-};
-document.getElementById('confirmDeleteSlotLink').onclick = function(e) {
-    e.preventDefault();
-    const slotId = document.getElementById('deleteSlotId').value;
-    fetch('/ops/ajax/delete-examination/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: JSON.stringify({ slot_id: slotId })
-    })
-    .then(res => res.json())
-    .then(data => {
-        document.getElementById('deleteSlotModal').style.display = 'none';
-        if (data.success) {
-            alert('Slot and all related exams deleted successfully.');
-            fetchExamSlotsAjax();
-        } else {
-            alert('Failed to delete slot: ' + (data.error || 'Unknown error'));
+    // Utility to show popup message (top-right)
+    function showPopupMessage(msg, type = 'error') {
+        let popup = document.getElementById('popup-messages');
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = 'popup-messages';
+            document.body.appendChild(popup);
         }
-    })
-    .catch(() => {
-        document.getElementById('deleteSlotModal').style.display = 'none';
-        alert('Failed to delete slot due to network error.');
+        const div = document.createElement('div');
+        div.className = 'popup-message popup-' + type;
+        div.tabIndex = 0;
+        div.textContent = msg;
+        popup.appendChild(div);
+        setTimeout(() => {
+            div.remove();
+        }, 3500);
+    }
+
+    // Intercept Room Allocation and Faculty Assignment clicks for status checks
+    document.addEventListener('click', function (e) {
+        const slotTable = document.getElementById('slot-table');
+        if (!slotTable) return;
+        const roomLink = e.target.closest('a[href*="/ops/exam_rooms_alloc/"]');
+        const facultyLink = e.target.closest('a[href*="/ops/exam_faculty_alloc/"]');
+        if (roomLink || facultyLink) {
+            const row = e.target.closest('tr');
+            if (!row) return;
+            // 0: Exam Type, 1: Mode, 2: Date, 3: Start, 4: End, 5: Slot Code, 6: Course Status, 7: Course Count, 8: Student Count, 9: Room, 10: Faculty
+            const courseStatusCell = row.children[6];
+            const roomCell = row.children[9];
+            // Check for 'Pending' in course status before allowing room allocation
+            if (roomLink) {
+                if (courseStatusCell && courseStatusCell.textContent.includes('Pending')) {
+                    e.preventDefault();
+                    showPopupMessage('Cannot allocate rooms: Course status is pending.', 'error');
+                    return;
+                }
+            }
+            // Check for 'Pending' in room allocation before allowing faculty assignment
+            if (facultyLink) {
+                if (roomCell && roomCell.textContent.includes('Pending')) {
+                    e.preventDefault();
+                    showPopupMessage('Cannot assign faculty: Room allocation is pending.', 'error');
+                    return;
+                }
+                if (courseStatusCell && courseStatusCell.textContent.includes('Pending')) {
+                    e.preventDefault();
+                    showPopupMessage('Cannot assign faculty: Course status is pending.', 'error');
+                    return;
+                }
+            }
+        }
     });
-};
+    // Slot delete modal and AJAX logic
+    document.addEventListener('click', function (e) {
+        const delBtn = e.target.closest('.delete-slot-btn');
+        if (delBtn) {
+            e.preventDefault();
+            const slotId = delBtn.dataset.slotId;
+            const slotDate = delBtn.dataset.slotDate;
+            const slotTime = delBtn.dataset.slotTime;
+            const slotCode = delBtn.dataset.slotCode;
+            document.getElementById('deleteSlotWarning').innerHTML = `Are you sure you want to delete this slot?<br><b>Date:</b> ${slotDate} <b>Time:</b> ${slotTime} <b>Code:</b> ${slotCode}<br>This will <b>permanently delete</b> all exams scheduled under this slot.`;
+            document.getElementById('deleteSlotId').value = slotId;
+            document.getElementById('deleteSlotModal').style.display = 'flex';
+        }
+    });
+    document.getElementById('closeDeleteSlotModal').onclick = function () {
+        document.getElementById('deleteSlotModal').style.display = 'none';
+    };
+    document.getElementById('cancelDeleteSlotBtn').onclick = function (e) {
+        e.preventDefault();
+        document.getElementById('deleteSlotModal').style.display = 'none';
+    };
+    document.getElementById('deleteSlotModal').onclick = function (e) {
+        if (e.target === this) this.style.display = 'none';
+    };
+    document.getElementById('confirmDeleteSlotLink').onclick = function (e) {
+        e.preventDefault();
+        const slotId = document.getElementById('deleteSlotId').value;
+        fetch('/ops/ajax/delete-examination/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ slot_id: slotId })
+        })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('deleteSlotModal').style.display = 'none';
+                if (data.success) {
+                    alert('Slot and all related exams deleted successfully.');
+                    fetchExamSlotsAjax();
+                } else {
+                    alert('Failed to delete slot: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(() => {
+                document.getElementById('deleteSlotModal').style.display = 'none';
+                alert('Failed to delete slot due to network error.');
+            });
+    };
 }
 // ============ EXAMINATION TABLE AJAX (operations/examination.html) ============
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // ...existing code for exam_date min/max and slot form validation...
     if (!document.getElementById('examination-table')) return;
 
@@ -655,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Available : ${count}
         </span>`;
     }
-    window.fetchExaminations = function fetchExaminations(page=1) {
+    window.fetchExaminations = function fetchExaminations(page = 1) {
         fetch(`/ops/ajax/examinations/?page=${page}`)
             .then(resp => resp.json())
             .then(data => {
@@ -714,10 +767,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 pagDiv.innerHTML = '';
                 if (data.num_pages > 1) {
                     for (let i = 1; i <= data.num_pages; i++) {
-                        pagDiv.innerHTML += `<a href="#" class="page-link${i===data.page ? ' active' : ''}" data-page="${i}">${i}</a> `;
+                        pagDiv.innerHTML += `<a href="#" class="page-link${i === data.page ? ' active' : ''}" data-page="${i}">${i}</a> `;
                     }
                     pagDiv.querySelectorAll('.page-link').forEach(link => {
-                        link.addEventListener('click', function(e) {
+                        link.addEventListener('click', function (e) {
                             e.preventDefault();
                             fetchExaminations(parseInt(this.dataset.page));
                         });
@@ -726,33 +779,33 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     // Register delete-exam-btn handler after table is rendered
-    document.addEventListener('click', function(e) {
-            // Handle click on Exam Scheduling link to check for slots
-            const schedLink = e.target.closest('.exam-schedule-link');
-            if (schedLink) {
-                e.preventDefault();
-                const examId = schedLink.dataset.examId;
-                const slotLink = schedLink.dataset.slotLink;
-                fetch(`/ops/ajax_exam_slots/?exam_id=${examId}`)
-                    .then(resp => resp.json())
-                    .then(data => {
-                        if (data.slots && data.slots.length > 0) {
-                            window.location.href = slotLink;
-                        } else {
-                            alert('No slots available for this examination. Please create slots first.');
-                        }
-                    })
-                    .catch(() => {
-                        alert('Error checking slots for this examination.');
-                    });
-                return;
-            }
+    document.addEventListener('click', function (e) {
+        // Handle click on Exam Scheduling link to check for slots
+        const schedLink = e.target.closest('.exam-schedule-link');
+        if (schedLink) {
+            e.preventDefault();
+            const examId = schedLink.dataset.examId;
+            const slotLink = schedLink.dataset.slotLink;
+            fetch(`/ops/ajax_exam_slots/?exam_id=${examId}`)
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.slots && data.slots.length > 0) {
+                        window.location.href = slotLink;
+                    } else {
+                        alert('No slots available for this examination. Please create slots first.');
+                    }
+                })
+                .catch(() => {
+                    alert('Error checking slots for this examination.');
+                });
+            return;
+        }
         const btn = e.target.closest('.delete-exam-btn');
         if (btn) {
             e.preventDefault();
             const examId = btn.dataset.examId;
             const examName = btn.dataset.examName;
-                fetch(`/ops/ajax_exam_slots/?exam_id=${examId}`)
+            fetch(`/ops/ajax_exam_slots/?exam_id=${examId}`)
                 .then(resp => resp.json())
                 .then(data => {
                     let detailsHtml = '';
@@ -773,17 +826,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     // Modal close/cancel logic
-    document.getElementById('closeDeleteExamModal').onclick = function() {
+    document.getElementById('closeDeleteExamModal').onclick = function () {
         document.getElementById('deleteExamModal').style.display = 'none';
     };
-    document.getElementById('cancelDeleteExamBtn').onclick = function(e) {
+    document.getElementById('cancelDeleteExamBtn').onclick = function (e) {
         e.preventDefault();
         document.getElementById('deleteExamModal').style.display = 'none';
     };
-    document.getElementById('deleteExamModal').onclick = function(e) {
+    document.getElementById('deleteExamModal').onclick = function (e) {
         if (e.target === this) this.style.display = 'none';
     };
-    document.getElementById('confirmDeleteExamLink').onclick = function(e) {
+    document.getElementById('confirmDeleteExamLink').onclick = function (e) {
         e.preventDefault();
         const examId = document.getElementById('deleteExamId').value;
         fetch('/ops/ajax/delete-examination/', {
@@ -794,19 +847,19 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({ exam_id: examId })
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('deleteExamModal').style.display = 'none';
-                alert('Examination and all related slots and exams deleted successfully.');
-                fetchExaminations();
-            } else {
-                alert('Failed to delete examination: ' + (data.error || 'Unknown error'));
-            }
-        })
-        .catch(() => {
-            alert('Failed to delete examination due to network error.');
-        });
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('deleteExamModal').style.display = 'none';
+                    alert('Examination and all related slots and exams deleted successfully.');
+                    fetchExaminations();
+                } else {
+                    alert('Failed to delete examination: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(() => {
+                alert('Failed to delete examination due to network error.');
+            });
     };
     // If on exams.html, autofill exam name from query param and make readonly
     if (window.location.pathname.endsWith('/exams/')) {
@@ -843,7 +896,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchExaminations();
 });
 // ============ EXAM SCHEDULING AJAX (operations/exam_scheduling.html) ============
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Only run on exam scheduling page
     if (!document.getElementById('exam-schedule-groups-table')) return;
 
@@ -914,13 +967,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Show/hide confirm button based on selection
     var examScheduleGroupsFormElem = document.getElementById('examScheduleGroupsForm');
     if (examScheduleGroupsFormElem) {
-        examScheduleGroupsFormElem.addEventListener('change', function(e) {
+        examScheduleGroupsFormElem.addEventListener('change', function (e) {
             const confirmBtn = document.getElementById('confirmScheduleBtn');
             const checked = examScheduleGroupsFormElem.querySelectorAll('input[name="selected_groups"]:checked');
             if (confirmBtn) confirmBtn.style.display = checked.length ? '' : 'none';
         });
         // Prevent form submit if no group is selected
-        examScheduleGroupsFormElem.addEventListener('submit', function(e) {
+        examScheduleGroupsFormElem.addEventListener('submit', function (e) {
             const checked = examScheduleGroupsFormElem.querySelectorAll('input[name="selected_groups"]:checked');
             if (!checked.length) {
                 e.preventDefault();
@@ -942,26 +995,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-function fetchGroups(year, sem, reg) {
-    year = year || '';
-    sem = sem || '';
-    reg = reg || '';
-    const slotId = window.examSlotId || document.getElementById('examScheduleGroupsForm').dataset.slotId;
-    const params = new URLSearchParams({ academic_year: year, semester: sem, regulation: reg, slot_id: slotId });
-    fetch('/ops/ajax/exam-scheduling/groups/?' + params.toString())
-        .then(resp => resp.json())
-        .then(data => {
-            const tbody = document.querySelector('#exam-schedule-groups-table tbody');
-            const form = document.getElementById('examScheduleGroupsForm');
-            if (!tbody || !form) return;
-            const confirmBtn = document.getElementById('confirmScheduleBtn');
-            if (data.groups && data.groups.length) {
-                tbody.innerHTML = data.groups.map(group => {
-                    const disabled = group.clash ? 'disabled' : '';
-                    const clashStyle = group.clash ? 'background:#ffe6e6;color:#b30000;' : '';
-                    const clashMsg = group.clash ? '<div style="color:#b30000;font-size:0.9em;">Clash: Student has another exam in this slot</div>' : '';
-                    const studentIds = group.student_ids ? group.student_ids.join(',') : '';
-                    return `
+    function fetchGroups(year, sem, reg) {
+        year = year || '';
+        sem = sem || '';
+        reg = reg || '';
+        const slotId = window.examSlotId || document.getElementById('examScheduleGroupsForm').dataset.slotId;
+        const params = new URLSearchParams({ academic_year: year, semester: sem, regulation: reg, slot_id: slotId });
+        fetch('/ops/ajax/exam-scheduling/groups/?' + params.toString())
+            .then(resp => resp.json())
+            .then(data => {
+                const tbody = document.querySelector('#exam-schedule-groups-table tbody');
+                const form = document.getElementById('examScheduleGroupsForm');
+                if (!tbody || !form) return;
+                const confirmBtn = document.getElementById('confirmScheduleBtn');
+                if (data.groups && data.groups.length) {
+                    tbody.innerHTML = data.groups.map(group => {
+                        const disabled = group.clash ? 'disabled' : '';
+                        const clashStyle = group.clash ? 'background:#ffe6e6;color:#b30000;' : '';
+                        const clashMsg = group.clash ? '<div style="color:#b30000;font-size:0.9em;">Clash: Student has another exam in this slot</div>' : '';
+                        const studentIds = group.student_ids ? group.student_ids.join(',') : '';
+                        return `
                     <tr style="${clashStyle}">
                         <td><input type="checkbox" name="selected_groups" value="${group.course_code}|${group.regulation}|${group.academic_year}|${group.semester}" ${disabled} ${group.clash ? 'tabindex="-1" aria-disabled="true"' : ''}></td>
                         <td>${group.course_code}</td>
@@ -972,18 +1025,18 @@ function fetchGroups(year, sem, reg) {
                         <td data-students="${studentIds}">${group.student_count}${clashMsg}</td>
                     </tr>
                     `;
-                }).join('');
-                form.style.display = '';
-                if (confirmBtn) confirmBtn.style.display = '';
-            } else {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No course registrations found for the selected filters.</td></tr>';
-                form.style.display = '';
-                if (confirmBtn) confirmBtn.style.display = 'none';
-            }
-        });
-}
+                    }).join('');
+                    form.style.display = '';
+                    if (confirmBtn) confirmBtn.style.display = '';
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No course registrations found for the selected filters.</td></tr>';
+                    form.style.display = '';
+                    if (confirmBtn) confirmBtn.style.display = 'none';
+                }
+            });
+    }
     // Select all groups checkbox (re-bind after table update)
-    document.addEventListener('change', function(e) {
+    document.addEventListener('change', function (e) {
         if (e.target && e.target.id === 'selectAllGroups') {
             document.querySelectorAll('input[name="selected_groups"]').forEach(cb => {
                 cb.checked = e.target.checked;
@@ -1027,24 +1080,24 @@ function fetchGroups(year, sem, reg) {
 });
 // ============ EXAM SLOT CREATION (operations/exams.html) ============
 // JS validation removed; backend handles all validation and messaging.
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const createLink = document.getElementById('createExamSlotLink');
     const form = document.getElementById('examSlotForm');
     if (createLink && form) {
-        createLink.addEventListener('click', function(e) {
+        createLink.addEventListener('click', function (e) {
             e.preventDefault();
             form.submit();
         });
     }
 });
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // ============ COURSE EDIT/DELETE MODALS ============
     // Edit modal logic
     const editModal = document.getElementById('editCourseModal');
     const editForm = document.getElementById('editCourseForm');
     const closeEditBtn = document.getElementById('closeEditModal');
     document.querySelectorAll('.edit-course-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
+        btn.addEventListener('click', function (e) {
             e.preventDefault();
             document.getElementById('editCourseId').value = btn.dataset.id;
             document.getElementById('editCourseCode').value = btn.dataset.code;
@@ -1061,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteForm = document.getElementById('deleteCourseForm');
     const closeDeleteBtn = document.getElementById('closeDeleteModal');
     document.querySelectorAll('.delete-course-btn').forEach(btn => {
-        btn.addEventListener('click', function(e) {
+        btn.addEventListener('click', function (e) {
             e.preventDefault();
             document.getElementById('deleteCourseId').value = btn.dataset.id;
             deleteModal.style.display = 'flex';
@@ -1072,7 +1125,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // AJAX for edit
     if (editForm) {
-        editForm.onsubmit = function(e) {
+        editForm.onsubmit = function (e) {
             e.preventDefault();
             const id = document.getElementById('editCourseId').value;
             const code = document.getElementById('editCourseCode').value;
@@ -1086,21 +1139,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({ course_code: code, course_name: name, is_active: is_active })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    // Show notification after reload
-                    localStorage.setItem('course_notify', 'Course updated successfully.');
-                    window.location.reload();
-                } else {
-                    alert(data.error || 'Failed to update course.');
-                }
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show notification after reload
+                        localStorage.setItem('course_notify', 'Course updated successfully.');
+                        window.location.reload();
+                    } else {
+                        alert(data.error || 'Failed to update course.');
+                    }
+                });
         };
     }
     // AJAX for delete
     if (deleteForm) {
-        deleteForm.onsubmit = function(e) {
+        deleteForm.onsubmit = function (e) {
             e.preventDefault();
             const id = document.getElementById('deleteCourseId').value;
             fetch(`/masters/courses/${id}/delete/`, {
@@ -1110,36 +1163,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                 }
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('course_notify', 'Course deleted successfully.');
-                    window.location.reload();
-                } else {
-                    alert(data.error || 'Failed to delete course.');
-                }
-                // Show notification if present in localStorage
-                const msg = localStorage.getItem('course_notify');
-                if (msg) {
-                    let popup = document.createElement('div');
-                    popup.className = 'popup-message popup-success';
-                    popup.innerText = msg;
-                    popup.style.position = 'fixed';
-                    popup.style.top = '30px';
-                    popup.style.left = '50%';
-                    popup.style.transform = 'translateX(-50%)';
-                    popup.style.zIndex = 99999;
-                    popup.style.background = '#38a169';
-                    popup.style.color = '#fff';
-                    popup.style.padding = '16px 32px';
-                    popup.style.borderRadius = '8px';
-                    popup.style.fontSize = '1.1rem';
-                    popup.style.boxShadow = '0 2px 12px rgba(30,58,95,0.18)';
-                    document.body.appendChild(popup);
-                    setTimeout(() => { popup.remove(); }, 2500);
-                    localStorage.removeItem('course_notify');
-                }
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        localStorage.setItem('course_notify', 'Course deleted successfully.');
+                        window.location.reload();
+                    } else {
+                        alert(data.error || 'Failed to delete course.');
+                    }
+                    // Show notification if present in localStorage
+                    const msg = localStorage.getItem('course_notify');
+                    if (msg) {
+                        let popup = document.createElement('div');
+                        popup.className = 'popup-message popup-success';
+                        popup.innerText = msg;
+                        popup.style.position = 'fixed';
+                        popup.style.top = '30px';
+                        popup.style.left = '50%';
+                        popup.style.transform = 'translateX(-50%)';
+                        popup.style.zIndex = 99999;
+                        popup.style.background = '#38a169';
+                        popup.style.color = '#fff';
+                        popup.style.padding = '16px 32px';
+                        popup.style.borderRadius = '8px';
+                        popup.style.fontSize = '1.1rem';
+                        popup.style.boxShadow = '0 2px 12px rgba(30,58,95,0.18)';
+                        document.body.appendChild(popup);
+                        setTimeout(() => { popup.remove(); }, 2500);
+                        localStorage.removeItem('course_notify');
+                    }
+                });
         };
     }
 
@@ -1208,7 +1261,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         padding: 14,
                         cornerRadius: 8,
                         callbacks: {
-                            label: function(context) {
+                            label: function (context) {
                                 const value = context.parsed;
                                 const percent = total ? ((value / total) * 100).toFixed(1) : 0;
                                 return `${context.label}: ${value} (${percent}%)`;
@@ -1229,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 {
                     id: 'piePercentLabels',
                     afterDraw(chart) {
-                        const {ctx, chartArea, data} = chart;
+                        const { ctx, chartArea, data } = chart;
                         if (!chartArea) return;
                         chart.getDatasetMeta(0).data.forEach((arc, i) => {
                             const value = data.datasets[0].data[i];
@@ -1320,7 +1373,7 @@ function downloadStudentCSV() {
     link.click();
     document.body.removeChild(link);
 }
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     if (typeof initializeStudentFilters === 'function') {
         initializeStudentFilters();
     }
@@ -1405,49 +1458,49 @@ function downloadFacultyCSV() {
 }
 
 // ============ FACULTY DELETE MODAL (AJAX, JS-only) ============
-document.addEventListener('DOMContentLoaded', function() {
-  const facultyDeleteBtns = document.querySelectorAll('.faculty-delete-btn');
-  let facultyModal = document.getElementById('facultyDeleteModal');
-  if (!facultyModal) {
-    facultyModal = document.createElement('div');
-    facultyModal.id = 'facultyDeleteModal';
-    facultyModal.className = 'modal';
-    facultyModal.style.display = 'none';
-    facultyModal.style.position = 'fixed';
-    facultyModal.style.top = '0';
-    facultyModal.style.left = '0';
-    facultyModal.style.width = '100vw';
-    facultyModal.style.height = '100vh';
-    facultyModal.style.background = 'rgba(30,58,95,0.18)';
-    facultyModal.style.zIndex = '3000';
-    facultyModal.style.alignItems = 'center';
-    facultyModal.style.justifyContent = 'center';
-    document.body.appendChild(facultyModal);
-  }
-  let facultyModalContent = document.getElementById('facultyDeleteModalContent');
-  if (!facultyModalContent) {
-    facultyModalContent = document.createElement('div');
-    facultyModalContent.id = 'facultyDeleteModalContent';
-    facultyModalContent.className = 'modal-content';
-    facultyModalContent.style.background = '#fff';
-    facultyModalContent.style.padding = '0';
-    facultyModalContent.style.borderRadius = '14px';
-    facultyModalContent.style.maxWidth = '480px';
-    facultyModalContent.style.width = '100%';
-    facultyModalContent.style.boxShadow = '0 2px 12px rgba(30,58,95,0.18)';
-    facultyModalContent.style.position = 'relative';
-    facultyModal.appendChild(facultyModalContent);
-  }
-  facultyDeleteBtns.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const facultyId = btn.getAttribute('data-faculty-id');
-      const facultyName = btn.getAttribute('data-faculty-name');
-      const facultyEmail = btn.getAttribute('data-faculty-email');
-      const facultyDept = btn.getAttribute('data-faculty-dept');
-      const facultyPhone = btn.getAttribute('data-faculty-phone');
-      const facultyDesignation = btn.getAttribute('data-faculty-designation');
-      const facultyStatus = btn.getAttribute('data-faculty-status');
-      facultyModalContent.innerHTML = `
+document.addEventListener('DOMContentLoaded', function () {
+    const facultyDeleteBtns = document.querySelectorAll('.faculty-delete-btn');
+    let facultyModal = document.getElementById('facultyDeleteModal');
+    if (!facultyModal) {
+        facultyModal = document.createElement('div');
+        facultyModal.id = 'facultyDeleteModal';
+        facultyModal.className = 'modal';
+        facultyModal.style.display = 'none';
+        facultyModal.style.position = 'fixed';
+        facultyModal.style.top = '0';
+        facultyModal.style.left = '0';
+        facultyModal.style.width = '100vw';
+        facultyModal.style.height = '100vh';
+        facultyModal.style.background = 'rgba(30,58,95,0.18)';
+        facultyModal.style.zIndex = '3000';
+        facultyModal.style.alignItems = 'center';
+        facultyModal.style.justifyContent = 'center';
+        document.body.appendChild(facultyModal);
+    }
+    let facultyModalContent = document.getElementById('facultyDeleteModalContent');
+    if (!facultyModalContent) {
+        facultyModalContent = document.createElement('div');
+        facultyModalContent.id = 'facultyDeleteModalContent';
+        facultyModalContent.className = 'modal-content';
+        facultyModalContent.style.background = '#fff';
+        facultyModalContent.style.padding = '0';
+        facultyModalContent.style.borderRadius = '14px';
+        facultyModalContent.style.maxWidth = '480px';
+        facultyModalContent.style.width = '100%';
+        facultyModalContent.style.boxShadow = '0 2px 12px rgba(30,58,95,0.18)';
+        facultyModalContent.style.position = 'relative';
+        facultyModal.appendChild(facultyModalContent);
+    }
+    facultyDeleteBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            const facultyId = btn.getAttribute('data-faculty-id');
+            const facultyName = btn.getAttribute('data-faculty-name');
+            const facultyEmail = btn.getAttribute('data-faculty-email');
+            const facultyDept = btn.getAttribute('data-faculty-dept');
+            const facultyPhone = btn.getAttribute('data-faculty-phone');
+            const facultyDesignation = btn.getAttribute('data-faculty-designation');
+            const facultyStatus = btn.getAttribute('data-faculty-status');
+            facultyModalContent.innerHTML = `
         <div class="delete-form">
           <h2>Delete Faculty</h2>
           <div style='text-align:left;font-size:0.98em;color:#000;margin-bottom:12px;'>
@@ -1466,54 +1519,54 @@ document.addEventListener('DOMContentLoaded', function() {
           <button type="button" id="cancelFacultyDeleteBtn" class="action-link" style="margin-top:12px;">Cancel</button>
         </div>
       `;
-      facultyModal.style.display = 'flex';
-      // Cancel button
-      const cancelBtn = document.getElementById('cancelFacultyDeleteBtn');
-      if (cancelBtn) {
-        cancelBtn.onclick = function() {
-          facultyModal.style.display = 'none';
-        };
-      }
-      // Close modal on outside click
-      facultyModal.onclick = function(e) {
-        if (e.target === facultyModal) facultyModal.style.display = 'none';
-      };
-      // Submit form to delete faculty
-      const deleteForm = document.getElementById('deleteFacultyForm');
-      if (deleteForm) {
-        deleteForm.onsubmit = function(e) {
-          e.preventDefault();
-          const url = `/masters/faculty/${facultyId}/delete/`;
-          // Try to get CSRF token from page
-          const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
-          const csrfToken = csrfInput ? csrfInput.value : '';
-          fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'X-CSRFToken': csrfToken,
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: `csrfmiddlewaretoken=${csrfToken}`
-          }).then(resp => {
-            if (resp.ok) {
-              showPopup('Faculty deleted successfully.', 'success');
-              setTimeout(() => { window.location.reload(); }, 1200);
-            } else {
-              showPopup('Failed to delete faculty.', 'error');
-              facultyModal.style.display = 'none';
+            facultyModal.style.display = 'flex';
+            // Cancel button
+            const cancelBtn = document.getElementById('cancelFacultyDeleteBtn');
+            if (cancelBtn) {
+                cancelBtn.onclick = function () {
+                    facultyModal.style.display = 'none';
+                };
             }
-          });
-        };
-      }
+            // Close modal on outside click
+            facultyModal.onclick = function (e) {
+                if (e.target === facultyModal) facultyModal.style.display = 'none';
+            };
+            // Submit form to delete faculty
+            const deleteForm = document.getElementById('deleteFacultyForm');
+            if (deleteForm) {
+                deleteForm.onsubmit = function (e) {
+                    e.preventDefault();
+                    const url = `/masters/faculty/${facultyId}/delete/`;
+                    // Try to get CSRF token from page
+                    const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+                    const csrfToken = csrfInput ? csrfInput.value : '';
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: `csrfmiddlewaretoken=${csrfToken}`
+                    }).then(resp => {
+                        if (resp.ok) {
+                            showPopup('Faculty deleted successfully.', 'success');
+                            setTimeout(() => { window.location.reload(); }, 1200);
+                        } else {
+                            showPopup('Failed to delete faculty.', 'error');
+                            facultyModal.style.display = 'none';
+                        }
+                    });
+                };
+            }
+        });
     });
-  });
 });
 
 // ============ STUDENT DELETE MODAL (AJAX) ============
-document.addEventListener('DOMContentLoaded', function() {
-  const modal = document.getElementById('studentDeleteModal');
-// Only the correct delete-exam-btn event handler should be present (see above)
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('studentDeleteModal');
+    // Only the correct delete-exam-btn event handler should be present (see above)
 });
 
 // ============ GLOBAL POPUP FUNCTION ============
@@ -1679,7 +1732,7 @@ function downloadRoomCSV() {
 }
 
 // ============ SIDEBAR ACTIVE LINK SCRIPT ============
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     // Select all sidebar links
     const sidebarLinks = document.querySelectorAll('.sidebar-links ul li a');
     const currentPath = window.location.pathname.replace(/\/$/, '');
@@ -1729,9 +1782,9 @@ function initializeContentScripts(pageUrl) {
 window.usersTable = {
     USERS_URL: '/ajax/users/',
     currentPage: 1,
-    fetchUsers: function(page = 1) {
+    fetchUsers: function (page = 1) {
         let params = { page };
-        $("#filter-row .users-filter-input").each(function() {
+        $("#filter-row .users-filter-input").each(function () {
             const field = $(this).data("field");
             const value = $(this).val();
             if (field && value) params[field] = value;
@@ -1740,15 +1793,15 @@ window.usersTable = {
             url: this.USERS_URL,
             data: params,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 usersTable.renderTable(data.users);
                 usersTable.renderPagination(data.current_page, data.num_pages);
             }
         });
     },
-    renderTable: function(users) {
+    renderTable: function (users) {
         let html = "";
-        users.forEach(function(u) {
+        users.forEach(function (u) {
             html += `<tr>
                 <td>${u.username}</td>
                 <td>${u.email}</td>
@@ -1760,7 +1813,7 @@ window.usersTable = {
         });
         $("#users-table-body").html(html);
     },
-    renderPagination: function(current, total) {
+    renderPagination: function (current, total) {
         let html = "";
         let start = Math.max(1, current - 4);
         let end = Math.min(total, start + 9);
@@ -1771,14 +1824,14 @@ window.usersTable = {
         }
         // Previous page button
         if (current > 1) {
-            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current-1}">&laquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current - 1}">&laquo;</a></li>`;
         }
         for (let i = start; i <= end; i++) {
             html += `<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
         }
         // Next page button
         if (current < total) {
-            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current+1}">&raquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current + 1}">&raquo;</a></li>`;
         }
         // Last page button
         if (current < total) {
@@ -1786,11 +1839,11 @@ window.usersTable = {
         }
         $("#users-pagination").html(html);
     },
-    bindEvents: function() {
-        $(document).on("keyup change", ".users-filter-input", function() {
+    bindEvents: function () {
+        $(document).on("keyup change", ".users-filter-input", function () {
             usersTable.fetchUsers(1);
         });
-        $(document).on("click", "#users-pagination .page-link", function(e) {
+        $(document).on("click", "#users-pagination .page-link", function (e) {
             e.preventDefault();
             const page = parseInt($(this).data("page"));
             if (page && page !== usersTable.currentPage) {
@@ -1799,12 +1852,12 @@ window.usersTable = {
             }
         });
     },
-    init: function() {
+    init: function () {
         usersTable.fetchUsers();
         usersTable.bindEvents();
     }
 };
-$(document).ready(function() {
+$(document).ready(function () {
     if (document.getElementById('users-table')) {
         usersTable.init();
     }
@@ -1814,7 +1867,7 @@ $(document).ready(function() {
 window.studentsTable = {
     STUDENTS_URL: '/masters/ajax/',
     currentPage: 1,
-    fetchStudents: function(page = 1) {
+    fetchStudents: function (page = 1) {
         let params = { type: 'student', page };
         // Get search, department, batch (regulation) filter values
         params['search'] = $("#search").val() || '';
@@ -1824,7 +1877,7 @@ window.studentsTable = {
             url: this.STUDENTS_URL,
             data: params,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 $("#student-list").html(data.table_html);
                 $("#studentPaginationBar").html(data.pagination_html);
                 // Re-initialize delete modal and other listeners if needed
@@ -1834,17 +1887,17 @@ window.studentsTable = {
             }
         });
     },
-    bindEvents: function() {
+    bindEvents: function () {
         // On filter change
-        $(document).on("change", "#department, #batch", function() {
+        $(document).on("change", "#department, #batch", function () {
             studentsTable.fetchStudents(1);
         });
         // On search input
-        $(document).on("input", "#search", function() {
+        $(document).on("input", "#search", function () {
             studentsTable.fetchStudents(1);
         });
         // On pagination click
-        $(document).on("click", "#studentPaginationBar .page-arrow, #studentPaginationBar .page-num", function(e) {
+        $(document).on("click", "#studentPaginationBar .page-arrow, #studentPaginationBar .page-num", function (e) {
             e.preventDefault();
             const page = parseInt($(this).data("page"));
             if (page && page !== studentsTable.currentPage) {
@@ -1853,20 +1906,20 @@ window.studentsTable = {
             }
         });
         // Reset filters
-        $(document).on("click", "#resetStudentFilters", function() {
+        $(document).on("click", "#resetStudentFilters", function () {
             $("#search").val("");
             $("#department").val("all");
             $("#batch").val("all");
-            setTimeout(function() { studentsTable.fetchStudents(1); }, 0);
+            setTimeout(function () { studentsTable.fetchStudents(1); }, 0);
         });
     },
-    init: function() {
+    init: function () {
         studentsTable.fetchStudents();
         studentsTable.bindEvents();
     }
 };
 
-$(document).ready(function() {
+$(document).ready(function () {
     if (document.getElementById('student-table')) {
         studentsTable.init();
     }
@@ -1875,9 +1928,9 @@ $(document).ready(function() {
 window.batchesTable = {
     BATCHES_URL: '/ajax/batches/',
     currentPage: 1,
-    fetchBatches: function(page = 1) {
+    fetchBatches: function (page = 1) {
         let params = { page };
-        $("#batch-filter-row .batches-filter-input").each(function() {
+        $("#batch-filter-row .batches-filter-input").each(function () {
             const field = $(this).data("field");
             const value = $(this).val();
             if (field && value) params[field] = value;
@@ -1886,15 +1939,15 @@ window.batchesTable = {
             url: this.BATCHES_URL,
             data: params,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 batchesTable.renderTable(data.batches);
                 batchesTable.renderPagination(data.current_page, data.num_pages);
             }
         });
     },
-    renderTable: function(batches) {
+    renderTable: function (batches) {
         let html = "";
-        batches.forEach(function(b) {
+        batches.forEach(function (b) {
             html += `<tr>
                 <td>${b.batch_code}</td>
                 <td>${b.admission_year}</td>
@@ -1904,29 +1957,29 @@ window.batchesTable = {
         });
         $("#batches-table-body").html(html);
     },
-    renderPagination: function(current, total) {
+    renderPagination: function (current, total) {
         let html = "";
         let start = Math.max(1, current - 4);
         let end = Math.min(total, start + 9);
         if (end - start < 9) start = Math.max(1, end - 9);
         if (current > 1) {
             html += `<li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>`;
-            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current-1}">&laquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current - 1}">&laquo;</a></li>`;
         }
         for (let i = start; i <= end; i++) {
             html += `<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
         }
         if (current < total) {
-            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current+1}">&raquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current + 1}">&raquo;</a></li>`;
             html += `<li class="page-item"><a class="page-link" href="#" data-page="${total}">&raquo;&raquo;</a></li>`;
         }
         $("#batches-pagination").html(html);
     },
-    bindEvents: function() {
-        $(document).on("keyup change", ".batches-filter-input", function() {
+    bindEvents: function () {
+        $(document).on("keyup change", ".batches-filter-input", function () {
             batchesTable.fetchBatches(1);
         });
-        $(document).on("click", "#batches-pagination .page-link", function(e) {
+        $(document).on("click", "#batches-pagination .page-link", function (e) {
             e.preventDefault();
             const page = parseInt($(this).data("page"));
             if (page && page !== batchesTable.currentPage) {
@@ -1935,7 +1988,7 @@ window.batchesTable = {
             }
         });
     },
-    init: function() {
+    init: function () {
         batchesTable.fetchBatches();
         batchesTable.bindEvents();
     }
@@ -1945,9 +1998,9 @@ window.batchesTable = {
 window.departmentsTable = {
     DEPARTMENTS_URL: '/ajax/departments/',
     currentPage: 1,
-    fetchDepartments: function(page = 1) {
+    fetchDepartments: function (page = 1) {
         let params = { page };
-        $("#department-filter-row .departments-filter-input").each(function() {
+        $("#department-filter-row .departments-filter-input").each(function () {
             const field = $(this).data("field");
             const value = $(this).val();
             if (field && value) params[field] = value;
@@ -1956,15 +2009,15 @@ window.departmentsTable = {
             url: this.DEPARTMENTS_URL,
             data: params,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 departmentsTable.renderTable(data.departments);
                 departmentsTable.renderPagination(data.current_page, data.num_pages);
             }
         });
     },
-    renderTable: function(departments) {
+    renderTable: function (departments) {
         let html = "";
-        departments.forEach(function(d) {
+        departments.forEach(function (d) {
             html += `<tr>
                 <td>${d.dept_code}</td>
                 <td>${d.dept_name}</td>
@@ -1973,29 +2026,29 @@ window.departmentsTable = {
         });
         $("#departments-table-body").html(html);
     },
-    renderPagination: function(current, total) {
+    renderPagination: function (current, total) {
         let html = "";
         let start = Math.max(1, current - 4);
         let end = Math.min(total, start + 9);
         if (end - start < 9) start = Math.max(1, end - 9);
         if (current > 1) {
             html += `<li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>`;
-            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current-1}">&laquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current - 1}">&laquo;</a></li>`;
         }
         for (let i = start; i <= end; i++) {
             html += `<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
         }
         if (current < total) {
-            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current+1}">&raquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current + 1}">&raquo;</a></li>`;
             html += `<li class="page-item"><a class="page-link" href="#" data-page="${total}">&raquo;&raquo;</a></li>`;
         }
         $("#departments-pagination").html(html);
     },
-    bindEvents: function() {
-        $(document).on("keyup change", ".departments-filter-input", function() {
+    bindEvents: function () {
+        $(document).on("keyup change", ".departments-filter-input", function () {
             departmentsTable.fetchDepartments(1);
         });
-        $(document).on("click", "#departments-pagination .page-link", function(e) {
+        $(document).on("click", "#departments-pagination .page-link", function (e) {
             e.preventDefault();
             const page = parseInt($(this).data("page"));
             if (page && page !== departmentsTable.currentPage) {
@@ -2004,7 +2057,7 @@ window.departmentsTable = {
             }
         });
     },
-    init: function() {
+    init: function () {
         departmentsTable.fetchDepartments();
         departmentsTable.bindEvents();
     }
@@ -2014,9 +2067,9 @@ window.departmentsTable = {
 window.programsTable = {
     PROGRAMS_URL: '/ajax/programs/',
     currentPage: 1,
-    fetchPrograms: function(page = 1) {
+    fetchPrograms: function (page = 1) {
         let params = { page };
-        $("#program-filter-row .programs-filter-input").each(function() {
+        $("#program-filter-row .programs-filter-input").each(function () {
             const field = $(this).data("field");
             const value = $(this).val();
             if (field && value) params[field] = value;
@@ -2025,15 +2078,15 @@ window.programsTable = {
             url: this.PROGRAMS_URL,
             data: params,
             dataType: "json",
-            success: function(data) {
+            success: function (data) {
                 programsTable.renderTable(data.programs);
                 programsTable.renderPagination(data.current_page, data.num_pages);
             }
         });
     },
-    renderTable: function(programs) {
+    renderTable: function (programs) {
         let html = "";
-        programs.forEach(function(p) {
+        programs.forEach(function (p) {
             html += `<tr>
                 <td>${p.program_code}</td>
                 <td>${p.program_name}</td>
@@ -2042,29 +2095,29 @@ window.programsTable = {
         });
         $("#programs-table-body").html(html);
     },
-    renderPagination: function(current, total) {
+    renderPagination: function (current, total) {
         let html = "";
         let start = Math.max(1, current - 4);
         let end = Math.min(total, start + 9);
         if (end - start < 9) start = Math.max(1, end - 9);
         if (current > 1) {
             html += `<li class="page-item"><a class="page-link" href="#" data-page="1">&laquo;&laquo;</a></li>`;
-            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current-1}">&laquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current - 1}">&laquo;</a></li>`;
         }
         for (let i = start; i <= end; i++) {
             html += `<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
         }
         if (current < total) {
-            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current+1}">&raquo;</a></li>`;
+            html += `<li class="page-item"><a class="page-link" href="#" data-page="${current + 1}">&raquo;</a></li>`;
             html += `<li class="page-item"><a class="page-link" href="#" data-page="${total}">&raquo;&raquo;</a></li>`;
         }
         $("#programs-pagination").html(html);
     },
-    bindEvents: function() {
-        $(document).on("keyup change", ".programs-filter-input", function() {
+    bindEvents: function () {
+        $(document).on("keyup change", ".programs-filter-input", function () {
             programsTable.fetchPrograms(1);
         });
-        $(document).on("click", "#programs-pagination .page-link", function(e) {
+        $(document).on("click", "#programs-pagination .page-link", function (e) {
             e.preventDefault();
             const page = parseInt($(this).data("page"));
             if (page && page !== programsTable.currentPage) {
@@ -2073,13 +2126,13 @@ window.programsTable = {
             }
         });
     },
-    init: function() {
+    init: function () {
         programsTable.fetchPrograms();
         programsTable.bindEvents();
     }
 };
 
-$(document).ready(function() {
+$(document).ready(function () {
     if (document.getElementById('batches-table')) {
         batchesTable.init();
     }
@@ -2092,10 +2145,10 @@ $(document).ready(function() {
 });
 
 // ============ EXAMINATION FORM SUBMIT ============
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     var examForm = document.getElementById('examinationForm');
     if (examForm) {
-        examForm.addEventListener('submit', function(e) {
+        examForm.addEventListener('submit', function (e) {
             // Optionally, add client-side validation here if needed
             // (HTML5 required/min already covers most cases)
             // Allow normal form submit for backend processing
@@ -2119,7 +2172,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Add event handler for edit-exam-btn
-$(document).on('click', '.edit-exam-btn', function(e) {
+$(document).on('click', '.edit-exam-btn', function (e) {
     e.preventDefault();
     var row = $(this).closest('tr');
     var examId = $(this).data('exam-id');
@@ -2137,10 +2190,10 @@ $(document).on('click', '.edit-exam-btn', function(e) {
     $('#edit_start_date').val(startDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? startDateRaw : '');
     $('#edit_end_date').val(endDateRaw.match(/^\d{4}-\d{2}-\d{2}$/) ? endDateRaw : '');
     // Set date constraints
-    var todayStr = (function() {
+    var todayStr = (function () {
         var d = new Date();
-        var m = (d.getMonth()+1).toString().padStart(2,'0');
-        var day = d.getDate().toString().padStart(2,'0');
+        var m = (d.getMonth() + 1).toString().padStart(2, '0');
+        var day = d.getDate().toString().padStart(2, '0');
         return d.getFullYear() + '-' + m + '-' + day;
     })();
     var editStartDateElem = document.getElementById('edit_start_date');
@@ -2149,7 +2202,7 @@ $(document).on('click', '.edit-exam-btn', function(e) {
     if (editEndDateElem && editStartDateElem) editEndDateElem.min = editStartDateElem.value;
     // Remove previous event listeners to avoid stacking
     if (editStartDateElem && editEndDateElem) {
-        editStartDateElem.onchange = function() {
+        editStartDateElem.onchange = function () {
             editEndDateElem.min = editStartDateElem.value;
             if (editEndDateElem.value && editEndDateElem.value < editStartDateElem.value) {
                 editEndDateElem.value = '';

@@ -12,11 +12,9 @@
                 <div style="margin-bottom:1em;">
                     <label for="edit_examtype">Exam Type:</label>
                     <select id="edit_examtype" name="examtype" required>
-                        <option value="Theoretical">Theoretical</option>
-                        <option value="Practical">Practical</option>
-                        <option value="Viva">Viva</option>
-                        <option value="Quiz">Quiz</option>
-                        <option value="Assignment">Assignment</option>
+                        <option value="Regular">Regular</option>
+                        <option value="Supplementary">Supplementary</option>
+                        <option value="Improvement">Improvement</option>
                     </select>
                 </div>
                 <div style="margin-bottom:1em;">
@@ -31,14 +29,17 @@
                 </div>
                 <div style="margin-bottom:1em;">
                     <label for="edit_exam_date">Exam Date:</label>
-                    <input type="date" id="edit_exam_date" name="exam_date" required>
-                </div>
+                    <br>
+                    <input type="date" id="edit_exam_date" name="exam_date" requireated>
+ 0               </div>
                 <div style="margin-bottom:1em;">
                     <label for="edit_start_time">Start Time:</label>
-                    <input type="time" id="edit_start_time" name="start_time" required>
+                    <br>
+                    <input type="time" id="edit_start_time" name="start_time" reqsuired>
                 </div>
                 <div style="margin-bottom:1em;">
                     <label for="edit_end_time">End Time:</label>
+                    <br>
                     <input type="time" id="edit_end_time" name="end_time" required>
                 </div>
                 <div style="margin-bottom:1em;">
@@ -163,11 +164,13 @@
                     <th>Course Status</th>
                     <th>Course Count</th>
                     <th>Student Count</th>
+                    <th>Room Allocation</th>
+                    <th>Faculty Assignment</th>
                     <th>Action</th>
                 </tr>
             </thead>
             <tbody id="exam-slots-list">
-                <tr><td colspan="10" style="text-align:center;">Loading...</td></tr>
+                <tr><td colspan="12" style="text-align:center;">Loading...</td></tr>
             </tbody>
         </table>
         <!-- Delete Slot Modal -->
