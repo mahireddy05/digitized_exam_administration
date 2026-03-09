@@ -20,4 +20,6 @@ urlpatterns = [
     path("ajax/delete-examination/", ajax.ajax_delete_examination, name="ajax_delete_examination"),
     path("ajax/edit-examination/", ajax.ajax_edit_examination, name="ajax_edit_examination"),
     path("ajax/slot-courses/", ajax.ajax_slot_courses, name="ajax_slot_courses"),
+    path("ajax/slot-rooms/", ajax.ajax_slot_rooms, name="ajax_slot_rooms"),
+    path("ajax/slot-faculty/", ajax.ajax_slot_faculty, name="ajax_slot_faculty"),
 ]

@@ -1,4 +1,38 @@
 from django.views.decorators.http import require_GET
+from django.http import JsonResponse
+from operations.models import ExamSlot, FacultyAvailability
+from masters.models import Faculty
+
+# AJAX endpoint to get assigned faculty for a slot
+@require_GET
+def ajax_slot_faculty(request):
+    slot_id = request.GET.get('slot_id')
+    if not slot_id:
+        return JsonResponse({'success': False, 'error': 'Missing slot_id'})
+    try:
+        slot = ExamSlot.objects.get(id=slot_id)
+    except ExamSlot.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Slot not found'})
+    assignments = FacultyAvailability.objects.filter(exam_slot=slot, is_active=True).select_related('faculty__dept')
+    faculty_list = []
+    for assign in assignments:
+        fac = assign.faculty
+        faculty_list.append({
+            'faculty_id': fac.faculty_id if fac and fac.faculty_id else 'N/A',
+            'faculty_name': fac.faculty_name if fac and fac.faculty_name else 'N/A',
+            'email': fac.email if fac and fac.email else 'N/A',
+            'dept': fac.dept.dept_name if fac and hasattr(fac, 'dept') and fac.dept and fac.dept.dept_name else 'N/A',
+        })
+    slot_info = {
+        'exam_type': slot.exam_type or 'N/A',
+        'mode': slot.mode or 'N/A',
+        'exam_date': slot.exam_date.strftime('%Y-%m-%d') if slot.exam_date else 'N/A',
+        'start_time': slot.start_time.strftime('%H:%M') if slot.start_time else 'N/A',
+        'end_time': slot.end_time.strftime('%H:%M') if slot.end_time else 'N/A',
+        'slot_code': slot.slot_code or 'N/A',
+    }
+    return JsonResponse({'success': True, 'slot': slot_info, 'faculty': faculty_list})
+from django.views.decorators.http import require_GET
 
 # AJAX endpoint to get course details for a slot
 @require_GET
@@ -163,7 +197,10 @@ def ajax_exam_slots(request):
             assigned_room_count = 0
             if exams.exists():
                 from operations.models import RoomAllocation
-                assigned_room_count = RoomAllocation.objects.filter(exam__in=exams).count()
+                assigned_room_count = RoomAllocation.objects.filter(exam_slot=slot).count()
+                # Count assigned faculty for this slot
+                from operations.models import FacultyAvailability
+                assigned_faculty_count = FacultyAvailability.objects.filter(exam_slot=slot, is_active=True).count()
             slots.append({
                 'id': slot.id,
                 'exam_type': slot.exam_type,
@@ -176,6 +213,7 @@ def ajax_exam_slots(request):
                 'course_count': course_count,
                 'student_count': student_count,
                 'assigned_room_count': assigned_room_count,
+                    'assigned_faculty_count': assigned_faculty_count,
             })
     return JsonResponse({'slots': slots})
 from django.http import JsonResponse
@@ -280,3 +318,37 @@ def ajax_exam_filters(request):
     semesters = sorted(set(exams.values_list('semester', flat=True)), key=str)
     regulations = []  # Not needed for exam scheduling filters
     return JsonResponse({'academic_years': academic_years, 'semesters': semesters, 'regulations': regulations})
+
+from django.views.decorators.http import require_GET
+from django.http import JsonResponse
+from operations.models import ExamSlot, RoomAllocation
+from masters.models import Room
+
+@require_GET
+def ajax_slot_rooms(request):
+    slot_id = request.GET.get('slot_id')
+    if not slot_id:
+        return JsonResponse({'success': False, 'error': 'Missing slot_id'})
+    try:
+        slot = ExamSlot.objects.get(id=slot_id)
+    except ExamSlot.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Slot not found'})
+    allocations = RoomAllocation.objects.filter(exam_slot=slot).select_related('room')
+    rooms = []
+    for alloc in allocations:
+        room = alloc.room
+        rooms.append({
+            'room_no': room.room_code,
+            'room_type': room.room_type or '',
+            'capacity': room.capacity,
+            'block': room.block or '',
+        })
+    slot_info = {
+        'exam_type': slot.exam_type,
+        'mode': slot.mode,
+        'exam_date': slot.exam_date.strftime('%Y-%m-%d'),
+        'start_time': slot.start_time.strftime('%H:%M'),
+        'end_time': slot.end_time.strftime('%H:%M'),
+        'slot_code': slot.slot_code,
+    }
+    return JsonResponse({'success': True, 'slot': slot_info, 'rooms': rooms})

@@ -19,7 +19,7 @@ def exam_rooms_alloc(request):
                 end_time__gt=slot.start_time
             ).exclude(id=slot.id)
             from .models import RoomAllocation
-            overlapping_room_ids = RoomAllocation.objects.filter(exam__exam_slot__in=overlapping_slots).values_list('room_id', flat=True)
+            overlapping_room_ids = RoomAllocation.objects.filter(exam_slot__in=overlapping_slots).values_list('room_id', flat=True)
         except ExamSlot.DoesNotExist:
             pass
     rooms = Room.objects.filter(is_active=True).exclude(id__in=overlapping_room_ids)
@@ -38,7 +38,7 @@ def exam_rooms_alloc(request):
             if request.method == "POST":
                 from .models import RoomAllocation
                 selected_room_ids = set(map(int, request.POST.getlist('selected_rooms')))
-                prev_allocs = RoomAllocation.objects.filter(exam=exams.first())
+                prev_allocs = RoomAllocation.objects.filter(exam_slot=slot)
                 prev_room_ids = set(prev_allocs.values_list('room_id', flat=True))
                 # Find deleted and added rooms
                 deleted_ids = prev_room_ids - selected_room_ids
@@ -49,7 +49,7 @@ def exam_rooms_alloc(request):
                 for room_id in selected_room_ids:
                     try:
                         room_obj = Room.objects.get(id=room_id)
-                        RoomAllocation.objects.create(exam=exams.first(), room=room_obj)
+                        RoomAllocation.objects.create(exam_slot=slot, room=room_obj)
                     except Room.DoesNotExist:
                         continue
                 # Prepare message
@@ -85,7 +85,7 @@ def exam_rooms_alloc(request):
             # On GET, just fetch allocated_room_ids, do not change allocations
             if request.method == "GET" and exams.exists():
                 from .models import RoomAllocation
-                allocated_room_ids = list(RoomAllocation.objects.filter(exam=exams.first()).values_list('room_id', flat=True))
+                allocated_room_ids = list(RoomAllocation.objects.filter(exam_slot=slot).values_list('room_id', flat=True))
         except ExamSlot.DoesNotExist:
             slot = None
     import math
@@ -99,52 +99,134 @@ def exam_rooms_alloc(request):
     })
 
 def exam_faculty_alloc(request):
-    slot_id = request.GET.get('slot_id')
+    slot_id = request.GET.get('slot_id') if request.method == 'GET' else request.POST.get('slot_id')
     slot = None
     faculties = []
     total_students = 0
     allocated_faculty = 0
-    if slot_id:
-        try:
-            slot = ExamSlot.objects.get(id=slot_id)
-            exams = Exam.objects.filter(exam_slot=slot)
-            from operations.models import FacultyCourse
-            from masters.models import Faculty
-            found_assignment = False
-            for exam in exams:
-                academic_year = slot.examination.academic_year if slot.examination else ''
-                semester = slot.examination.semester if slot.examination else ''
-                # Count students for this exam
-                from operations.models import StudentCourse
-                students = StudentCourse.objects.filter(course=exam.course, academic_year=academic_year, semester=semester)
-                total_students += students.count()
-                faculty_courses = FacultyCourse.objects.filter(course=exam.course, academic_year=academic_year, semester=semester, is_active=True)
-                for fc in faculty_courses:
-                    faculty_obj = fc.faculty
-                    faculties.append({
-                        'id': faculty_obj.faculty_id,
-                        'name': faculty_obj.faculty_name,
-                        'department': faculty_obj.dept.dept_name if faculty_obj.dept else '',
-                        'course': exam.course.course_name if exam.course else '',
-                        'role': faculty_obj.designation if hasattr(faculty_obj, 'designation') else ''
-                    })
-                    found_assignment = True
-            allocated_faculty = len(faculties)
-            # If no assignments found, show all active faculty
-            if not found_assignment:
-                from masters.models import Faculty
-                active_faculty = Faculty.objects.filter(status='ACTIVE')
-                for faculty_obj in active_faculty:
-                    faculties.append({
-                        'id': faculty_obj.faculty_id,
-                        'name': faculty_obj.faculty_name,
-                        'department': faculty_obj.dept.dept_name if faculty_obj.dept else '',
-                        'course': '',
-                        'role': faculty_obj.designation if hasattr(faculty_obj, 'designation') else ''
-                    })
-                allocated_faculty = len(active_faculty)
-        except ExamSlot.DoesNotExist:
-            slot = None
+    from operations.models import FacultyAvailability, ExamSlot
+    from django.db.models import Q
+    overlapping_faculty_ids = []
+    if not slot_id:
+        debug_message = "Slot ID is missing. Please select a slot before assigning faculty."
+        from .models import ExamSlot
+        slots = ExamSlot.objects.filter(status="ACTIVE").order_by("exam_date", "start_time")
+        return render(request, "operations/exam_faculty_alloc.html", {
+            'slot': None,
+            'faculties': [],
+            'required_faculty': 0,
+            'allocated_faculty': 0,
+            'debug_message': debug_message,
+            'slots': slots
+        })
+    from django.contrib import messages
+    success_message = None
+    selected_faculty_objs = []
+    required_faculty = 0
+    try:
+        slot = ExamSlot.objects.get(id=slot_id)
+        # Find overlapping slots
+        overlapping_slots = ExamSlot.objects.filter(
+            exam_date=slot.exam_date,
+            start_time__lt=slot.end_time,
+            end_time__gt=slot.start_time
+        ).exclude(id=slot.id)
+        # Get faculty assigned to overlapping slots
+        overlapping_faculty_ids = list(FacultyAvailability.objects.filter(
+            exam_slot__in=overlapping_slots
+        ).values_list('faculty__faculty_id', flat=True))
+        from masters.models import Faculty
+        if request.method == 'POST' and 'assign_faculty' in request.POST:
+            selected_faculty_ids = request.POST.getlist('selected_faculty')
+            selected_faculty_ids_set = set(selected_faculty_ids)
+            prev_allocated_set = set([f.faculty_id for f in Faculty.objects.filter(facultyavailability__exam_slot=slot)])
+            # Find removed and added
+            removed_ids = prev_allocated_set - selected_faculty_ids_set
+            added_ids = selected_faculty_ids_set - prev_allocated_set
+            removed_faculty_objs = []
+            added_faculty_objs = []
+            # Remove only deselected
+            for faculty_id in removed_ids:
+                FacultyAvailability.objects.filter(exam_slot=slot, faculty__faculty_id=faculty_id).delete()
+                try:
+                    removed_faculty_objs.append(Faculty.objects.get(faculty_id=faculty_id))
+                except Faculty.DoesNotExist:
+                    continue
+            # Add only newly selected
+            for faculty_id in added_ids:
+                if faculty_id in overlapping_faculty_ids:
+                    continue  # Skip assigning faculty already assigned to overlapping slot
+                try:
+                    faculty_obj = Faculty.objects.get(faculty_id=faculty_id)
+                    FacultyAvailability.objects.create(exam_slot=slot, faculty=faculty_obj, is_active=True)
+                    added_faculty_objs.append(faculty_obj)
+                except Faculty.DoesNotExist:
+                    continue
+            msg_parts = []
+            if added_faculty_objs:
+                msg_parts.append("Added: " + ', '.join([f.faculty_name for f in added_faculty_objs]))
+            if removed_faculty_objs:
+                msg_parts.append("Removed: " + ', '.join([f.faculty_name for f in removed_faculty_objs]))
+            if msg_parts:
+                messages.success(request, "Faculty allocation updated. " + ' | '.join(msg_parts))
+            else:
+                messages.info(request, "No changes made to faculty allocation.")
+            # Redirect to avoid repeated processing/messages
+            from django.shortcuts import redirect
+            return redirect(f'/ops/exam_faculty_alloc/?slot_id={slot.id}')
+        # Always show currently allocated faculty for this slot
+        allocated_faculty_objs = Faculty.objects.filter(facultyavailability__exam_slot=slot)
+        exams = Exam.objects.filter(exam_slot=slot)
+        from operations.models import FacultyCourse
+        found_assignment = False
+        total_students = 0
+        for exam in exams:
+            academic_year = slot.examination.academic_year if slot.examination else ''
+            semester = slot.examination.semester if slot.examination else ''
+            from operations.models import StudentCourse
+            students = StudentCourse.objects.filter(course=exam.course, academic_year=academic_year, semester=semester)
+            total_students += students.count()
+            faculty_courses = FacultyCourse.objects.filter(course=exam.course, academic_year=academic_year, semester=semester, is_active=True)
+            for fc in faculty_courses:
+                faculty_obj = fc.faculty
+                if faculty_obj.faculty_id in overlapping_faculty_ids:
+                    continue  # Skip faculty assigned to overlapping slot
+                faculties.append({
+                    'id': faculty_obj.faculty_id,
+                    'name': faculty_obj.faculty_name,
+                    'department': faculty_obj.dept.dept_name if faculty_obj.dept else '',
+                    'course': exam.course.course_name if exam.course else '',
+                    'role': faculty_obj.designation if hasattr(faculty_obj, 'designation') else ''
+                })
+                found_assignment = True
+        allocated_faculty = len(faculties)
+        if total_students > 0:
+            import math
+            required_faculty = math.ceil(total_students / 50)
+        if not found_assignment:
+            active_faculty = Faculty.objects.filter(status='ACTIVE').exclude(faculty_id__in=overlapping_faculty_ids)
+            for faculty_obj in active_faculty:
+                faculties.append({
+                    'id': faculty_obj.faculty_id,
+                    'name': faculty_obj.faculty_name,
+                    'department': faculty_obj.dept.dept_name if faculty_obj.dept else '',
+                    'course': '',
+                    'role': faculty_obj.designation if hasattr(faculty_obj, 'designation') else ''
+                })
+            allocated_faculty = len(active_faculty)
+    except ExamSlot.DoesNotExist:
+        slot = None
+        allocated_faculty_objs = []
+    allocated_faculty_ids = [f.faculty_id for f in allocated_faculty_objs]
+    return render(request, "operations/exam_faculty_alloc.html", {
+        'slot': slot,
+        'faculties': faculties,
+        'required_faculty': required_faculty,
+        'allocated_faculty': allocated_faculty,
+        'success_message': success_message,
+        'allocated_faculty_objs': allocated_faculty_objs,
+        'allocated_faculty_ids': allocated_faculty_ids
+    })
     import math
     required_faculty = math.ceil(total_students / 50) if total_students > 0 else 0
     return render(request, "operations/exam_faculty_alloc.html", {
@@ -510,7 +592,8 @@ def exam_scheduling(request, slot_id):
         from django.shortcuts import redirect
         if created:
             messages.success(request, f"Scheduled {created} exam(s) successfully.")
-            return redirect('exam_scheduling', slot_id=slot_id)
+            from django.urls import reverse
+            return redirect(reverse('operations:schedule_exam', kwargs={'slot_id': slot_id}))
         else:
             messages.error(request, "No exams were scheduled. Please try again.")
     # Only fetch filter values for dropdowns

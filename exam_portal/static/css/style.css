@@ -1,3 +1,242 @@
+.exam-status-generate {
+  background: #ffe5b2 !important;
+  color: #b45309 !important;
+  border: 1.5px solid #ff9900 !important;
+}
+/* Edit button alignment in popups */
+.popup-edit-btn-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 1em;
+}
+/* Slot Info Styling for Popups - Label and Value */
+.popup-slot-info {
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: #1E3A5F;
+  letter-spacing: 0.01em;
+  margin-bottom: 1.5em;
+}
+.popup-slot-label {
+  color: #1E3A5F;
+  font-weight: 600;
+  margin-right: 0.25em;
+}
+.popup-slot-value {
+  color: #1E293B;
+  font-weight: 500;
+  margin-right: 1.5em;
+}
+/* Slot Info Styling for Popups */
+.popup-slot-info {
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: #1E3A5F;
+  letter-spacing: 0.01em;
+  margin-bottom: 1.5em;
+}
+.exam-status-available .status-icon,
+.exam-status-pending .status-icon {
+  margin-left: 5px;
+  margin-right: 0;
+}
+
+.dashboard-popup-table-wrapper {
+  max-height: 80vh;
+  min-height: 120px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.mb-1em {
+  margin-bottom: 0.5em !important;
+}
+
+/* Make only tbody scroll, keep thead fixed */
+.dashboard-popup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.01rem;
+  table-layout: fixed;
+}
+.dashboard-popup-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f1f5f9;
+  z-index: 2;
+}
+.dashboard-popup-table tbody {
+  display: block;
+  max-height: 60vh;
+  min-height: 60px;
+  overflow-y: auto;
+  width: 100%;
+}
+.dashboard-popup-table thead, .dashboard-popup-table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+.dashboard-popup-table th, .dashboard-popup-table td {
+  border: 1px solid #cbd5e1;
+  padding: 8px 14px;
+  text-align: left;
+  box-sizing: border-box;
+  word-break: break-word;
+  white-space: pre-line;
+  max-width: 220px;
+}
+.dashboard-popup-table th {
+  background: #f1f5f9;
+  color: #1E3A5F;
+  font-weight: 600;
+}
+.dashboard-popup-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+.dashboard-popup-table tr:hover {
+  background: #e0e7ef;
+}
+/* Icon styles for edit/delete */
+.icon-edit {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.icon-delete {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+}
+/* Popup Message Styles */
+.popup-message {
+  background: #fff;
+  color: #b30000;
+  border: 1.5px solid #b30000;
+  border-radius: 8px;
+  padding: 12px 22px;
+  margin-bottom: 10px;
+  font-size: 1.08rem;
+  box-shadow: 0 2px 8px rgba(30,58,95,0.10);
+  z-index: 9999;
+  min-width: 220px;
+  max-width: 400px;
+}
+.popup-success {
+  background: #38a169;
+  color: #fff;
+  border-color: #38a169;
+}
+.popup-error {
+  background: #fff;
+  color: #b30000;
+  border-color: #b30000;
+}
+
+/* Error message for room/faculty capacity */
+#room-capacity-error, #faculty-capacity-error {
+  color: #b30000;
+  margin: 10px 0;
+  display: none;
+  font-size: 1.05em;
+}
+
+/* Badge styles for dynamic status */
+
+/* Unified Badge Styles */
+.badge,
+.badge-courses,
+.exam-status-available,
+.exam-status-pending {
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  min-width: 2.5em;
+  text-align: center;
+  cursor: pointer;
+}
+.badge-courses-zero {
+  background: #f8d7da;
+  color: #721c24;
+}
+.badge-courses-positive,
+.exam-status-available {
+  background: #e6f9e6;
+  color: #1a7f1a;
+  border: 1.5px solid #38a169 !important;
+}
+.exam-status-pending {
+  background: #ffe6e6 !important;
+  color: #b30000 !important;
+  border: 1.5px solid #b30000 !important;
+}
+
+/* Table cell center text */
+.text-center {
+  text-align: center;
+}
+
+/* Clash row for scheduling */
+.row-clash {
+  background: #ffe6e6 !important;
+  color: #b30000 !important;
+}
+.clash-msg {
+  color: #b30000;
+  font-size: 0.9em;
+}
+/* General Modal Overlay */
+.modal {
+  display: none; /* shown as flex when active */
+  position: fixed;
+  z-index: 3500;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+  overflow: auto;
+  align-items: center;
+  justify-content: center;
+}
+
+/* General Modal Content */
+.modal-content {
+  background: #fff;
+  padding: 2.5em;
+  max-width: 1100px;
+  width: 96vw;
+  height: auto;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 14px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  box-shadow: 0 12px 48px rgba(30,58,95,0.25);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal Close Button (override if needed) */
+.modal-content .close-modal, .modal-content [id^="close"] {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  font-size: 2em;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #2563eb;
+  z-index: 10;
+}
 /* Room Capacity Summary Styles */
 .room-capacity-summary-wrapper, .faculty-capacity-summary-wrapper {
   display: flex;
@@ -1247,8 +1486,7 @@ table tbody tr td li {
   align-items: center;
   font-weight: 400;
   border-radius: 16px;
-  padding: 2px 12px 2px 8px;
-  font-size: 15px;
+  padding: 2px 1px 2px 8px;
 }
 .exam-status-pending {
   background: #fff4e5;

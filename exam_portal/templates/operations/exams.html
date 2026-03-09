@@ -30,12 +30,12 @@
                 <div style="margin-bottom:1em;">
                     <label for="edit_exam_date">Exam Date:</label>
                     <br>
-                    <input type="date" id="edit_exam_date" name="exam_date" requireated>
- 0               </div>
+                    <input type="date" id="edit_exam_date" name="exam_date" required>
+                </div>
                 <div style="margin-bottom:1em;">
                     <label for="edit_start_time">Start Time:</label>
                     <br>
-                    <input type="time" id="edit_start_time" name="start_time" reqsuired>
+                    <input type="time" id="edit_start_time" name="start_time" required>
                 </div>
                 <div style="margin-bottom:1em;">
                     <label for="edit_end_time">End Time:</label>
@@ -61,9 +61,6 @@
     </div>
 <div class="pages-main">
     <h1 class="pages-main-head">Exam Slot Management</h1>
-    <div class="note-text">
-        <p style="color: red;">(<strong>Note:</strong> Please provide appropriate data for all fields.)</p>
-    </div>
     <div class="controls-1">
         <form id="examSlotForm" action="{% url 'operations:exams' %}{% if request.GET.exam_id or request.GET.exam_name or request.GET.start_date or request.GET.end_date %}?{% if request.GET.exam_id %}exam_id={{ request.GET.exam_id }}&{% endif %}{% if request.GET.exam_name %}exam_name={{ request.GET.exam_name|urlencode }}&{% endif %}{% if request.GET.start_date %}start_date={{ request.GET.start_date }}&{% endif %}{% if request.GET.end_date %}end_date={{ request.GET.end_date }}{% endif %}{% endif %}" method="post" autocomplete="off">
                 {% csrf_token %}
@@ -161,16 +158,17 @@
                     <th>Start Time</th>
                     <th>End Time</th>
                     <th>Slot Code</th>
-                    <th>Course Status</th>
+                    <th>Course Assignment</th>
                     <th>Course Count</th>
                     <th>Student Count</th>
-                    <th>Room Allocation</th>
+                    <th>Room Assignment</th>
                     <th>Faculty Assignment</th>
+                    <th>Status</th>
                     <th>Action</th>
                 </tr>
             </thead>
             <tbody id="exam-slots-list">
-                <tr><td colspan="12" style="text-align:center;">Loading...</td></tr>
+                <tr><td colspan="13" style="text-align:center;">Loading...</td></tr>
             </tbody>
         </table>
         <!-- Delete Slot Modal -->

@@ -1,5 +1,22 @@
 {% extends "core/base_admin.html" %}
 {% load static %}
+{% if messages %}
+	{% for message in messages %}
+		{% if message.tags != 'info' or message != 'No changes made to faculty allocation.' %}
+			<div style="color: green; margin-bottom: 10px;">{{ message }}</div>
+		{% endif %}
+	{% endfor %}
+{% endif %}
+{% if allocated_faculty_objs %}
+	<div style="margin-bottom: 10px;">
+		<strong>Currently Allocated Faculty for this Slot:</strong>
+		<ul>
+		{% for fac in allocated_faculty_objs %}
+			<li>{{ fac.faculty_name }} ({{ fac.faculty_id }}){% if fac.dept %} - {{ fac.dept.dept_name }}{% endif %}</li>
+		{% endfor %}
+		</ul>
+	</div>
+{% endif %}
 {% block content %}
 <div class="pages-main">
 	<h1 class="pages-main-head">Faculty Assignment Details</h1>
@@ -29,7 +46,9 @@
 	</div>
 	<div class="faculty-assigned">
 		<h3>Faculty Assigned</h3>
+ 
 		<form method="post" action="">
+			<input type="hidden" name="slot_id" value="{{ slot.id }}">
 			{% csrf_token %}
 			<div style="max-height: 375px; overflow-y: auto;">
 				<table class="table" style="min-width:600px; margin-top: 0px;">
@@ -45,7 +64,7 @@
 					<tbody>
 						{% for faculty in faculties %}
 						<tr>
-							<td><input type="checkbox" name="selected_faculty" value="{{ faculty.id }}"></td>
+							<td><input type="checkbox" name="selected_faculty" value="{{ faculty.id }}" {% if faculty.id in allocated_faculty_ids %}checked{% endif %}></td>
 							<td>{{ faculty.id }}</td>
 							<td>{{ faculty.name }}</td>
 							<td>{{ faculty.department }}</td>
@@ -58,7 +77,7 @@
 				</table>
 			</div>
 			<div style="margin-top:10px;">
-				<button type="submit" class="control-btn">Assign Selected Faculty</button>
+				<button type="submit" class="control-btn" name="assign_faculty">Assign Selected Faculty</button>
 				<button type="button" class="control-btn" id="clear-faculty-selection" style="margin-left:10px;">Clear All</button>
 			</div>
 		</form>
