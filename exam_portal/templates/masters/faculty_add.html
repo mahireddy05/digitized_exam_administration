@@ -1,0 +1,68 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+{% block content %}
+<div class="pages-main">
+    <h1 class="pages-main-head">Add New Faculty</h1>
+    <div class="management-form">
+    <form method="post" id="addFacultyForm">
+        {% csrf_token %}
+        <p>Faculty ID: <input type="text" name="faculty_id" value="" required /></p>
+        <p>First Name: <input type="text" name="first_name" value="" required /></p>
+        <p>Last Name: <input type="text" name="last_name" value="" required /></p>
+        <p>Email: <input type="email" name="email" value="" required /></p>
+        <p>Department:
+            <select name="department" required>
+                <option value="" disabled selected>Select Department</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}">{{ dept.dept_name }} ({{ dept.dept_code }})</option>
+                {% endfor %}
+            </select>
+        </p>
+        <p>Phone: <input type="tel" name="phone" value="" placeholder="10 Digits" pattern="[0-9+\-\s]{10,15}"
+                required /></p>
+        <p>Designation:
+            <select name="designation" required>
+                <option value="" disabled selected>-- Select --</option>
+                <option value="Assistant Professor">Assistant Professor</option>
+                <option value="Associate Professor">Associate Professor</option>
+                <option value="Professor">Professor</option>
+            </select>
+        </p>
+        <p>Status:
+            <select name="status">
+                <option value="ACTIVE" selected>ACTIVE</option>
+                <option value="RESIGNED">RESIGNED</option>
+                <option value="ON_LEAVE">ON LEAVE</option>
+            </select>
+        </p>
+        <button type="submit">Save</button>
+    </form>
+        <a href="{% url 'masters:faculty' %}" class="action-link">Back to Faculty List</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById('addFacultyForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const form = this;
+        const facultyId = form.elements['faculty_id'].value.trim();
+
+        if (!facultyId) return form.submit();
+
+        fetch(`{% url 'masters:check_exists' %}?type=faculty&id=${encodeURIComponent(facultyId)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // exists -> submit so server throws proper error
+                    form.submit();
+                } else {
+                    // does not exist -> confirm
+                    if (confirm("User doesn't exist already. Do you want to create a new user?")) {
+                        form.submit();
+                    }
+                }
+            })
+            .catch(() => form.submit());
+    });
+</script>
+{% endblock %}

@@ -2397,14 +2397,14 @@ function downloadStudentCSV() {
     document.body.removeChild(link);
 }
 document.addEventListener('DOMContentLoaded', function () {
-    if (typeof initializeStudentFilters === 'function') {
-        initializeStudentFilters();
-    }
-    const printBtn = document.getElementById('printStudentBtn');
-    const downloadBtn = document.getElementById('downloadStudentBtn');
-    if (printBtn) printBtn.onclick = printStudentTable;
-    if (downloadBtn) downloadBtn.onclick = downloadStudentCSV;
+    // Master data initializations are handled by the .init() calls at the end of the file.
 });
+// ========== Print & Download Actions (Global Delegation) ==========
+$(document).on('click', '#printStudentBtn', function() { printStudentTable(); });
+$(document).on('click', '#downloadStudentBtn', function() { downloadStudentCSV(); });
+$(document).on('click', '#printFacultyBtn', function() { printFacultyTable(); });
+$(document).on('click', '#downloadFacultyBtn', function() { downloadFacultyCSV(); });
+
 
 
 function printFacultyTable() {
@@ -2481,49 +2481,21 @@ function downloadFacultyCSV() {
 }
 
 // ============ FACULTY DELETE MODAL (AJAX, JS-only) ============
-document.addEventListener('DOMContentLoaded', function () {
-    const facultyDeleteBtns = document.querySelectorAll('.faculty-delete-btn');
-    let facultyModal = document.getElementById('facultyDeleteModal');
-    if (!facultyModal) {
-        facultyModal = document.createElement('div');
-        facultyModal.id = 'facultyDeleteModal';
-        facultyModal.className = 'modal';
-        facultyModal.style.display = 'none';
-        facultyModal.style.position = 'fixed';
-        facultyModal.style.top = '0';
-        facultyModal.style.left = '0';
-        facultyModal.style.width = '100vw';
-        facultyModal.style.height = '100vh';
-        facultyModal.style.background = 'rgba(30,58,95,0.18)';
-        facultyModal.style.zIndex = '3000';
-        facultyModal.style.alignItems = 'center';
-        facultyModal.style.justifyContent = 'center';
-        document.body.appendChild(facultyModal);
-    }
-    let facultyModalContent = document.getElementById('facultyDeleteModalContent');
-    if (!facultyModalContent) {
-        facultyModalContent = document.createElement('div');
-        facultyModalContent.id = 'facultyDeleteModalContent';
-        facultyModalContent.className = 'modal-content';
-        facultyModalContent.style.background = '#fff';
-        facultyModalContent.style.padding = '0';
-        facultyModalContent.style.borderRadius = '14px';
-        facultyModalContent.style.maxWidth = '480px';
-        facultyModalContent.style.width = '100%';
-        facultyModalContent.style.boxShadow = '0 2px 12px rgba(30,58,95,0.18)';
-        facultyModalContent.style.position = 'relative';
-        facultyModal.appendChild(facultyModalContent);
-    }
-    facultyDeleteBtns.forEach(btn => {
-        btn.addEventListener('click', function () {
-            const facultyId = btn.getAttribute('data-faculty-id');
-            const facultyName = btn.getAttribute('data-faculty-name');
-            const facultyEmail = btn.getAttribute('data-faculty-email');
-            const facultyDept = btn.getAttribute('data-faculty-dept');
-            const facultyPhone = btn.getAttribute('data-faculty-phone');
-            const facultyDesignation = btn.getAttribute('data-faculty-designation');
-            const facultyStatus = btn.getAttribute('data-faculty-status');
-            facultyModalContent.innerHTML = `
+// ============ FACULTY DELETE MODAL (Global Delegation) ============
+$(document).on('click', '.faculty-delete-btn', function () {
+    const btn = $(this);
+    const facultyId = btn.data('faculty-id');
+    const facultyName = btn.data('faculty-name');
+    const facultyEmail = btn.data('faculty-email');
+    const facultyDept = btn.data('faculty-dept');
+    const facultyPhone = btn.data('faculty-phone');
+    const facultyDesignation = btn.data('faculty-designation');
+    const facultyStatus = btn.data('faculty-status');
+
+    let facultyModal = $('#facultyDeleteModal');
+    let facultyModalContent = $('#facultyDeleteModalContent');
+
+    facultyModalContent.html(`
         <div class="delete-form">
           <h2>Delete Faculty</h2>
           <div style='text-align:left;font-size:0.98em;color:#000;margin-bottom:12px;'>
@@ -2541,55 +2513,107 @@ document.addEventListener('DOMContentLoaded', function () {
           </form>
           <button type="button" id="cancelFacultyDeleteBtn" class="action-link" style="margin-top:12px;">Cancel</button>
         </div>
-      `;
-            facultyModal.style.display = 'flex';
-            // Cancel button
-            const cancelBtn = document.getElementById('cancelFacultyDeleteBtn');
-            if (cancelBtn) {
-                cancelBtn.onclick = function () {
-                    facultyModal.style.display = 'none';
-                };
-            }
-            // Close modal on outside click
-            facultyModal.onclick = function (e) {
-                if (e.target === facultyModal) facultyModal.style.display = 'none';
-            };
-            // Submit form to delete faculty
-            const deleteForm = document.getElementById('deleteFacultyForm');
-            if (deleteForm) {
-                deleteForm.onsubmit = function (e) {
-                    e.preventDefault();
-                    const url = `/masters/faculty/${facultyId}/delete/`;
-                    // Try to get CSRF token from page
-                    const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
-                    const csrfToken = csrfInput ? csrfInput.value : '';
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-CSRFToken': csrfToken,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: `csrfmiddlewaretoken=${csrfToken}`
-                    }).then(resp => {
-                        if (resp.ok) {
-                            showPopup('Faculty deleted successfully.', 'success');
-                            setTimeout(() => { window.location.reload(); }, 1200);
-                        } else {
-                            showPopup('Failed to delete faculty.', 'error');
-                            facultyModal.style.display = 'none';
-                        }
-                    });
-                };
-            }
-        });
+    `);
+    facultyModal.css('display', 'flex');
+});
+
+$(document).on('click', '#cancelFacultyDeleteBtn', function() {
+    $('#facultyDeleteModal').hide();
+});
+
+$(document).on('submit', '#deleteFacultyForm', function (e) {
+    e.preventDefault();
+    const facultyId = $(this).find('input[name="faculty_id"]').val();
+    const url = `/masters/faculty/${facultyId}/delete/`;
+    const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: { csrfmiddlewaretoken: csrfToken },
+        success: function(resp) {
+            showPopup('Faculty deleted successfully.', 'success');
+            $('#facultyDeleteModal').hide();
+            setTimeout(() => { 
+                if (typeof facultyTable !== 'undefined' && facultyTable.fetchFaculty) {
+                    facultyTable.fetchFaculty(1);
+                } else {
+                    window.location.reload();
+                }
+            }, 1000);
+        },
+        error: function() {
+            showPopup('Failed to delete faculty.', 'error');
+            $('#facultyDeleteModal').hide();
+        }
     });
 });
 
 // ============ STUDENT DELETE MODAL (AJAX) ============
-document.addEventListener('DOMContentLoaded', function () {
-    const modal = document.getElementById('studentDeleteModal');
-    // Only the correct delete-exam-btn event handler should be present (see above)
+// ============ STUDENT DELETE MODAL (Global Delegation) ============
+$(document).on('click', '.student-delete-btn', function () {
+    const btn = $(this);
+    const studentId = btn.data('student-id');
+    const studentName = btn.data('student-name');
+    const studentReg = btn.data('student-reg');
+    const studentEmail = btn.data('student-email');
+    const studentDept = btn.data('student-dept');
+    const studentStatus = btn.data('student-status');
+
+    let studentModal = $('#studentDeleteModal');
+    let studentModalContent = $('#studentDeleteModalContent');
+
+    studentModalContent.html(`
+        <div class="delete-form">
+          <h2>Delete Student</h2>
+          <div style='text-align:left;font-size:0.98em;color:#000;margin-bottom:12px;'>
+            <strong>Name:</strong> ${studentName}<br>
+            <strong>Student ID:</strong> ${studentReg}<br>
+            <strong>Email:</strong> ${studentEmail}<br>
+            <strong>Department:</strong> ${studentDept}<br>
+            <strong>Status:</strong> ${studentStatus}
+          </div>
+          <p>Are you sure you want to delete student <strong>${studentName}</strong>?</p>
+          <form id="deleteStudentFormAjax" method="post" style="margin-bottom:0;">
+            <input type="hidden" name="student_id" value="${studentId}">
+            <button type="submit">Confirm Delete</button>
+          </form>
+          <button type="button" id="cancelStudentDeleteBtn" class="action-link" style="margin-top:12px;">Cancel</button>
+        </div>
+    `);
+    studentModal.css('display', 'flex');
+});
+
+$(document).on('click', '#cancelStudentDeleteBtn', function() {
+    $('#studentDeleteModal').hide();
+});
+
+$(document).on('submit', '#deleteStudentFormAjax', function (e) {
+    e.preventDefault();
+    const sId = $(this).find('input[name="student_id"]').val();
+    const url = `/masters/student/${sId}/delete/`;
+    const csrfToken = $('input[name="csrfmiddlewaretoken"]').val();
+
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: { csrfmiddlewaretoken: csrfToken },
+        success: function(resp) {
+            showPopup('Student deleted successfully.', 'success');
+            $('#studentDeleteModal').hide();
+            setTimeout(() => { 
+                if (typeof studentsTable !== 'undefined' && studentsTable.fetchStudents) {
+                    studentsTable.fetchStudents(1);
+                } else {
+                    window.location.reload();
+                }
+            }, 1000);
+        },
+        error: function() {
+            showPopup('Failed to delete student.', 'error');
+            $('#studentDeleteModal').hide();
+        }
+    });
 });
 
 // ============ GLOBAL POPUP FUNCTION ============
@@ -2786,13 +2810,15 @@ function initializeContentScripts(pageUrl) {
     // They also grab the latest table rows, which is important for filtering.
     // We explicitly call them here based on the URL.
 
-    // Student Management
-    if (pageUrl.includes('/students/') && typeof initializeStudentFilters === 'function') {
-        initializeStudentFilters();
+    // Student Management logic (initially handled by studentsTable.init())
+    // No recursive fetchStudents calls here.
+    if (pageUrl.includes('/students/') && typeof studentsTable !== 'undefined') {
+        // studentsTable.fetchStudents(1); // REMOVED TO PREVENT INFINITE LOOP
     }
-    // Faculty Management
-    if (pageUrl.includes('/faculty/') && typeof initializeFacultyFilters === 'function') {
-        initializeFacultyFilters();
+    // Faculty Management logic (initially handled by facultyTable.init())
+    // No recursive fetchFaculty calls here.
+    if (pageUrl.includes('/faculty/') && typeof facultyTable !== 'undefined') {
+        // facultyTable.fetchFaculty(1); // REMOVED TO PREVENT INFINITE LOOP
     }
     // Room Management
     if (pageUrl.includes('/rooms/') && typeof initializeRoomFilters === 'function') {
@@ -2903,9 +2929,9 @@ window.studentsTable = {
             success: function (data) {
                 $("#student-list").html(data.table_html);
                 $("#studentPaginationBar").html(data.pagination_html);
-                // Re-initialize delete modal and other listeners if needed
+                // Re-initialize master table logic if needed
                 if (typeof initializeContentScripts === 'function') {
-                    initializeContentScripts(window.location.pathname);
+                    // (Optional: can call if we have other scripts to run)
                 }
             }
         });
@@ -2945,6 +2971,60 @@ window.studentsTable = {
 $(document).ready(function () {
     if (document.getElementById('student-table')) {
         studentsTable.init();
+    }
+});
+
+// ============ FACULTY TABLE (AJAX) ============
+window.facultyTable = {
+    FACULTY_URL: '/masters/ajax/',
+    currentPage: 1,
+    fetchFaculty: function (page = 1) {
+        let params = { type: 'faculty', page };
+        params['search'] = $("#search").val() || '';
+        params['department'] = $("#department").val() || 'all';
+        $.ajax({
+            url: this.FACULTY_URL,
+            data: params,
+            dataType: "json",
+            success: function (data) {
+                $("#faculty-list").html(data.table_html);
+                $(".pagination-bar").html(data.pagination_html);
+                if (typeof initializeContentScripts === 'function') {
+                    initializeContentScripts(window.location.pathname);
+                }
+            }
+        });
+    },
+    bindEvents: function () {
+        $(document).on("change", "#department", function () {
+            facultyTable.fetchFaculty(1);
+        });
+        $(document).on("input", "#search", function () {
+            facultyTable.fetchFaculty(1);
+        });
+        $(document).on("click", ".pagination-bar .page-arrow, .pagination-bar .page-num", function (e) {
+            e.preventDefault();
+            const page = $(this).data("page");
+            if (page && page !== facultyTable.currentPage) {
+                facultyTable.currentPage = page;
+                facultyTable.fetchFaculty(page);
+            }
+        });
+        $(document).on("click", "#resetFacultyFilters", function () {
+            $("#search").val("");
+            $("#department").val("all");
+            setTimeout(function () { facultyTable.fetchFaculty(1); }, 0);
+        });
+    },
+    init: function () {
+        facultyTable.fetchFaculty();
+        facultyTable.bindEvents();
+    }
+};
+
+$(document).ready(function () {
+    if (document.getElementById('faculty-table')) {
+        facultyTable.init();
     }
 });
 // ============ BATCHES TABLE ============

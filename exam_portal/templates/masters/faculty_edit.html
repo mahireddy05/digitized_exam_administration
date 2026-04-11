@@ -1,8 +1,9 @@
 {% extends "core/base_admin.html" %}
 {% load static %}
 {% block content %}
-    <div class="edit-form">
-        <h2>Edit Faculty ({{ faculty.faculty_id }} - {{ user.first_name }} {{ user.last_name }})</h2>
+<div class="pages-main">
+    <h1 class="pages-main-head">Edit Faculty ({{ faculty.faculty_id }} - {{ user.first_name }} {{ user.last_name }})</h1>
+    <div class="management-form">
         <form method="post">
             {% csrf_token %}
             <p>First Name: <input type="text" name="first_name" value="{{ user.first_name }}" /></p>
@@ -11,7 +12,7 @@
             <p>Department:
                 <select name="department">
                     {% for dept in departments %}
-                        <option value="{{ dept.id }}" {% if faculty.dept.id == dept.id %}selected{% endif %}>{{ dept.dept_name }} ({{ dept.dept_code }})</option>
+                    <option value="{{ dept.id }}" {% if faculty.dept.id == dept.id %}selected{% endif %}>{{ dept.dept_name }} ({{ dept.dept_code }})</option>
                     {% endfor %}
                 </select>
             </p>
@@ -35,4 +36,5 @@
         </form>
         <a href="{% url 'masters:faculty' %}" class="action-link">Back to Faculty List</a>
     </div>
+</div>
 {% endblock %}

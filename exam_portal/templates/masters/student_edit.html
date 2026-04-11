@@ -1,8 +1,9 @@
 {% extends "core/base_admin.html" %}
 {% load static %}
 {% block content %}
-    <div class="edit-form">
-        <h2>Edit Student ({{ student.student_id }} - {{ student.user.first_name }} {{ student.user.last_name }})</h2>
+<div class="pages-main">
+    <h1 class="pages-main-head">Edit Student ({{ student.student_id }} - {{ student.user.first_name }} {{ student.user.last_name }})</h1>
+    <div class="management-form">
         <form method="post">
             {% csrf_token %}
             <p>Student ID: <input type="text" name="student_id" value="{{ student.student_id }}" readonly class="readonly-e5" /></p>
@@ -44,4 +45,5 @@
         </form>
         <a href="{% url 'masters:student' %}" class="action-link">Back to Student List</a>
     </div>
+</div>
 {% endblock %}

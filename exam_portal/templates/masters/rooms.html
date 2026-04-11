@@ -10,7 +10,7 @@
                 avoid errors)</p>
         </div>
         <div class="add-data">
-            <a class="control-btn" href="addroom.html">Add new room</a>
+            <a class="control-btn" href="{% url 'masters:room_add' %}">Add new room</a>
             <form id="room-upload-form" action="{% url 'masters:room_upload' %}" method="post"
                 enctype="multipart/form-data" class="d-inline">
                 {% csrf_token %}

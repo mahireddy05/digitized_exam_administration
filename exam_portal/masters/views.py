@@ -19,6 +19,23 @@ from datetime import datetime, timedelta
 def faculty_dashboard(request):
     return render(request, "core/faculty_dashboard.html")
 
+@login_required
+def check_id_exists(request):
+    """AJAX endpoint to check if an ID exists before submitting forms."""
+    entity_type = request.GET.get('type')
+    check_id = request.GET.get('id', '').strip()
+    
+    if not check_id:
+        return JsonResponse({'exists': False})
+        
+    exists = False
+    if entity_type == 'student':
+        exists = Student.objects.filter(student_id=check_id).exists() or User.objects.filter(username=check_id).exists()
+    elif entity_type == 'faculty':
+        exists = Faculty.objects.filter(faculty_id=check_id).exists() or User.objects.filter(username=check_id).exists()
+        
+    return JsonResponse({'exists': exists})
+
 # Invigilation Duties view for faculty
 @login_required(login_url='/accounts/login/')
 def invigilation_duties(request):
@@ -682,7 +699,108 @@ def faculty_upload(request):
 
     return redirect("masters:faculty")
 
+@login_required
+def faculty_add(request):
+    from .models import Faculty, Department
+    from accounts.models import User
+    departments = Department.objects.all()
+
+    if request.method == "POST":
+        faculty_id = request.POST.get("faculty_id", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        email = request.POST.get("email", "").strip()
+        phone = request.POST.get("phone", "").strip()
+        dept_id = request.POST.get("department")
+        designation = request.POST.get("designation")
+        status = request.POST.get("status", "ACTIVE")
+
+        if not faculty_id:
+            messages.error(request, "Faculty ID is required.")
+            return redirect("masters:faculty_add")
+            
+        if not first_name or not last_name:
+            messages.error(request, "First Name and Last Name are required.")
+            return redirect("masters:faculty_add")
+            
+        if not email:
+            messages.error(request, "Email address is required.")
+            return redirect("masters:faculty_add")
+            
+        if not dept_id:
+            messages.error(request, "Department selection is mandatory.")
+            return redirect("masters:faculty_add")
+
+        if Faculty.objects.filter(faculty_id=faculty_id).exists() or User.objects.filter(username=faculty_id).exists():
+            messages.error(request, f"Faculty with ID {faculty_id} already exists. To update, please use the edit view.")
+            return redirect("masters:faculty_add")
+
+        try:
+            # Create user
+            fac_password = f"{faculty_id}@{faculty_id}"
+            user = User.objects.create_user(
+                username=faculty_id,
+                email=email,
+                password=fac_password,
+                first_name=first_name,
+                last_name=last_name,
+                role='Faculty'
+            )
+
+            # Create Faculty
+            dept = Department.objects.get(id=dept_id) if dept_id else None
+            Faculty.objects.create(
+                faculty_id=faculty_id,
+                user=user,
+                faculty_name=f"{first_name} {last_name}".strip(),
+                dept=dept,
+                email=email,
+                phone_number=phone,
+                designation=designation,
+                status=status
+            )
+            messages.success(request, f"User created successfully. Password is: {fac_password}")
+            return redirect("masters:faculty")
+        except Exception as e:
+            messages.error(request, f"Error adding faculty: {e}")
+            return redirect("masters:faculty_add")
+
+    return render(request, "masters/faculty_add.html", {
+        "departments": departments,
+    })
+
 # AJAX: Edit course
+
+@login_required
+def course_add(request):
+    from .models import Course
+    
+    if request.method == "POST":
+        course_code = request.POST.get("course_code", "").strip()
+        course_name = request.POST.get("course_name", "").strip()
+        is_active = request.POST.get("is_active") == "1"
+        
+        if not course_code or not course_name:
+            messages.error(request, "Course code and Course name are strictly required.")
+            return redirect("masters:course_add")
+            
+        if Course.objects.filter(course_code=course_code).exists():
+            messages.error(request, f"Course {course_code} already exists. Please edit it instead of creating a duplicate.")
+            return redirect("masters:course_add")
+            
+        try:
+            Course.objects.create(
+                course_code=course_code,
+                course_name=course_name,
+                is_active=is_active
+            )
+            messages.success(request, f"Course {course_code} added successfully.")
+            return redirect("masters:courses")
+        except Exception as e:
+            messages.error(request, f"Error adding course: {e}")
+            return redirect("masters:course_add")
+
+    return render(request, "masters/course_add.html")
 
 @csrf_exempt
 @login_required
@@ -781,6 +899,93 @@ def student_detail(request, pk):
     else:
         base_template = "core/base_admin.html" if request.user.is_staff or request.user.is_superuser else "core/base_student.html"
     return render(request, "masters/student_detail.html", {"student": student, "base_template": base_template})
+
+@login_required
+def student_add(request):
+    from .models import Student, Department, Program, Batch
+    from accounts.models import User
+    departments = Department.objects.all()
+    programs = Program.objects.all()
+    batches = Batch.objects.all()
+    
+    if request.method == "POST":
+        student_id = request.POST.get("student_id", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        email = request.POST.get("email", "").strip()
+        phone = request.POST.get("phone_number", "").strip()
+        parent_phone = request.POST.get("parent_phone_number", "").strip()
+        dept_id = request.POST.get("department")
+        program_id = request.POST.get("program")
+        batch_id = request.POST.get("batch")
+        status = request.POST.get("status", "ACTIVE")
+        
+        if not student_id:
+            messages.error(request, "Student ID is required.")
+            return redirect("masters:student_add")
+            
+        if not first_name or not last_name:
+            messages.error(request, "First Name and Last Name are required.")
+            return redirect("masters:student_add")
+            
+        if not email:
+            messages.error(request, "Email address is required.")
+            return redirect("masters:student_add")
+            
+        if not dept_id or not program_id or not batch_id:
+            messages.error(request, "Department, Program, and Regulation/Batch selections are mandatory.")
+            return redirect("masters:student_add")
+            
+        if Student.objects.filter(student_id=student_id).exists() or User.objects.filter(username=student_id).exists():
+            messages.error(request, f"Student with ID {student_id} already exists. To update this student, use the edit function.")
+            return redirect("masters:student_add")
+            
+        try:
+            # Create user
+            stu_password = "Test@123"
+            user = User.objects.create_user(
+                username=student_id,
+                email=email,
+                password=stu_password,
+                first_name=first_name,
+                last_name=last_name,
+                role='Student'
+            )
+            
+            # Create Student
+            dept = Department.objects.get(id=dept_id) if dept_id else None
+            prog = Program.objects.get(id=program_id) if program_id else None
+            batch = Batch.objects.get(id=batch_id) if batch_id else None
+            
+            Student.objects.create(
+                student_id=student_id,
+                user=user,
+                std_name=f"{first_name} {last_name}".strip(),
+                program=prog,
+                dept=dept,
+                email=email,
+                phone_number=phone,
+                parent_phone_number=parent_phone,
+                status=status,
+                batch=batch
+            )
+            messages.success(request, f"User created successfully. Password is: {stu_password}")
+            return redirect("masters:student")
+        except Exception as e:
+            messages.error(request, f"Error adding student: {e}")
+            return redirect("masters:student_add")
+
+    if hasattr(request.user, 'role') and request.user.role == 'faculty':
+        base_template = "core/base_faculty.html"
+    else:
+        base_template = "core/base_admin.html"
+        
+    return render(request, "masters/student_add.html", {
+        "departments": departments,
+        "programs": programs,
+        "batches": batches,
+        "base_template": base_template
+    })
 
 @login_required
 def student_edit(request, pk):
@@ -1660,6 +1865,61 @@ def faculty_update_conflicts(request):
             return redirect('masters:faculty_update_conflicts')
     return render(request, "masters/faculty_update_conflicts.html", {"mismatches": mismatches})
 
+
+@login_required
+def room_add(request):
+    from .models import Room
+    
+    if request.method == "POST":
+        room_code = request.POST.get("room_code", "").strip()
+        block = request.POST.get("block", "").strip()
+        floor = request.POST.get("floor", "").strip()
+        rows_str = request.POST.get("rowscount", "0")
+        cols_str = request.POST.get("columnscount", "0")
+        is_active = request.POST.get("is_active") == "1"
+        
+        try:
+            rows = int(rows_str)
+            columns = int(cols_str)
+            capacity = rows * columns
+        except ValueError:
+            messages.error(request, "Rows and columns must be numbers.")
+            return redirect("masters:room_add")
+            
+        if not room_code:
+            messages.error(request, "Room code is required.")
+            return redirect("masters:room_add")
+            
+        if not block or not floor:
+            messages.error(request, "Block and Floor are strictly required.")
+            return redirect("masters:room_add")
+            
+        if rows <= 0 or columns <= 0:
+            messages.error(request, "Room rows and columns must be strictly positive numbers.")
+            return redirect("masters:room_add")
+            
+        if Room.objects.filter(room_code=room_code).exists():
+            messages.error(request, f"Room {room_code} already exists. Proceed to edit it instead.")
+            return redirect("masters:room_add")
+            
+        try:
+            Room.objects.create(
+                room_code=room_code,
+                block=block,
+                floor=floor,
+                rows=rows,
+                columns=columns,
+                capacity=capacity,
+                room_type="Theory", # default assignment
+                is_active=is_active
+            )
+            messages.success(request, f"Room {room_code} added successfully.")
+            return redirect("masters:rooms")
+        except Exception as e:
+            messages.error(request, f"Error adding room: {e}")
+            return redirect("masters:room_add")
+
+    return render(request, "masters/room_add.html")
 
 # ===== ROOM CSV UPLOAD =====
 @login_required

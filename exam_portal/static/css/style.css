@@ -838,10 +838,18 @@ a img {
   vertical-align: middle;
 }
 
+body {
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
 #page {
   display: flex;
   flex-direction: row;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .content {
@@ -849,8 +857,10 @@ a img {
   width: calc(100% - 250px);
   background: whitesmoke;
   padding: 5px;
-  min-height: 100vh;
-  overflow-y: auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .pages-main {
@@ -862,8 +872,8 @@ a img {
   font-family: 'Poppins', sans-serif;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  max-height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 @media (max-width: 768px) {
@@ -994,7 +1004,8 @@ a img {
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
-  margin-top: 20px;
+  margin-top: 15px;
+  min-height: 0;
 }
 
 
@@ -1105,6 +1116,117 @@ table tbody tr td li {
   text-align: center;
 }
 
+.management-form {
+  font-family: 'Poppins', sans-serif;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 10px 0;
+}
+
+.management-form h2 {
+  color: #1E3A5F;
+  margin-bottom: 25px;
+  font-weight: 600;
+}
+
+.management-form form {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 30px;
+  align-items: start;
+}
+
+.management-form p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 500;
+  color: #2C4C70;
+  font-size: 0.95rem;
+}
+
+.management-form p:has(input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.management-form p input:not([type="checkbox"]), 
+.management-form p select {
+  padding: 10px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
+  background: #f8fafc;
+  outline: none;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.management-form p input:not([type="checkbox"]):focus, 
+.management-form p select:focus {
+  border-color: #1E3A5F;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+}
+
+.management-form button[type="submit"] {
+  grid-column: 1 / -1;
+  background: linear-gradient(90deg, #1E3A5F 0%, #3c5f88 100%);
+  color: #fff;
+  padding: 12px 30px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1.05rem;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: box-shadow 0.2s, transform 0.2s;
+  justify-self: start;
+}
+
+.management-form button[type="submit"]:hover {
+  box-shadow: 0 4px 12px rgba(30, 58, 95, 0.2);
+  transform: translateY(-1px);
+}
+
+/* On extremely small screens, revert to 1 column */
+@media (max-width: 768px) {
+  .management-form form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.management-form .action-link {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 25px;
+  background: #f1f5f9;
+  color: #1E3A5F;
+  border: 1.5px solid #cbd5e1;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.management-form .action-link:hover {
+  background: #e2e8f0;
+  border-color: #1E3A5F;
+  transform: translateX(-3px);
+}
+
+.management-form .action-link::before {
+  content: '←';
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
 .view-page .user-profile-pic {
   justify-content: center;
   align-items: center;
@@ -1209,6 +1331,18 @@ table tbody tr td li {
     margin-left: 0;
     width: 100%;
     padding: 10px;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+
+  #page {
+    height: auto !important;
+    overflow: visible !important;
   }
 
   .note-text {

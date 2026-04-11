@@ -1,0 +1,20 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+{% block content %}
+<div class="pages-main">
+    <h1 class="pages-main-head">Add New Room</h1>
+    <div class="management-form">
+        <form method="post">
+            {% csrf_token %}
+            <p>Room Code: <input type="text" name="room_code" value="" required /></p>
+            <p>Block: <input type="text" name="block" value="" required /></p>
+            <p>Floor: <input type="text" name="floor" value="" required /></p>
+            <p>Rows: <input type="number" name="rowscount" value="0" required /></p>
+            <p>Columns: <input type="number" name="columnscount" value="0" required /></p>
+            <p>Status: <input type="checkbox" name="is_active" value="1" checked /> Active</p>
+            <button type="submit">Save</button>
+        </form>
+        <a href="{% url 'masters:rooms' %}" class="action-link">Back to Room List</a>
+    </div>
+</div>
+{% endblock %}

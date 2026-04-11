@@ -1,0 +1,76 @@
+{% extends base_template|default:"core/base_admin.html" %}
+{% load static %}
+{% block content %}
+<div class="pages-main">
+    <h1 class="pages-main-head">Add New Student</h1>
+    <div class="management-form">
+        <form method="post" id="addStudentForm">
+            {% csrf_token %}
+            <p>Student ID: <input type="text" name="student_id" value="" required /></p>
+            <p>First Name: <input type="text" name="first_name" value="" required /></p>
+            <p>Last Name: <input type="text" name="last_name" value="" required /></p>
+            <p>Department:
+                <select name="department" required>
+                    <option value="" disabled selected>Select Department</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}">{{ dept.dept_name }} ({{ dept.dept_code }})</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>Program:
+                <select name="program" required>
+                    <option value="" disabled selected>Select Program</option>
+                    {% for prog in programs %}
+                        <option value="{{ prog.id }}">{{ prog.program_name }} ({{ prog.program_code }})</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>Regulation (Batch):
+                <select name="batch" required>
+                    <option value="" disabled selected>Select Regulation/Batch</option>
+                    {% for batch in batches %}
+                        <option value="{{ batch.id }}">{{ batch.batch_code }} ({{ batch.admission_year }}-{{ batch.grad_year }})</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p>Email: <input type="email" name="email" value="" required /></p>
+            <p>Mobile: <input type="tel" name="phone_number" value="" placeholder="10 Digits" pattern="[0-9+\-\s]{10,15}" required /></p>
+            <p>Parent Mobile: <input type="tel" name="parent_phone_number" value="" placeholder="10 Digits" pattern="[0-9+\-\s]{10,15}" required /></p>
+            <p>Status:
+                <select name="status">
+                    <option value="ACTIVE" selected>ACTIVE</option>
+                    <option value="GRADUATED">GRADUATED</option>
+                    <option value="DROPPED">DROPPED</option>
+                </select>
+            </p>
+            <button type="submit">Save</button>
+        </form>
+        <a href="{% url 'masters:student' %}" class="action-link">Back to Student List</a>
+    </div>
+</div>
+
+    <script>
+    document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const studentId = form.elements['student_id'].value.trim();
+        
+        if(!studentId) return form.submit(); // Let HTML5 validation handle or backend
+
+        fetch(`{% url 'masters:check_exists' %}?type=student&id=${encodeURIComponent(studentId)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    // It already exists; submit so Django throws the proper error
+                    form.submit();
+                } else {
+                    // It doesn't exist; confirm before creating
+                    if (confirm("User doesn't exist already. Do you want to create a new user?")) {
+                        form.submit();
+                    }
+                }
+            })
+            .catch(() => form.submit()); // fallback
+    });
+    </script>
+{% endblock %}

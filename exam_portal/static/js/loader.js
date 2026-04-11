@@ -38,7 +38,7 @@ window.Loader = {
         if (subtextEl) subtextEl.textContent = subtext;
         if (dismissBtn) dismissBtn.classList.remove('visible');
 
-        // Set a 1-second delay before showing the full overlay to prevent flickering for fast requests
+        // Set a 0.5-second delay before showing the full overlay to prevent flickering for fast requests
         this._showTimeout = setTimeout(() => {
             if (!this._isActive) return;
 
@@ -67,7 +67,7 @@ window.Loader = {
                     }
                 }, 3000);
             }
-        }, 1000);
+        }, 500);
     },
     
     hide: function() {

@@ -11,7 +11,7 @@
                 avoid errors)</p>
         </div>
         <div class="add-data">
-            <a class="control-btn" href="#">Add new faculty</a>
+            <a class="control-btn" href="{% url 'masters:faculty_add' %}">Add new faculty</a>
             <form action="{% url 'masters:faculty_upload' %}" method="post" enctype="multipart/form-data"
                 class="d-inline">
                 {% csrf_token %}
@@ -152,51 +152,4 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{% static 'js/scripts.js' %}"></script>
-<script>
-    const facultyFilterForm = document.getElementById('facultyFilterForm');
-    const facultySearchInput = document.getElementById('search');
-    const facultyDepartmentSelect = document.getElementById('department');
-    const facultyList = document.getElementById('faculty-list');
-    const facultyPaginationBar = document.querySelector('.pagination-bar');
-    const resetFacultyBtn = document.getElementById('resetFacultyFilters');
-
-    let facultyAjaxTimeout = null;
-    function fetchFacultyData(page = 1) {
-        const search = facultySearchInput.value;
-        const department = facultyDepartmentSelect.value;
-        const params = new URLSearchParams({ type: 'faculty', search, department, page });
-        fetch('/masters/ajax/?' + params.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.json())
-            .then(data => {
-                facultyList.innerHTML = data.table_html;
-                facultyPaginationBar.innerHTML = data.pagination_html;
-                attachFacultyPaginationEvents();
-            });
-    }
-
-    function instantFacultyFilter() {
-        clearTimeout(facultyAjaxTimeout);
-        facultyAjaxTimeout = setTimeout(() => fetchFacultyData(1), 250);
-    }
-
-    facultySearchInput.addEventListener('input', instantFacultyFilter);
-    facultyDepartmentSelect.addEventListener('change', instantFacultyFilter);
-
-    function attachFacultyPaginationEvents() {
-        facultyPaginationBar.querySelectorAll('a[data-page]').forEach(a => {
-            a.addEventListener('click', function (e) {
-                e.preventDefault();
-                const page = this.getAttribute('data-page');
-                fetchFacultyData(page);
-            });
-        });
-    }
-    attachFacultyPaginationEvents();
-
-    resetFacultyBtn.addEventListener('click', function () {
-        facultySearchInput.value = '';
-        facultyDepartmentSelect.value = 'all';
-        fetchFacultyData(1);
-    });
-</script>
 {% endblock %}

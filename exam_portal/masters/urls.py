@@ -15,6 +15,7 @@ urlpatterns = [
 
     # STUDENT
     path("student/", views.student, name="student"),
+    path("student/add/", views.student_add, name="student_add"),
     path("student/content/", views.student_content, name="student_content"),
     path("student/<int:pk>/detail/", views.student_detail, name="student_detail"),
     path("student/<int:pk>/edit/", views.student_edit, name="student_edit"),
@@ -24,9 +25,11 @@ urlpatterns = [
 
     # Central AJAX endpoint for all management pages
     path('ajax/', ajax.ajax, name='ajax'),
+    path('check_exists/', views.check_id_exists, name='check_exists'),
 
     # FACULTY
     path("faculty/", views.faculty, name="faculty"),
+    path("faculty/add/", views.faculty_add, name="faculty_add"),
     path("faculty/content/", views.faculty_content, name="faculty_content"),
     path("faculty/<int:pk>/detail/", views.faculty_detail, name="faculty_detail"),
     path("faculty/<int:pk>/detail_content/", views.faculty_detail_content, name="faculty_detail_content"),
@@ -37,6 +40,7 @@ urlpatterns = [
 
     # ROOMS
     path("rooms/", views.rooms, name="rooms"),
+    path("rooms/add/", views.room_add, name="room_add"),
     path("rooms/upload/", views.room_upload, name="room_upload"),
     path("rooms/content/", views.rooms_content, name="rooms_content"),
     path("rooms/<int:pk>/detail/", views.room_detail, name="room_detail"),
@@ -47,6 +51,7 @@ urlpatterns = [
 
     # COURSES
     path("courses/", views.courses, name="courses"),
+    path("courses/add/", views.course_add, name="course_add"),
     path("courses/<int:pk>/edit/", views.course_edit, name="course_edit"),
     path("courses/<int:pk>/delete/", views.course_delete, name="course_delete"),
     path("courses/upload/", views.course_upload, name="course_upload"),

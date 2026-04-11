@@ -12,7 +12,7 @@
                 errors)</p>
         </div>
         <div class="add-data">
-            <a class="control-btn" href="addstu.html">Add new student</a>
+            <a class="control-btn" href="{% url 'masters:student_add' %}">Add new student</a>
             <form action="{% url 'masters:student_upload' %}" method="post" enctype="multipart/form-data"
                 class="d-inline">
                 {% csrf_token %}
@@ -147,71 +147,12 @@
     </div>
 </div>
 <!-- Student Delete Modal (moved outside table for single instance) -->
-<div id="studentDeleteModal" class="modal modal-backdrop-blue">
-    <div class="delete-form modal-delete-form-container">
-        <h2 id="deleteModalTitle">Delete Student</h2>
-        <p id="deleteModalText">Are you sure you want to delete?</p>
-        <form id="deleteStudentForm" method="post" class="m-0">
-            {% csrf_token %}
-            <input type="hidden" name="student_id" id="deleteStudentId">
-            <button type="submit">Confirm Delete</button>
-        </form>
-        <button type="button" id="cancelDeleteBtn" class="action-link mt-12">Cancel</button>
+<div id="studentDeleteModal" class="modal student-modal-backdrop">
+    <div class="modal-content student-modal-content-wrapper" id="studentDeleteModalContent">
+        <!-- Content will be loaded dynamically via scripts.js -->
     </div>
 </div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{% static 'js/scripts.js' %}"></script>
-<script>
-    // --- AJAX instant search/filter for students ---
-    const studentFilterForm = document.getElementById('studentFilterForm');
-    const searchInput = document.getElementById('search');
-    const departmentSelect = document.getElementById('department');
-    const batchSelect = document.getElementById('batch');
-    const studentList = document.getElementById('student-list');
-    const paginationBar = document.getElementById('studentPaginationBar');
-    const resetBtn = document.getElementById('resetStudentFilters');
-
-    let studentAjaxTimeout = null;
-    function fetchStudentData(page = 1) {
-        const search = searchInput.value;
-        const department = departmentSelect.value;
-        const batch = batchSelect.value;
-        const params = new URLSearchParams({ type: 'student', search, department, batch, page });
-        fetch('/masters/ajax/?' + params.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.json())
-            .then(data => {
-                studentList.innerHTML = data.table_html;
-                paginationBar.innerHTML = data.pagination_html;
-                attachStudentPaginationEvents();
-            });
-    }
-
-    function instantStudentFilter() {
-        clearTimeout(studentAjaxTimeout);
-        studentAjaxTimeout = setTimeout(() => fetchStudentData(1), 250);
-    }
-
-    searchInput.addEventListener('input', instantStudentFilter);
-    departmentSelect.addEventListener('change', instantStudentFilter);
-    batchSelect.addEventListener('change', instantStudentFilter);
-
-    function attachStudentPaginationEvents() {
-        paginationBar.querySelectorAll('a[data-page]').forEach(a => {
-            a.addEventListener('click', function (e) {
-                e.preventDefault();
-                const page = this.getAttribute('data-page');
-                fetchStudentData(page);
-            });
-        });
-    }
-    attachStudentPaginationEvents();
-
-    // --- Reset button clears filters and reloads all data ---
-    resetBtn.addEventListener('click', function () {
-        searchInput.value = '';
-        departmentSelect.value = 'all';
-        batchSelect.value = 'all';
-        fetchStudentData(1);
-    });
-</script>
 {% endblock %}

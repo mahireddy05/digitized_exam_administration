@@ -10,7 +10,7 @@
                 errors)</p>
         </div>
         <div class="add-data">
-            <a class="control-btn" href="#">Add new student</a>
+            <a class="control-btn" href="{% url 'masters:course_add' %}">Add new course</a>
             <form id="courseUploadForm" action="{% url 'masters:course_upload' %}" method="post"
                 enctype="multipart/form-data" class="d-inline">
                 {% csrf_token %}
@@ -117,7 +117,7 @@
 
     <!-- Edit Course Modal -->
     <div id="editCourseModal" class="modal modal-z-10000 modal-backdrop-black-4">
-        <div class="edit-form">
+        <div class="management-form">
             <h2>Edit Course</h2>
             <form id="editCourseForm">
                 <input type="hidden" id="editCourseId" name="id" />
