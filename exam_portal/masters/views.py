@@ -1239,41 +1239,39 @@ from django.views.decorators.http import require_POST
 @login_required(login_url='/accounts/login/')
 def coursereg(request):
     user = request.user
+    # Initialize defaults to prevent UnboundLocalError
+    courseregs = StudentCourse.objects.select_related('student', 'course').all()
+    courses = Course.objects.order_by('course_code').all()
+    registration_types = sorted(set(StudentCourse.objects.values_list('registration_type', flat=True)))
+    academic_years = sorted(set(StudentCourse.objects.values_list('academic_year', flat=True)))
+    semesters = sorted(set(StudentCourse.objects.values_list('semester', flat=True)), key=str)
+    base_template = "core/base_admin.html"
+
     if hasattr(user, 'role'):
-        role = user.role.lower() if hasattr(user, 'role') and user.role else ''
+        role = user.role.lower() if user.role else ''
         if role in ['student', 'Student', 'STUDENT']:
             try:
                 student = user.student_profile
+                courseregs = courseregs.filter(student=student)
+                academic_years = sorted(set(courseregs.values_list('academic_year', flat=True)))
+                semesters = sorted(set(courseregs.values_list('semester', flat=True)), key=str)
             except Student.DoesNotExist:
-                return render(request, "masters/coursereg.html", {"courseregs": [], "user": user, "base_template": "core/base_student.html"})
-            courseregs = StudentCourse.objects.select_related('student', 'course').filter(student=student)
-            courses = Course.objects.order_by('course_code').all()
-            academic_years = sorted(set(courseregs.values_list('academic_year', flat=True)))
-            semesters = sorted(set(courseregs.values_list('semester', flat=True)), key=str)
+                courseregs = StudentCourse.objects.none()
             base_template = "core/base_student.html"
         elif role == 'faculty':
-            courseregs = StudentCourse.objects.select_related('student', 'course').all()
-            courses = Course.objects.order_by('course_code').all()
-            academic_years = sorted(set(courseregs.values_list('academic_year', flat=True)))
-            semesters = sorted(set(courseregs.values_list('semester', flat=True)), key=str)
             base_template = "core/base_faculty.html"
         else:
-            courseregs = StudentCourse.objects.select_related('student', 'course').all()
-            courses = Course.objects.order_by('course_code').all()
-            academic_years = sorted(set(courseregs.values_list('academic_year', flat=True)))
-            semesters = sorted(set(courseregs.values_list('semester', flat=True)), key=str)
             base_template = "core/base_admin.html"
     else:
-        courseregs = StudentCourse.objects.select_related('student', 'course').all()
-        courses = Course.objects.order_by('course_code').all()
-        academic_years = sorted(set(courseregs.values_list('academic_year', flat=True)))
-        semesters = sorted(set(courseregs.values_list('semester', flat=True)), key=str)
-        base_template = "core/base_admin.html" if user.is_staff or user.is_superuser else "core/base_student.html"
+        if not (user.is_staff or user.is_superuser):
+            base_template = "core/base_student.html"
+
     return render(request, "masters/coursereg.html", {
         "courseregs": courseregs,
         "courses": courses,
         "academic_years": academic_years,
         "semesters": semesters,
+        "registration_types": registration_types,
         "user": user,
         "base_template": base_template
     })

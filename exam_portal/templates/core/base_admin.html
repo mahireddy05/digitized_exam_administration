@@ -227,6 +227,103 @@
             <button class="loader-dismiss" id="loader-dismiss">Stop & Stay Here</button>
         </div>
     </div>
+    <!-- Export Options Modal -->
+    <div id="exportOptionsModal" class="modal export-modal-backdrop" style="display: none;">
+        <div class="modal-content export-modal-content">
+            <div class="export-modal-header">
+                <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=2563eb" alt="Export Icon" class="export-header-icon">
+                <h2 id="exportModalTitle">Export Data Options</h2>
+                <button type="button" class="close-export-modal" id="closeExportModal">&times;</button>
+            </div>
+            <div class="export-modal-body">
+                <p id="exportModalText">How would you like to process your data?</p>
+                <div class="export-options-grid">
+                    <button type="button" class="export-option-card" id="exportCurrentBtn">
+                        <div class="option-icon-wrapper">
+                            <img src="https://img.icons8.com/?size=100&id=fdX9cvS8MtuS&format=png&color=2563eb" alt="Current Page">
+                        </div>
+                        <div class="option-details">
+                            <h3>Current Displayed Data</h3>
+                            <p>Export only the rows currently visible on this page.</p>
+                        </div>
+                    </button>
+                    <button type="button" class="export-option-card" id="exportCompleteBtn">
+                        <div class="option-icon-wrapper">
+                            <img src="https://img.icons8.com/?size=100&id=85372&format=png&color=2563eb" alt="Complete Data">
+                        </div>
+                        <div class="option-details">
+                            <h3>Complete Data</h3>
+                            <p>Export the entire dataset across all pages and records.</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="export-modal-footer">
+                <button type="button" class="btn-cancel-export" id="cancelExportBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Specialized Course Registration Download Modal (Premium) -->
+    <div id="specializedDownloadModal" class="modal export-modal-backdrop" style="display: none;">
+        <div class="modal-content export-modal-content" style="max-width: 500px;">
+            <div class="export-modal-header">
+                <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=2563eb" alt="Export Icon" class="export-header-icon">
+                <h2>Filtered Course Data</h2>
+                <button type="button" class="close-export-modal" id="closeSpecModal">&times;</button>
+            </div>
+            <div class="export-modal-body">
+                <p class="export-modal-subtitle">Filter records to download specific registration data</p>
+                <div class="spec-form-container">
+                    <div class="spec-form-group" style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Student ID</label>
+                        <div class="spec-autocomplete-wrapper" style="position: relative;">
+                            <input type="text" id="spec_student_id" placeholder="Start typing Student ID..." autocomplete="off" 
+                                   style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box;">
+                            <div id="spec_autocomplete_list" class="autocomplete-items" 
+                                 style="position: absolute; border: 1px solid #e2e8f0; background-color: white; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); z-index: 99; top: 100%; left: 0; right: 0;"></div>
+                        </div>
+                    </div>
+                    <div class="spec-form-row" style="display: flex; gap: 15px; margin-bottom: 15px;">
+                        <div class="spec-form-group" style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Academic Year</label>
+                            <select id="spec_academic_year" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                                <option value="">All Academic Years</option>
+                                {% for year in academic_years %}
+                                <option value="{{ year }}">{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="spec-form-group" style="flex: 1;">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Semester</label>
+                            <select id="spec_semester" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                                <option value="">All Semesters</option>
+                                {% for sem in semesters %}
+                                <option value="{{ sem }}">{{ sem }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="spec-form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Registration Type</label>
+                        <select id="spec_registration_type" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                            <option value="">All Types</option>
+                            {% for type in registration_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button id="triggerSpecializedDownload" class="premium-download-btn" 
+                            style="width: 100%; padding: 12px; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 16px;">
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=ffffff" alt="Download" style="width: 20px; height: 20px;">
+                        Download Filtered CSV
+                    </button>
+                    <button type="button" class="btn-cancel-export" id="cancelSpecBtn" 
+                            style="width: 100%; margin-top: 10px; padding: 10px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

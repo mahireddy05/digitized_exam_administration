@@ -595,8 +595,6 @@ var studentSearchElem = document.getElementById('studentSearch');
 var searchStudentLinkElem = document.getElementById('searchStudentLink');
 var resetStudentSearchLinkElem = document.getElementById('resetStudentSearchLink');
 var courseregPaginationElem = document.getElementById('coursereg-pagination');
-var printCourseRegBtnElem = document.getElementById('printCourseRegBtn');
-var downloadCourseRegBtnElem = document.getElementById('downloadCourseRegBtn');
 if (studentSearchElem) {
     studentSearchElem.addEventListener('input', function () {
         courseregFetchStudentIdAutocomplete(this.value);
@@ -648,37 +646,7 @@ if (courseregPaginationElem) {
         }
     });
 }
-if (printCourseRegBtnElem) {
-    printCourseRegBtnElem.addEventListener('click', function () {
-        const table = document.getElementById('coursereg-table').outerHTML;
-        const win = window.open('', '', 'width=900,height=700');
-        win.document.write('<html><head><title>Print Course Registrations</title>');
-        win.document.write('<link rel="stylesheet" href="/static/css/style.css">');
-        win.document.write('</head><body>');
-        win.document.write(table);
-        win.document.write('</body></html>');
-        win.document.close();
-        win.print();
-    });
-}
-if (downloadCourseRegBtnElem) {
-    downloadCourseRegBtnElem.addEventListener('click', function () {
-        let csv = 'Student ID,Student Name,Course Code,Course Name,Academic Year,Semester\n';
-        document.querySelectorAll('#coursereg-list tr').forEach(row => {
-            let cols = Array.from(row.querySelectorAll('td')).slice(1, 7).map(td => '"' + td.innerText.replace(/"/g, '""') + '"');
-            if (cols.length) csv += cols.join(',') + '\n';
-        });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'course_registrations.csv';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-}
+
 // Clear Examination Form utility
 function clearExaminationForm() {
     var form = document.getElementById('examinationForm');
@@ -2329,156 +2297,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
-// ============ STUDENT PAGE EXPORT/PRINT ============
-// ============ STUDENT PAGE EXPORT/PRINT ============
-function getVisibleStudentRows() {
-    return Array.from(document.querySelectorAll('#student-list tr')).filter(row => {
-        // Only count rows with at least 6 cells and not the empty row
-        return row.style.display !== 'none' && row.querySelectorAll('td').length >= 6 && !row.querySelector('td[colspan]');
-    });
-}
-function printStudentTable() {
-    const table = document.getElementById('student-table');
-    if (!table) return;
-    const visibleRows = getVisibleStudentRows();
-    if (!visibleRows.length) return alert('No data to print.');
-    const cloneTable = table.cloneNode(true);
-    // Remove last column (actions) from header
-    const headerRow = cloneTable.querySelector('thead tr');
-    if (headerRow && headerRow.children.length > 6) headerRow.removeChild(headerRow.lastElementChild);
-    // Remove all rows from tbody
-    const tbody = cloneTable.querySelector('tbody');
-    tbody.innerHTML = '';
-    visibleRows.forEach(row => {
-        const cloneRow = row.cloneNode(true);
-        if (cloneRow.children.length > 6) cloneRow.removeChild(cloneRow.lastElementChild);
-        tbody.appendChild(cloneRow);
-    });
-    const newWindow = window.open('', '_blank');
-    if (!newWindow) return alert('Popup blocked!');
-    newWindow.document.write(`
-        <html><head><title>Print Student Data</title>
-        <style>
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background-color: #1E3A5F; color: white; }
-        </style></head><body>
-        <h2>Student Data</h2>
-        ${cloneTable.outerHTML}
-        </body></html>
-    `);
-    newWindow.document.close();
-    newWindow.focus();
-    newWindow.print();
-}
-function downloadStudentCSV() {
-    const table = document.getElementById('student-table');
-    if (!table) return;
-    const rows = getVisibleStudentRows();
-    if (!rows.length) return alert('No data to download.');
-    const headers = Array.from(table.querySelectorAll('thead th'))
-        .slice(0, -1)
-        .map(th => `"${th.textContent.trim()}"`)
-        .join(',');
-    const data = rows.map(row => {
-        return Array.from(row.querySelectorAll('td'))
-            .slice(0, -1)
-            .map(td => `"${td.textContent.trim()}"`)
-            .join(',');
-    });
-    const csvContent = [headers, ...data].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'student_data.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-document.addEventListener('DOMContentLoaded', function () {
-    // Master data initializations are handled by the .init() calls at the end of the file.
-});
-// ========== Print & Download Actions (Global Delegation) ==========
-$(document).on('click', '#printStudentBtn', function() { printStudentTable(); });
-$(document).on('click', '#downloadStudentBtn', function() { downloadStudentCSV(); });
-$(document).on('click', '#printFacultyBtn', function() { printFacultyTable(); });
-$(document).on('click', '#downloadFacultyBtn', function() { downloadFacultyCSV(); });
-
-
-
-function printFacultyTable() {
-    const table = document.getElementById("faculty-table");
-    if (!table) return;
-
-    const cloneTable = table.cloneNode(true);
-    const headerRow = cloneTable.querySelector("thead tr");
-    if (headerRow && headerRow.children.length > 0) headerRow.lastElementChild.remove(); // Remove actions header
-
-    const visibleRows = Array.from(table.querySelectorAll("tbody tr")).filter( // Use original table for visibility
-        row => row.style.display !== "none"
-    );
-
-    const tbody = cloneTable.querySelector("tbody");
-    tbody.innerHTML = ""; // Clear existing rows in clone
-
-    visibleRows.forEach(row => {
-        const cloneRow = row.cloneNode(true);
-        if (cloneRow.children.length > 0) cloneRow.lastElementChild.remove(); // Remove actions cell
-        tbody.appendChild(cloneRow);
-    });
-
-    const newWindow = window.open("", "_blank");
-    if (!newWindow) return alert("Popup blocked!");
-
-    newWindow.document.write(`
-        <html><head><title>Print Faculty Data</title>
-        <style>
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background-color: #1E3A5F; color: white; }
-        </style></head><body>
-        <h2>Faculty Data</h2>
-        ${cloneTable.outerHTML}
-        </body></html>
-    `);
-    newWindow.document.close();
-    newWindow.focus();
-    newWindow.print();
-}
-
-function downloadFacultyCSV() {
-    const table = document.getElementById("faculty-table");
-    if (!table) return;
-
-    const rows = Array.from(document.querySelectorAll("#faculty-list tr"))
-        .filter(row => row.style.display !== "none");
-
-    if (!rows.length) return alert("No data to download.");
-
-    const headers = Array.from(table.querySelectorAll("thead th"))
-        .slice(0, -1) // Exclude the last header ("Actions")
-        .map(th => `"${th.textContent.trim()}"`)
-        .join(",");
-
-    const data = rows.map(row => {
-        return Array.from(row.querySelectorAll("td"))
-            .slice(0, -1) // Exclude the last cell ("Actions")
-            .map(td => `"${td.textContent.trim()}"`)
-            .join(",");
-    });
-
-    const csvContent = [headers, ...data].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "faculty_data.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
+// [Deleted redundant legacy print/download functions and handlers]
 
 // ============ FACULTY DELETE MODAL (AJAX, JS-only) ============
 // ============ FACULTY DELETE MODAL (Global Delegation) ============
@@ -2806,25 +2625,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Function to call appropriate initialization after AJAX content load
 function initializeContentScripts(pageUrl) {
-    // These functions now handle attaching print/download listeners themselves.
-    // They also grab the latest table rows, which is important for filtering.
-    // We explicitly call them here based on the URL.
-
-    // Student Management logic (initially handled by studentsTable.init())
-    // No recursive fetchStudents calls here.
-    if (pageUrl.includes('/students/') && typeof studentsTable !== 'undefined') {
-        // studentsTable.fetchStudents(1); // REMOVED TO PREVENT INFINITE LOOP
+    // Student Management logic
+    if (pageUrl.includes('/student/') && typeof studentsTable !== 'undefined') {
+        // initialization if needed
     }
-    // Faculty Management logic (initially handled by facultyTable.init())
-    // No recursive fetchFaculty calls here.
+    // Faculty Management logic
     if (pageUrl.includes('/faculty/') && typeof facultyTable !== 'undefined') {
-        // facultyTable.fetchFaculty(1); // REMOVED TO PREVENT INFINITE LOOP
+        // initialization if needed
     }
     // Room Management
-    if (pageUrl.includes('/rooms/') && typeof initializeRoomFilters === 'function') {
+    if (pageUrl.includes('/room/') && typeof initializeRoomFilters === 'function') {
         initializeRoomFilters();
     }
-    // Add more conditions for other pages if they have unique JS initialization
 }
 
 // Users Table AJAX and Pagination
@@ -3315,5 +3127,470 @@ $(document).on('click', '.edit-exam-btn', function (e) {
     $('#editExamModal').css('display', 'flex');
 });
 
-// Add missing closing brace for file
+// ========== Data Export Manager (Student, Faculty, Room, Course) ==========
+const ExportManager = {
+    currentType: '', // 'student', 'faculty', 'room', 'course'
+    currentAction: '', // 'print', 'download'
+    
+    init: function() {
+        console.log("ExportManager Initialized");
+        const modal = document.getElementById('exportOptionsModal');
+        if (!modal) return;
+        
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('button, a');
+            if (!btn) return;
+            
+            const id = btn.id || '';
+            // Match IDs like printStudentBtn, downloadFacultyBtn, printRoomBtn, etc.
+            if (id.startsWith('print') || id.startsWith('download')) {
+                const typeMatch = id.match(/(Student|Faculty|Room|Course|CourseReg)/i);
+                if (typeMatch) {
+                    e.preventDefault();
+                    // Don't stop propagation if it's already an ExportManager button or similar
+                    if (!id.includes('export')) {
+                        this.currentType = typeMatch[1].toLowerCase();
+                        this.currentAction = id.startsWith('print') ? 'print' : 'download';
+                        this.showModal();
+                    }
+                }
+            }
+        });
+        
+        // Modal internal buttons
+        const currentBtn = document.getElementById('exportCurrentBtn');
+        const completeBtn = document.getElementById('exportCompleteBtn');
+        const closeX = document.getElementById('closeExportModal');
+        const cancelBtn = document.getElementById('cancelExportBtn');
 
+        if (currentBtn) currentBtn.addEventListener('click', () => this.handleCurrent());
+        if (completeBtn) completeBtn.addEventListener('click', () => this.handleComplete());
+        if (closeX) closeX.addEventListener('click', () => this.hideModal());
+        if (cancelBtn) cancelBtn.addEventListener('click', () => this.hideModal());
+        
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) this.hideModal();
+        });
+    },
+    
+    showModal: function() {
+        const modal = document.getElementById('exportOptionsModal');
+        if (!modal) return;
+
+        const title = document.getElementById('exportModalTitle');
+        const text = document.getElementById('exportModalText');
+        
+        const actionLabel = this.currentAction === 'print' ? 'Print' : 'Download';
+        const typeLabel = this.currentType.charAt(0).toUpperCase() + this.currentType.slice(1);
+        
+        if (title) title.innerText = `${actionLabel} ${typeLabel} Data`;
+        if (text) text.innerText = `Choose the scope for your ${this.currentAction} action.`;
+        
+        modal.classList.add('active');
+        modal.style.display = 'block';
+    },
+    
+    hideModal: function() {
+        const modal = document.getElementById('exportOptionsModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        }
+    },
+    
+    handleCurrent: function() {
+        this.hideModal();
+        const table = document.querySelector('table'); 
+        if (!table) {
+            if (typeof showPopupMessage === 'function') showPopupMessage('No table found to export.', 'error');
+            return;
+        }
+        
+        // Clone and sanitize table for print
+        const cloneTable = table.cloneNode(true);
+        const headers = Array.from(cloneTable.querySelectorAll('thead th')).map(th => th.innerText.toLowerCase().trim());
+        const excludeIndices = headers.map((h, i) => (h.includes('status') || h.includes('action')) ? i : -1).filter(i => i !== -1);
+        
+        // Remove excluded columns from header and rows
+        const rows = cloneTable.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cells = Array.from(row.children);
+            // Reverse order to avoid index shifting problems
+            excludeIndices.sort((a,b) => b-a).forEach(idx => {
+                if (cells[idx]) row.removeChild(cells[idx]);
+            });
+        });
+
+        // Ensure first column is S.NO and handle existing index columns
+        const theadFirstTh = cloneTable.querySelector('thead tr th');
+        if (theadFirstTh) {
+            const txt = theadFirstTh.innerText.toLowerCase().trim();
+            // Check if existing column is an index (common patterns)
+            const isExistingIdx = txt === '#' || txt.includes('s.no') || txt.includes('idx') || txt === 'id' || txt === 'sl.no';
+            
+            if (isExistingIdx) {
+                // Rename existing to S.NO for consistency
+                theadFirstTh.innerText = 'S.NO';
+            } else {
+                // Add new S.NO column before the first one
+                const theadRow = cloneTable.querySelector('thead tr');
+                const th = document.createElement('th');
+                th.innerText = 'S.NO';
+                theadRow.insertBefore(th, theadRow.firstChild);
+                
+                const tbodyRows = cloneTable.querySelectorAll('tbody tr');
+                tbodyRows.forEach((tr, i) => {
+                    const td = document.createElement('td');
+                    td.innerText = i + 1;
+                    tr.insertBefore(td, tr.firstChild);
+                });
+            }
+        }
+
+        if (this.currentAction === 'print') {
+            this.printTable(cloneTable.outerHTML);
+        } else {
+            this.downloadCSV(this.tableToCSV(cloneTable), `${this.currentType}_current_page.csv`);
+        }
+    },
+    
+    handleComplete: function(customParams = null) {
+        this.hideModal();
+        if (window.Loader) window.Loader.show(`Fetching complete ${this.currentType} data...`, "This may take a few seconds");
+
+        // Get current filters from the URL/UI if no custom params provided
+        let ajaxParams;
+        if (customParams) {
+            ajaxParams = new URLSearchParams(customParams);
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchQuery = document.querySelector('input[name="search"], #search-fac') ? 
+                                (document.querySelector('input[name="search"]') || document.querySelector('#search-fac')).value : 
+                                (urlParams.get('search') || '');
+                                
+            ajaxParams = new URLSearchParams({
+                type: this.currentType,
+                full_data: 'true',
+                search: searchQuery,
+                department: urlParams.get('department') || '',
+                batch: urlParams.get('batch') || '',
+                block: urlParams.get('block') || '',
+                room_type: urlParams.get('room_type') || '',
+                // Add CourseReg specific filters
+                year: urlParams.get('year') || '',
+                semester: urlParams.get('semester') || '',
+                student_id: urlParams.get('student_id') || ''
+            });
+        }
+        
+        fetch(`/masters/ajax/?${ajaxParams.toString()}`)
+            .then(resp => resp.json())
+            .then(data => {
+                if (window.Loader) window.Loader.hide();
+                if (data.results) {
+                    if (this.currentAction === 'print') {
+                        this.printData(data.results);
+                    } else {
+                        this.downloadCSV(this.jsonToCSV(data.results), `${this.currentType}_complete_data.csv`);
+                    }
+                } else {
+                    if (typeof showPopupMessage === 'function') showPopupMessage('No data received from server.', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Export failed:', err);
+                if (window.Loader) window.Loader.hide();
+                if (typeof showPopupMessage === 'function') showPopupMessage('Export failed. Please check console.', 'error');
+            });
+    },
+    
+    printTable: function(html) {
+        const win = window.open('', '_blank', 'width=1100,height=800');
+        const actionLabel = this.currentAction === 'print' ? 'Print' : 'Download';
+        const typeLabel = this.currentType.charAt(0).toUpperCase() + this.currentType.slice(1);
+        
+        win.document.write(`
+        <html>
+        <head>
+            <title>${typeLabel} Data Export</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                
+                body { 
+                    font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+                    color: #1e293b; 
+                    margin: 40px; 
+                    line-height: 1.5;
+                }
+                
+                .print-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-end;
+                    border-bottom: 2px solid #2563eb;
+                    padding-bottom: 20px;
+                    margin-bottom: 30px;
+                }
+                
+                .brand-info h1 { margin: 0; color: #1e3a8a; font-size: 24px; font-weight: 700; }
+                .brand-info p { margin: 5px 0 0; color: #64748b; font-size: 14px; }
+                
+                .export-meta { text-align: right; }
+                .export-meta div { font-size: 12px; color: #64748b; }
+                .export-meta strong { color: #1e293b; display: block; font-size: 16px; margin-bottom: 4px; }
+                
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: auto; }
+                th { 
+                    background-color: #f8fafc; 
+                    color: #475569; 
+                    font-weight: 600; 
+                    font-size: 12px; 
+                    text-transform: uppercase; 
+                    letter-spacing: 0.05em;
+                    padding: 12px 15px;
+                    border: 1px solid #e2e8f0;
+                    text-align: left;
+                }
+                td { 
+                    padding: 12px 15px; 
+                    border: 1px solid #e2e8f0; 
+                    font-size: 13px; 
+                    color: #1e293b;
+                }
+                tr:nth-child(even) { background-color: #fcfcfd; }
+                
+                @media print {
+                    body { margin: 20px; }
+                    .no-print { display: none; }
+                    table { page-break-inside: auto; }
+                    tr { page-break-inside: avoid; page-break-after: auto; }
+                    thead { display: table-header-group; }
+                    footer { display: table-footer-group; position: fixed; bottom: 0; }
+                }
+                
+                .footer {
+                    margin-top: 40px;
+                    font-size: 11px;
+                    color: #94a3b8;
+                    text-align: center;
+                    border-top: 1px solid #e2e8f0;
+                    padding-top: 20px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-header">
+                <div class="brand-info">
+                    <h1>Administrative Dashboard</h1>
+                    <p>Digital Examination Administration System</p>
+                </div>
+                <div class="export-meta">
+                    <strong>${typeLabel} Records Report</strong>
+                    <div>Generated on: ${new Date().toLocaleString('en-IN')}</div>
+                    <div>Source: System Central Database</div>
+                </div>
+            </div>
+            
+            ${html}
+            
+            <div class="footer">
+                This is a system-generated report. All data is subject to institutional privacy policies.
+                <br>Page 1 of 1
+            </div>
+            
+            <script>
+                window.onload = function() {
+                    // Small delay to ensure styles are applied before print dialog
+                    setTimeout(() => {
+                        window.print();
+                    }, 500);
+                }
+            </script>
+        </body>
+        </html>
+        `);
+        win.document.close();
+    },
+    
+    printData: function(results) {
+        if (!results.length) return;
+        
+        // Define columns to skip
+        const skipKeys = ['status', 'is_active', 'id', 'user_id', 'dept_id', 'batch_id', 'idx', '#', 's_no', 's.no'];
+        
+        // Filter headers
+        const rawHeaders = Object.keys(results[0]).filter(k => !skipKeys.includes(k.toLowerCase()));
+        
+        let html = '<table><thead><tr><th>S.NO</th>';
+        rawHeaders.forEach(h => html += `<th>${h.replace(/_/g, ' ').toUpperCase()}</th>`);
+        html += '</tr></thead><tbody>';
+        
+        results.forEach((row, index) => {
+            html += `<tr><td>${index + 1}</td>`;
+            rawHeaders.forEach(key => {
+                const val = row[key];
+                html += `<td>${val === null || val === undefined ? '-' : val}</td>`;
+            });
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        this.printTable(html);
+    },
+    
+    tableToCSV: function(table) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        return rows.map(row => {
+            const cols = Array.from(row.querySelectorAll('th, td'));
+            // Remove cells with action buttons/icons
+            const filteredCols = cols.filter(col => !col.querySelector('img, button, a.student-action-link[href*="edit"]'));
+            return filteredCols.map(col => {
+                let text = col.innerText.trim().replace(/"/g, '""');
+                return `"${text}"`;
+            }).join(',');
+        }).filter(line => line.length > 2).join('\n');
+    },
+    
+    jsonToCSV: function(json) {
+        if (!json.length) return '';
+        
+        const skipKeys = ['status', 'is_active', 'id', 'user_id', 'dept_id', 'batch_id', 'idx', '#', 's_no', 's.no'];
+        const headers = Object.keys(json[0]).filter(k => !skipKeys.includes(k.toLowerCase()));
+        
+        const headerRow = ['"S.NO"', ...headers.map(h => `"${h.replace(/_/g, ' ').toUpperCase()}"`)].join(',');
+        
+        const rows = json.map((item, index) => {
+            const rowData = [index + 1];
+            headers.forEach(h => {
+                let text = String(item[h] === null || item[h] === undefined ? '-' : item[h]).replace(/"/g, '""');
+                rowData.push(`"${text}"`);
+            });
+            return rowData.join(',');
+        }).join('\n');
+        
+        return headerRow + '\n' + rows;
+    },
+    
+    downloadCSV: function(csv, filename) {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.setAttribute('download', filename);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+};
+
+// Specialized Course Registration Download Logic
+const SpecialDownloadManager = {
+    init: function() {
+        const openBtn = document.getElementById('openSpecializedDownloadBtn');
+        const modal = document.getElementById('specializedDownloadModal');
+        const closeBtn = document.getElementById('closeSpecModal');
+        const cancelBtn = document.getElementById('cancelSpecBtn');
+        const triggerBtn = document.getElementById('triggerSpecializedDownload');
+        const studentInput = document.getElementById('spec_student_id');
+
+        if (openBtn && modal) {
+            openBtn.addEventListener('click', () => {
+                modal.style.display = 'block';
+                modal.classList.add('active');
+            });
+        }
+
+        const hide = () => {
+            if (modal) {
+                modal.style.display = 'none';
+                modal.classList.remove('active');
+            }
+        };
+
+        if (closeBtn) closeBtn.addEventListener('click', hide);
+        if (cancelBtn) cancelBtn.addEventListener('click', hide);
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) hide();
+            });
+        }
+
+        // Autocomplete for Student ID in Modal
+        if (studentInput) {
+            studentInput.addEventListener('input', (e) => {
+                const val = e.target.value;
+                this.fetchAutocomplete(val);
+            });
+        }
+
+        // Trigger Download
+        if (triggerBtn) {
+            triggerBtn.addEventListener('click', () => {
+                const studentIdRaw = studentInput.value.trim();
+                const studentId = studentIdRaw.includes(' - ') ? studentIdRaw.split(' - ')[0].trim() : studentIdRaw;
+                const year = document.getElementById('spec_academic_year').value;
+                const sem = document.getElementById('spec_semester').value;
+                const type = document.getElementById('spec_registration_type').value;
+
+                hide();
+                
+                // Use ExportManager to handle the data fetching and CSV generation
+                ExportManager.currentType = 'coursereg';
+                ExportManager.currentAction = 'download';
+                ExportManager.handleComplete({
+                    type: 'coursereg',
+                    full_data: 'true',
+                    student_id: studentId,
+                    year: year,
+                    semester: sem,
+                    registration_type: type
+                });
+            });
+        }
+    },
+
+    fetchAutocomplete: function(val) {
+        if (val.length < 2) {
+            this.closeAllLists();
+            return;
+        }
+        fetch(`/masters/ajax/?type=student-id-autocomplete&q=${val}`)
+            .then(r => r.json())
+            .then(data => {
+                this.closeAllLists();
+                if (!data.results || !data.results.length) return;
+                
+                const list = document.getElementById('spec_autocomplete_list');
+                list.style.display = 'block';
+                data.results.forEach(item => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `<strong>${item.id}</strong> - ${item.name}`;
+                    div.style.backgroundColor = '#fff';
+                    div.style.padding = '10px';
+                    div.style.cursor = 'pointer';
+                    div.style.borderBottom = '1px solid #e2e8f0';
+                    div.addEventListener('click', () => {
+                        document.getElementById('spec_student_id').value = `${item.id} - ${item.name}`;
+                        this.closeAllLists();
+                    });
+                    list.appendChild(div);
+                });
+            });
+    },
+
+    closeAllLists: function() {
+        const list = document.getElementById('spec_autocomplete_list');
+        if (list) {
+            list.innerHTML = '';
+            list.style.display = 'none';
+        }
+    }
+};
+
+// Initialize Managers
+document.addEventListener('DOMContentLoaded', () => {
+    ExportManager.init();
+    SpecialDownloadManager.init();
+});

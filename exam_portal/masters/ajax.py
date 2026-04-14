@@ -8,6 +8,7 @@ def ajax(request):
     data_type = request.GET.get('type')
     page_number = request.GET.get('page')
     search = request.GET.get('search', '').strip().lower()
+    full_data = request.GET.get('full_data') == 'true'
     
     # --- Student ID Autocomplete AJAX ---
     if data_type == 'student-id-autocomplete':
@@ -37,6 +38,7 @@ def ajax(request):
         academic_year = request.GET.get('year', '').strip()
         semester = request.GET.get('semester', '').strip()
         student_id = request.GET.get('student_id', '').strip()
+        reg_type = request.GET.get('registration_type', '').strip()
         search = request.GET.get('search', '').strip().lower()
         queryset = StudentCourse.objects.select_related('student', 'course').order_by('id')
         if student_id:
@@ -54,6 +56,26 @@ def ajax(request):
             queryset = queryset.filter(academic_year=academic_year)
         if semester:
             queryset = queryset.filter(semester=semester)
+        if reg_type and reg_type.lower() != 'all':
+            queryset = queryset.filter(registration_type=reg_type)
+        if full_data:
+            results = list(queryset.values(
+                'student__student_id',
+                'student__std_name',
+                'course__course_code',
+                'course__course_name',
+                'academic_year',
+                'semester',
+                'registration_type'
+            ))
+            for r in results:
+                # Rename keys for display consistency
+                r['student_id'] = r.pop('student__student_id')
+                r['student_name'] = r.pop('student__std_name')
+                r['course_code'] = r.pop('course__course_code')
+                r['course_name'] = r.pop('course__course_name')
+            return JsonResponse({'results': results})
+
         paginator = Paginator(queryset, 25)  # Show 25 rows per page
         page_obj = paginator.get_page(page_number)
         rows = []
@@ -111,6 +133,22 @@ def ajax(request):
             queryset = queryset.filter(dept__dept_code=department)
         if batch and batch != 'all':
             queryset = queryset.filter(batch__batch_code=batch)
+        if full_data:
+            # Use values() for significant performance boost on large datasets
+            results = list(queryset.values(
+                'student_id',
+                'user__first_name', 'user__last_name',
+                'dept__dept_name', 'dept__dept_code',
+                'batch__batch_code',
+                'email'
+            ))
+            # Format some fields for display
+            for s in results:
+                s['student_name'] = f"{s.pop('user__first_name')} {s.pop('user__last_name')}"
+                s['department'] = f"{s.pop('dept__dept_name')}({s.pop('dept__dept_code')})"
+                s['batch'] = s.pop('batch__batch_code') or 'Not set'
+            return JsonResponse({'results': results})
+
         paginator = Paginator(queryset, 25)
         page_obj = paginator.get_page(page_number)
         rows = []
@@ -164,6 +202,20 @@ def ajax(request):
             )
         if department and department != 'all':
             queryset = queryset.filter(dept__dept_code=department)
+        if full_data:
+            results = list(queryset.values(
+                'faculty_id',
+                'user__first_name', 'user__last_name',
+                'dept__dept_name', 'dept__dept_code',
+                'phone_number',
+                'user__email'
+            ))
+            for f in results:
+                f['faculty_name'] = f"{f.pop('user__first_name')} {f.pop('user__last_name')}"
+                f['department'] = f"{f.pop('dept__dept_name')} ({f.pop('dept__dept_code')})"
+                f['email'] = f.pop('user__email')
+            return JsonResponse({'results': results})
+
         paginator = Paginator(queryset, 25)
         page_obj = paginator.get_page(page_number)
         rows = []
@@ -205,6 +257,15 @@ def ajax(request):
             queryset = queryset.filter(capacity__gte=int(capacity_min))
         if capacity_max.isdigit():
             queryset = queryset.filter(capacity__lte=int(capacity_max))
+        if full_data:
+            results = list(queryset.values(
+                'room_code',
+                'block',
+                'room_type',
+                'capacity'
+            ))
+            return JsonResponse({'results': results})
+
         paginator = Paginator(queryset, 25)
         page_obj = paginator.get_page(page_number)
         rows = []
@@ -238,6 +299,13 @@ def ajax(request):
                 models.Q(course_code__icontains=search) |
                 models.Q(course_name__icontains=search)
             )
+        if full_data:
+            results = list(queryset.values(
+                'course_code',
+                'course_name'
+            ))
+            return JsonResponse({'results': results})
+
         paginator = Paginator(queryset, 25)
         page_obj = paginator.get_page(page_number)
         rows = []

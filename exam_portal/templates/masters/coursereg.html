@@ -3,13 +3,14 @@
 {% block content %}
 <div class="pages-main">
     <h1 class="pages-main-head">{% if user.role == 'student' %}My Courses{% else %}Student Course Registrations{% endif %}</h1>
+
     {% if user.role|lower == 'admin' %}
     <div class="note-and-actions">
         <div class="note-text">
-            <p class="text-red"><strong>Note:</strong> Upload course registration data in <strong>.csv</strong>
-                format.</p>
-            <p class="text-red">(Download the sample .csv file and add data in the specified structure to avoid
-                errors)</p>
+            <p class="text-red"><strong>Note:</strong> Upload course registration data in <strong>.csv</strong> format.
+            </p>
+            <p class="text-red">(Download the sample .csv file and add data in the specified structure to avoid errors)
+            </p>
         </div>
         <div class="add-data">
             <form action="{% url 'masters:coursereg_upload' %}" method="post" enctype="multipart/form-data"
@@ -21,9 +22,15 @@
             </form>
             <a href="{% static 'samples/student_reg_courses.csv' %}" download class="control-btn">Download Sample
                 CSV</a>
+            <button type="button" id="openSpecializedDownloadBtn" class="control-btn">
+                <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=ffffff" alt="Download"
+                    style="width: 16px; height: 16px; margin-right: 5px;">
+                Stu-Reg Course Data
+            </button>
         </div>
     </div>
     {% endif %}
+
     {% if user.role|lower != 'student' %}
     <div class="controls pv-6">
         <form id="searchForm" onsubmit="return false;" class="flex-center-gap-8">
@@ -36,6 +43,7 @@
         <div id="autocomplete-list" class="autocomplete-items autocomplete-pos"></div>
     </div>
     {% endif %}
+
     <div class="coursereg-actions-bar actions-bar-custom d-none" id="courseregActionsBar">
         <div class="pagination-bar d-flex" id="courseregPaginationBar">
             <div id="coursereg-pagination"></div>
@@ -49,9 +57,10 @@
                 Data</button>
         </div>
     </div>
+
     {% if user.role == "student" %}
-    <div class="table mt-24" id="courseregTableContainer">
-        <table id="coursereg-table">
+    <div class="table mt-24" id="courseregTableContainer_student">
+        <table id="coursereg-table-student">
             <thead>
                 <tr>
                     <th>#</th>
@@ -83,9 +92,10 @@
                 {% endfor %}
             </tbody>
         </table>
+
         {% if page_obj %}
-        <div class="pagination-bar pagination-bar-bottom" id="courseregPaginationBar">
-            <div id="coursereg-pagination">
+        <div class="pagination-bar pagination-bar-bottom">
+            <div id="coursereg-pagination-student">
                 {% if page_obj.has_previous %}
                 <a href="#" class="page-arrow" data-page="1">&#171;</a>
                 <a href="#" class="page-arrow" data-page="{{ page_obj.previous_page_number }}">&#8592;</a>
@@ -93,14 +103,17 @@
                 <span class="page-arrow disabled">&#171;</span>
                 <span class="page-arrow disabled">&#8592;</span>
                 {% endif %}
+
                 {% for i in page_obj.paginator.page_range %}
-                {% if i > page_obj.number|add:'-5' and i < page_obj.number|add:'5' %} {% if i == page_obj.number %} <span
-                    class="page-num current">{{ i }}</span>
-                    {% else %}
-                    <a href="#" class="page-num" data-page="{{ i }}">{{ i }}</a>
+                    {% if i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                        {% if i == page_obj.number %}
+                            <span class="page-num current">{{ i }}</span>
+                        {% else %}
+                            <a href="#" class="page-num" data-page="{{ i }}">{{ i }}</a>
+                        {% endif %}
                     {% endif %}
-                    {% endif %}
-                    {% endfor %}
+                {% endfor %}
+
                     {% if page_obj.has_next %}
                     <a href="#" class="page-arrow" data-page="{{ page_obj.next_page_number }}">&#8594;</a>
                     <a href="#" class="page-arrow" data-page="{{ page_obj.paginator.num_pages }}">&#187;</a>
@@ -130,13 +143,12 @@
             </thead>
             <tbody id="coursereg-list">
                 {% if user.role|lower == 'admin' %}
-                <!-- AJAX will fill this with Actions column -->
+                <!-- Content via AJAX -->
                 {% else %}
-                <!-- AJAX will fill this without Actions column -->
+                <!-- Content via AJAX -->
                 {% endif %}
             </tbody>
         </table>
-        <!-- Pagination for admin is handled by AJAX/JS only -->
     </div>
     {% endif %}
 </div>
