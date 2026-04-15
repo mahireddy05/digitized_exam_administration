@@ -22,14 +22,12 @@ window.Loader = {
     },
 
     show: function(text = "Processing Request...", subtext = "Please wait a moment", isPermanent = false) {
-        // Clear any existing timeouts first
         if (this._showTimeout) clearTimeout(this._showTimeout);
         if (this._dismissTimeout) clearTimeout(this._dismissTimeout);
         
         this._isPermanent = isPermanent;
         this._isActive = true;
 
-        // Immediately update text elements if they exist (to avoid 'Loading...' flash)
         const textEl = document.querySelector('.loader-text');
         const subtextEl = document.querySelector('.loader-subtext');
         const dismissBtn = document.querySelector('.loader-dismiss');
@@ -38,7 +36,6 @@ window.Loader = {
         if (subtextEl) subtextEl.textContent = subtext;
         if (dismissBtn) dismissBtn.classList.remove('visible');
 
-        // Set a 0.5-second delay before showing the full overlay to prevent flickering for fast requests
         this._showTimeout = setTimeout(() => {
             if (!this._isActive) return;
 
@@ -47,12 +44,9 @@ window.Loader = {
             
             if (overlay) {
                 overlay.style.display = 'flex';
-                
-                // Show and start progress bar animation
                 if (bar) {
                     bar.style.display = 'block';
                     bar.style.width = '0%';
-                    // Simulated progress
                     setTimeout(() => { if (this._isActive) bar.style.width = '30%'; }, 100);
                     setTimeout(() => { if (this._isActive) bar.style.width = '60%'; }, 1500);
                     setTimeout(() => { if (this._isActive) bar.style.width = '85%'; }, 4000);
@@ -60,7 +54,6 @@ window.Loader = {
 
                 setTimeout(() => { if (this._isActive) overlay.style.opacity = '1'; }, 10);
 
-                // Show dismiss button after 3 seconds of loading
                 this._dismissTimeout = setTimeout(() => {
                     if (this._isActive && dismissBtn) {
                         dismissBtn.classList.add('visible');
@@ -71,7 +64,6 @@ window.Loader = {
     },
     
     hide: function() {
-        // Clear all timeouts
         if (this._showTimeout) clearTimeout(this._showTimeout);
         if (this._dismissTimeout) clearTimeout(this._dismissTimeout);
         this._showTimeout = null;
@@ -98,12 +90,23 @@ window.Loader = {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle file input changes (immediate upload detection for programmatic submit)
+    document.addEventListener('change', function(e) {
+        if (e.target.tagName === 'INPUT' && e.target.type === 'file') {
+            const form = e.target.form;
+            if (form && !form.classList.contains('no-loader')) {
+                window.Loader._isActive = true;
+                window.Loader._isPermanent = true;
+                window.Loader.show("Uploading Data...", "Processing your file...", true);
+            }
+        }
+    });
+
     // Intercept all form submissions
     document.addEventListener('submit', function(e) {
         const form = e.target;
         if (form.classList.contains('no-loader')) return;
         
-        // Block beforeunload from taking over
         window.Loader._isActive = true;
         window.Loader._isPermanent = true;
 
@@ -137,18 +140,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Intercept jQuery AJAX if present
+    // Intercept jQuery AJAX
     if (typeof jQuery !== 'undefined') {
         $(document).ajaxSend(function(event, xhr, settings) {
             const url = settings ? settings.url : '';
-            // EXCLUDE AUTOCOMPLETE
-            if (url.includes('type=student-id-autocomplete') || url.includes('type=student-autocomplete')) {
-                return;
-            }
+            if (url.includes('student-id-autocomplete') || url.includes('student-autocomplete')) return;
             const [text, subtext] = window.Loader.getLabelForUrl(url);
             window.Loader.show(text, subtext, false);
         });
-        $(document).ajaxComplete(function(event, xhr, settings) {
+        $(document).ajaxComplete(function() {
             window.Loader.hide();
         });
     }
@@ -157,11 +157,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const originalFetch = window.fetch;
     window.fetch = function() {
         const url = arguments[0];
-        // EXCLUDE AUTOCOMPLETE
-        if (typeof url === 'string' && (url.includes('type=student-id-autocomplete') || url.includes('type=student-autocomplete'))) {
+        if (typeof url === 'string' && (url.includes('student-id-autocomplete') || url.includes('student-autocomplete'))) {
             return originalFetch.apply(this, arguments);
         }
-
         const [text, subtext] = window.Loader.getLabelForUrl(url);
         window.Loader.show(text, subtext, false);
         return originalFetch.apply(this, arguments).finally(() => {
@@ -171,13 +169,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Show on page unload (navigation)
     window.addEventListener('beforeunload', function() {
-        // ONLY show if a specialized loader (like Uploading) isn't already visible or in permanent mode
         if (!window.Loader._isActive && !window.Loader._isPermanent) {
             window.Loader.show("Navigating...", "Preparing next page", false);
         }
     });
 
-    // Handle back button (clear loader if page is restored from cache)
+    // Handle back button
     window.addEventListener('pageshow', function(event) {
         if (event.persisted) {
             window.Loader.hide();

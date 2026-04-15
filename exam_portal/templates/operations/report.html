@@ -7,20 +7,31 @@
 <div class="pages-main">
     <div class="reports-header-flex">
         <h1 class="pages-main-head">Reports & Analytics</h1>
-        <p class="setting-paragraph" style="margin-top: -15px; margin-bottom: 30px;">Access critical operational data and generated statements for examinations.</p>
     </div>
 
-    <div class="settings-container">
+    <!-- AJAX Report Content Area (Hidden by default) -->
+    <div id="ajax-report-container" class="d-none">
+        <div class="report-navigation-bar" style="margin-bottom: 20px;">
+            <button id="back-to-reports" class="control-btn" style="background: #64748b; margin-bottom: 15px;">
+                <img src="https://img.icons8.com/ios-filled/16/ffffff/left.png" alt="back"> Back to Reports
+            </button>
+        </div>
+        <div id="report-view-content">
+            <!-- Dynamic content loaded here -->
+        </div>
+    </div>
+
+    <div class="settings-container" id="reports-grid">
         <!-- Academic & Registration -->
         <div class="settings-card">
             <div class="category-label">Academic</div>
             <div class="report-card-icon">
                 <img src="https://img.icons8.com/ios-filled/50/2563eb/student-male.png" alt="Students">
             </div>
-            <h2 class="settings-card-head">Student Registration</h2>
-            <p class="setting-paragraph">Summary of students registered for various courses and registration types.</p>
+            <h2 class="settings-card-head">Enrolment Summary</h2>
+            <p class="setting-paragraph">Consolidated view of students registered across all courses and types.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_student_coursereg' %}" class="btn-report btn-view-report">
+                <a href="{% url 'operations:report_student_coursereg' %}" class="btn-report btn-view-report ajax-report-link">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Report
                 </a>
             </div>
@@ -32,10 +43,10 @@
             <div class="report-card-icon">
                 <img src="https://img.icons8.com/ios-filled/50/2563eb/calendar-2.png" alt="Timetable">
             </div>
-            <h2 class="settings-card-head">Consolidated Timetable</h2>
-            <p class="setting-paragraph">Master schedule of all exam slots, dates, and courses for examinations.</p>
+            <h2 class="settings-card-head">Exam Schedule</h2>
+            <p class="setting-paragraph">Master timetable of all exam slots, dates, and course distributions.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_timetable' %}" class="btn-report btn-view-report">
+                <a href="{% url 'operations:report_timetable' %}" class="btn-report btn-view-report ajax-report-link">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Table
                 </a>
             </div>
@@ -47,10 +58,10 @@
             <div class="report-card-icon">
                 <img src="https://img.icons8.com/ios-filled/50/2563eb/classroom.png" alt="Rooms">
             </div>
-            <h2 class="settings-card-head">Room Occupancy</h2>
-            <p class="setting-paragraph">Overview of room usage, capacity, and student density for exam slots.</p>
+            <h2 class="settings-card-head">Venue Logistics</h2>
+            <p class="setting-paragraph">Real-time room occupancy, capacity metrics, and student density logs.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_room_occupancy' %}" class="btn-report btn-view-report">
+                <a href="{% url 'operations:report_room_occupancy' %}" class="btn-report btn-view-report ajax-report-link">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Summary
                 </a>
             </div>
@@ -62,11 +73,11 @@
             <div class="report-card-icon">
                 <img src="https://img.icons8.com/ios-filled/50/2563eb/teacher.png" alt="Invigilation">
             </div>
-            <h2 class="settings-card-head">Invigilation Chart</h2>
-            <p class="setting-paragraph">Consolidated report of faculty duty assignments across all rooms.</p>
+            <h2 class="settings-card-head">Duty Roster</h2>
+            <p class="setting-paragraph">Comprehensive list of faculty invigilation assignments per room/slot.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_invigilation' %}" class="btn-report btn-view-report">
-                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Chart
+                <a href="{% url 'operations:report_invigilation' %}" class="btn-report btn-view-report ajax-report-link">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Roster
                 </a>
             </div>
         </div>
@@ -77,11 +88,11 @@
             <div class="report-card-icon">
                 <img src="https://img.icons8.com/ios-filled/50/2563eb/grid.png" alt="Seating">
             </div>
-            <h2 class="settings-card-head">Master Seating</h2>
-            <p class="setting-paragraph">Detailed seating plan for each room and slot for easy navigation.</p>
+            <h2 class="settings-card-head">Seating Matrix</h2>
+            <p class="setting-paragraph">Detailed seating arrangements and room-wise student allocation plans.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_master_seating' %}" class="btn-report btn-view-report">
-                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Plan
+                <a href="{% url 'operations:report_master_seating' %}" class="btn-report btn-view-report ajax-report-link">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Matrix
                 </a>
             </div>
         </div>
@@ -92,14 +103,229 @@
             <div class="report-card-icon">
                 <img src="https://img.icons8.com/ios-filled/50/2563eb/attendance-mark.png" alt="Attendance">
             </div>
-            <h2 class="settings-card-head">Attendance Sheets</h2>
-            <p class="setting-paragraph">Pre-populated sheets for each room to simplify exam marking.</p>
+            <h2 class="settings-card-head">Attendance Logs</h2>
+            <p class="setting-paragraph">Status reports of student presence and reconciliation with faculty marks.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_attendance' %}" class="btn-report btn-view-report">
-                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Report
+                <a href="{% url 'operations:report_attendance' %}" class="btn-report btn-view-report ajax-report-link">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Logs
                 </a>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const grid = document.getElementById('reports-grid');
+    const container = document.getElementById('ajax-report-container');
+    const contentArea = document.getElementById('report-view-content');
+    const backBtn = document.getElementById('back-to-reports');
+
+    const loaderHTML = `
+        <div class="loader-container" style="display: flex; flex-direction: column; align-items: center; padding: 100px 0;">
+            <div class="premium-loader"></div>
+            <p style="margin-top: 20px; color: #1e3a8a; font-weight: 600;">Generating Report...</p>
+        </div>
+    `;
+
+    function loadReport(url) {
+        grid.style.display = 'none';
+        container.classList.remove('d-none');
+        contentArea.innerHTML = loaderHTML;
+
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            contentArea.innerHTML = html;
+            // Initialize filters inside loaded content
+            initializeReportFilters();
+        })
+        .catch(err => {
+            console.error('Report Load Error:', err);
+            contentArea.innerHTML = `<div class="alert-error">Failed to load report. Please try again.</div>`;
+        });
+    }
+
+    function initializeReportFilters() {
+        // Intercept form submissions inside the report
+        const forms = contentArea.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const params = new URLSearchParams(formData);
+                const url = form.action + '?' + params.toString();
+                loadReport(url);
+                history.pushState({url: url}, '', url);
+            });
+
+            // Handle auto-submit selects
+            const selects = form.querySelectorAll('select[onchange*="submit"]');
+            selects.forEach(select => {
+                select.removeAttribute('onchange');
+                select.addEventListener('change', () => form.dispatchEvent(new Event('submit')));
+            });
+        });
+
+        // Intercept internal AJAX links (e.g., Modify Filters)
+        const internalLinks = contentArea.querySelectorAll('.ajax-report-link');
+        internalLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+                loadReport(url);
+                history.pushState({url: url}, '', url);
+            });
+        });
+
+        // Intercept pagination links
+        const paginationLinks = contentArea.querySelectorAll('.pagination a');
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                loadReport(this.href);
+                history.pushState({url: this.href}, '', this.href);
+            });
+        });
+    }
+
+    document.querySelectorAll('.ajax-report-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.getAttribute('href');
+            loadReport(url);
+            history.pushState({url: url}, '', url);
+        });
+    });
+
+    backBtn.addEventListener('click', () => {
+        grid.style.display = 'grid';
+        container.classList.add('d-none');
+        history.pushState({}, '', "{% url 'operations:report' %}");
+    });
+
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.url) {
+            loadReport(e.state.url);
+        } else {
+            grid.style.display = 'grid';
+            container.classList.add('d-none');
+        }
+    });
+});
+</script>
+
+<style>
+.loader-container { min-height: 400px; }
+.premium-loader {
+    width: 60px;
+    height: 60px;
+    border: 5px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.d-none { display: none !important; }
+
+/* Report Table Styling Standard */
+#report-view-content .table-container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    overflow: auto; /* Enable scrolling */
+    max-height: 70vh; /* Vertical scroll if too many rows */
+}
+
+#report-view-content table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#report-view-content thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 10;
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #1e3a8a;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+#report-view-content tbody td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+#report-view-content tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Filter-First Workflow Styles */
+.report-selection-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background: #fff;
+    border-radius: 16px;
+    border: 2px dashed #e2e8f0;
+    padding: 40px;
+    text-align: center;
+}
+
+.filter-card {
+    background: #f8fafc;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+}
+
+.report-header-results {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 15px;
+}
+
+.modify-btn {
+    background: #f1f5f9;
+    color: #1e3a8a;
+    border: 1px solid #cbd5e1;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.modify-btn:hover {
+    background: #e2e8f0;
+}
+
+.report-navigation-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+</style>
+
 {% endblock %}

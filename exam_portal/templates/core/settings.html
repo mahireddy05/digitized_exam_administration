@@ -89,31 +89,51 @@
                 </div>
             </div>
             <!-- Modal structure for Users -->
-            <div id="usersModal" class="modal-popup modal-overlay-flex">
-                <div class="modal-content modal-content-90">
-                    <button class="close-modal close-modal-upper-right">&times;</button>
-                    <div id="users-modal-table"></div>
+            <div id="usersModal" class="global-modal-backdrop">
+                <div class="global-modal-content wide">
+                    <div class="modal-header-std">
+                        <h2>Users Master List</h2>
+                        <button type="button" class="close-global-modal close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body-std" id="users-modal-table">
+                        <!-- Content loaded via AJAX -->
+                    </div>
                 </div>
             </div>
             <!-- Modal structure for Departments -->
-            <div id="departmentsModal" class="modal-popup modal-overlay-flex">
-                <div class="modal-content modal-content-90">
-                    <button class="close-modal close-modal-upper-right">&times;</button>
-                    <div id="departments-modal-table"></div>
+            <div id="departmentsModal" class="global-modal-backdrop">
+                <div class="global-modal-content wide">
+                    <div class="modal-header-std">
+                        <h2>Departments Master List</h2>
+                        <button type="button" class="close-global-modal close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body-std" id="departments-modal-table">
+                        <!-- Content loaded via AJAX -->
+                    </div>
                 </div>
             </div>
             <!-- Modal structure for Programs -->
-            <div id="programsModal" class="modal-popup modal-overlay-flex">
-                <div class="modal-content modal-content-90">
-                    <button class="close-modal close-modal-upper-right">&times;</button>
-                    <div id="programs-modal-table"></div>
+            <div id="programsModal" class="global-modal-backdrop">
+                <div class="global-modal-content wide">
+                    <div class="modal-header-std">
+                        <h2>Programs Master List</h2>
+                        <button type="button" class="close-global-modal close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body-std" id="programs-modal-table">
+                        <!-- Content loaded via AJAX -->
+                    </div>
                 </div>
             </div>
             <!-- Modal structure for Batches -->
-            <div id="batchesModal" class="modal-popup modal-overlay-flex">
-                <div class="modal-content modal-content-90">
-                    <button class="close-modal close-modal-upper-right">&times;</button>
-                    <div id="batches-modal-table"></div>
+            <div id="batchesModal" class="global-modal-backdrop">
+                <div class="global-modal-content wide">
+                    <div class="modal-header-std">
+                        <h2>Batches Master List</h2>
+                        <button type="button" class="close-global-modal close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body-std" id="batches-modal-table">
+                        <!-- Content loaded via AJAX -->
+                    </div>
                 </div>
             </div>
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -124,8 +144,8 @@
                     e.preventDefault();
                     const modalId = this.getAttribute('data-modal');
                     const modal = document.getElementById(modalId);
+                    
                     if (modalId === 'usersModal') {
-                        // Load users_modal.html into the modal table div
                         $("#users-modal-table").load("{% url 'core:users_modal' %}", function() {
                             if (window.usersTable && document.getElementById('users-table')) {
                                 usersTable.init();
@@ -149,15 +169,23 @@
                                 batchesTable.init();
                             }
                         });
-                    } else {
-                        modal.style.display = 'flex';
                     }
-                    modal.style.display = 'flex';
+                    
+                    if (typeof toggleGlobalModal === 'function') {
+                        toggleGlobalModal(modalId, true);
+                    } else {
+                        modal.classList.add('active');
+                    }
                 });
             });
             document.querySelectorAll('.close-modal').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    this.closest('.modal-popup').style.display = 'none';
+                    const modal = this.closest('.global-modal-backdrop');
+                    if (typeof toggleGlobalModal === 'function') {
+                        toggleGlobalModal(modal.id, false);
+                    } else {
+                        modal.classList.remove('active');
+                    }
                 });
             });
             </script>

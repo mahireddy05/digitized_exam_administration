@@ -6,37 +6,92 @@ function formatDateDMY(dateStr) {
     if (isNaN(d)) return dateStr;
     return `${d.getDate().toString().padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
 }
-// ========== Delete Exam Modal Logic ========== 
-document.addEventListener('DOMContentLoaded', function() {
-    var deleteExamModal = document.getElementById('deleteExamModal');
-    if (deleteExamModal) {
-        deleteExamModal.style.display = 'none';
+
+// ========== Spinner Modal Utilities ==========
+function showSpinnerModal(message) {
+    let modal = document.getElementById('spinner-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'spinner-modal';
+        modal.innerHTML = `
+            <div class="spinner-modal-content">
+                <span class="spinner-std"></span>
+                <div class="spinner-modal-text">${message}</div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.querySelector('.spinner-modal-text').innerHTML = message;
     }
-});
+    modal.classList.add('active');
+}
+
+function closeSpinnerModal() {
+    let modal = document.getElementById('spinner-modal');
+    if (modal) modal.classList.remove('active');
+}
+// ========== Global Modal Utility System v2.0 ==========
+function toggleGlobalModal(modalId, show = true) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    if (show) {
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+    } else {
+        modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
+    }
+}
+
+// Global listener for closing any standardized modal
 document.addEventListener('click', function(e) {
-    var deleteExamModal = document.getElementById('deleteExamModal');
-    if (!deleteExamModal) return;
-    // Only show modal if delete button is clicked
-    if (e.target && e.target.id === 'confirmDeleteExamLink') {
-        deleteExamModal.style.display = 'flex';
-    } else if (deleteExamModal.style.display === 'flex' && (!e.target || (e.target.id !== 'confirmDeleteExamLink' && e.target.id !== 'closeDeleteExamModal' && e.target.id !== 'cancelDeleteExamBtn'))) {
-        // Hide modal if visible and not triggered by delete/cancel/close
-        deleteExamModal.style.display = 'none';
+    // 1. Backdrop click to close (exact match on background)
+    if (e.target.classList.contains('global-modal-backdrop')) {
+        toggleGlobalModal(e.target.id, false);
     }
-    if (e.target && (e.target.id === 'closeDeleteExamModal' || e.target.id === 'cancelDeleteExamBtn')) {
-        deleteExamModal.style.display = 'none';
-    }
-});
-document.addEventListener('click', function(e) {
-    var deleteExamModal = document.getElementById('deleteExamModal');
-    if (!deleteExamModal) return;
-    if (e.target && e.target.id === 'confirmDeleteExamLink') {
-        deleteExamModal.style.display = 'flex';
-    }
-    if (e.target && (e.target.id === 'closeDeleteExamModal' || e.target.id === 'cancelDeleteExamBtn')) {
-        deleteExamModal.style.display = 'none';
+    
+    // 2. Standardized Closing Triggers (supports nested icons/spans)
+    const isClosingTrigger = 
+        e.target.closest('.close-global-modal') || 
+        e.target.closest('.close-modal') || 
+        e.target.closest('.btn-secondary') ||
+        (e.target.id && e.target.id.toLowerCase().includes('cancel'));
+
+    if (isClosingTrigger) {
+        const modal = e.target.closest('.global-modal-backdrop');
+        if (modal) {
+            toggleGlobalModal(modal.id, false);
+        }
     }
 });
+
+// Final consolidated showPopupMessage utility
+function showPopupMessage(text, type = 'error') {
+    let popup = document.getElementById('popup-messages');
+    if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'popup-messages';
+        popup.style.position = 'fixed';
+        popup.style.top = '20px';
+        popup.style.right = '30px';
+        popup.style.zIndex = '99999';
+        document.body.appendChild(popup);
+    }
+    let msgDiv = document.createElement('div');
+    msgDiv.className = 'popup-message popup-' + type;
+    msgDiv.innerHTML = text;
+    popup.appendChild(msgDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        msgDiv.classList.add('fade-out');
+        setTimeout(() => msgDiv.remove(), 500);
+    }, 5000);
+
+    msgDiv.onclick = () => msgDiv.remove();
+}
+
+// Final consolidated showPopupMessage utility
 // ========== Exam Publishable Check (examination.html) ========== 
 function checkExamPublishable() {
     fetch('/ops/ajax/check_exam_publishable/', {
@@ -105,31 +160,95 @@ document.addEventListener('click', function(e) {
     }
 });
 // Global popup message utility
-function showPopupMessage(text, type) {
-    let popup = document.getElementById('popup-messages');
-    if (!popup) {
-        popup = document.createElement('div');
-        popup.id = 'popup-messages';
-        popup.style.position = 'fixed';
-        popup.style.top = '20px';
-        popup.style.right = '30px';
-        popup.style.zIndex = '9999';
-        document.body.appendChild(popup);
-    }
-    let msgDiv = document.createElement('div');
-    msgDiv.className = 'popup-message popup-' + (type || 'error');
-    msgDiv.tabIndex = 0;
-    msgDiv.innerHTML = text;
-    popup.appendChild(msgDiv);
-    // Dismiss only when clicking outside
-    function dismissPopup(e) {
-        if (!popup.contains(e.target)) {
-            popup.remove();
-            document.removeEventListener('mousedown', dismissPopup);
+// Robust Global Modal Triggers for Examination Table
+document.addEventListener('click', function(e) {
+    // 1. Edit Exam Trigger
+    const editBtn = e.target.closest('.edit-exam-link-trigger');
+    if (editBtn) {
+        e.preventDefault();
+        const row = editBtn.closest('tr');
+        if (row) {
+            document.getElementById('editExamId').value = editBtn.dataset.examId || '';
+            document.getElementById('edit_examname').value = row.children[1].textContent.trim();
+            document.getElementById('edit_academic_year').value = row.children[2].textContent.trim();
+            document.getElementById('edit_semester').value = row.children[3].textContent.trim();
+            // Dates might need parsing if format is DD-MMM-YYYY
+            toggleGlobalModal('editExamModal', true);
         }
     }
-    document.addEventListener('mousedown', dismissPopup);
-}
+
+    // 2. Delete Exam Trigger
+    const deleteBtn = e.target.closest('.delete-exam-link-trigger');
+    if (deleteBtn) {
+        e.preventDefault();
+        const row = deleteBtn.closest('tr');
+        if (row) {
+            document.getElementById('deleteExamId').value = deleteBtn.dataset.examId || '';
+            document.getElementById('deleteExamWarning').textContent = `Are you sure you want to delete "${row.children[1].textContent.trim()}"?`;
+            document.getElementById('deleteExamDetails').textContent = `Academic Year: ${row.children[2].textContent.trim()} | Semester: ${row.children[3].textContent.trim()}`;
+            toggleGlobalModal('deleteExamModal', true);
+        }
+    }
+
+    // 3. Confirm Delete Action
+    const confirmDeleteBtn = e.target.closest('#confirmDeleteExamLink');
+    if (confirmDeleteBtn) {
+        e.preventDefault();
+        const examId = document.getElementById('deleteExamId').value;
+        if (!examId) return;
+
+        fetch('/ops/ajax/delete-examination/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || ''
+            },
+            body: JSON.stringify({ exam_id: examId })
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (data.success) {
+                showPopupMessage('Examination deleted successfully.', 'success');
+                toggleGlobalModal('deleteExamModal', false);
+                if (typeof fetchExaminations === 'function') fetchExaminations();
+            } else {
+                showPopupMessage(data.error || 'Failed to delete examination.', 'error');
+            }
+        })
+        .catch(() => showPopupMessage('Network error occurred.', 'error'));
+    }
+});
+
+// Edit Examination Form Submission (AJAX)
+document.addEventListener('submit', function(e) {
+    if (e.target && e.target.id === 'editExamForm') {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = {};
+        formData.forEach((value, key) => { data[key] = value; });
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || ''
+            },
+            body: JSON.stringify(data)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (data.success) {
+                showPopupMessage('Examination updated successfully.', 'success');
+                toggleGlobalModal('editExamModal', false);
+                if (typeof fetchExaminations === 'function') fetchExaminations();
+            } else {
+                showPopupMessage(data.error || 'Failed to update examination.', 'error');
+            }
+        })
+        .catch(() => showPopupMessage('Network error occurred.', 'error'));
+    }
+});
 // Robust publish badge click handler for dynamically rendered elements
 document.addEventListener('click', function(e) {
     const publishBtn = e.target.closest('.publish-exam-btn');
@@ -212,32 +331,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 // ========== Room Allocation: Dynamic Allocated Capacity ========== 
 document.addEventListener('DOMContentLoaded', function () {
-            // Helper to show popup message at top right
-            function showPopupMessage(text, type) {
-                let popup = document.getElementById('popup-messages');
-                if (!popup) {
-                    popup = document.createElement('div');
-                    popup.id = 'popup-messages';
-                    popup.style.position = 'fixed';
-                    popup.style.top = '20px';
-                    popup.style.right = '30px';
-                    popup.style.zIndex = '9999';
-                    document.body.appendChild(popup);
-                }
-                let msgDiv = document.createElement('div');
-                msgDiv.className = 'popup-message popup-' + (type || 'error');
-                msgDiv.tabIndex = 0;
-                msgDiv.innerHTML = text;
-                popup.appendChild(msgDiv);
-                // Dismiss only when clicking outside
-                function dismissPopup(e) {
-                    if (!popup.contains(e.target)) {
-                        popup.remove();
-                        document.removeEventListener('mousedown', dismissPopup);
-                    }
-                }
-                document.addEventListener('mousedown', dismissPopup);
-            }
         // Prevent allocation if cap not reached
         // var allocationForm = document.querySelector('.rooms-table-section form');
         // if (allocationForm) {
@@ -403,35 +496,10 @@ if (typeof roomCheckboxes !== 'undefined' && typeof allocatedRoom !== 'undefined
 });
 // ========== Faculty Allocation: Dynamic Allocated Faculty ========== 
 document.addEventListener('DOMContentLoaded', function () {
-    var allocationForm = document.querySelector('.faculty-assigned form');
     var requiredFac = document.getElementById('required-faculty-display');
     var allocatedFac = document.getElementById('allocated-faculty-display');
     var facultyCheckboxes = document.querySelectorAll('input[name="selected_faculty"]');
-    function showPopupMessage(text, type) {
-        let popup = document.getElementById('popup-messages');
-        if (!popup) {
-            popup = document.createElement('div');
-            popup.id = 'popup-messages';
-            popup.style.position = 'fixed';
-            popup.style.top = '20px';
-            popup.style.right = '30px';
-            popup.style.zIndex = '9999';
-            document.body.appendChild(popup);
-        }
-        let msgDiv = document.createElement('div');
-        msgDiv.className = 'popup-message popup-' + (type || 'error');
-        msgDiv.tabIndex = 0;
-        msgDiv.innerHTML = text;
-        popup.appendChild(msgDiv);
-        // Dismiss only when clicking outside
-        function dismissPopup(e) {
-            if (!popup.contains(e.target)) {
-                popup.remove();
-                document.removeEventListener('mousedown', dismissPopup);
-            }
-        }
-        document.addEventListener('mousedown', dismissPopup);
-    }
+    var allocationForm = document.querySelector('.faculty-assigned form');
     function updateAllocatedFaculty() {
         let count = 0;
         facultyCheckboxes.forEach(function(cb) {
@@ -700,15 +768,15 @@ if (saveEditExamBtn) {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert('Examination updated successfully.');
-                    document.getElementById('editExamModal').style.display = 'none';
+                    showPopupMessage('Examination updated successfully.', 'success');
+                    toggleGlobalModal('editExamModal', false);
                     fetchExaminations();
                 } else {
-                    alert(data.error || 'Failed to update examination.');
+                    showPopupMessage(data.error || 'Failed to update examination.', 'error');
                 }
             })
             .catch(() => {
-                alert('Network error. Please try again.');
+                showPopupMessage('Network error. Please try again.', 'error');
             });
     };
 }
@@ -827,14 +895,14 @@ if (editEndDateElem) {
 var closeEditExamModal = document.getElementById('closeEditExamModal');
 if (closeEditExamModal) {
     closeEditExamModal.onclick = function () {
-        document.getElementById('editExamModal').style.display = 'none';
+        toggleGlobalModal('editExamModal', false);
     };
 }
 var cancelEditExamBtn = document.getElementById('cancelEditExamBtn');
 if (cancelEditExamBtn) {
     cancelEditExamBtn.onclick = function (e) {
         e.preventDefault();
-        document.getElementById('editExamModal').style.display = 'none';
+        toggleGlobalModal('editExamModal', false);
     };
 }
 var editExamModal = document.getElementById('editExamModal');
@@ -860,17 +928,16 @@ if (deleteExamForm) {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    document.getElementById('deleteExamModal').style.display = 'none';
-                    // Optionally show notification
-                    alert('Examination and all related slots and exams deleted successfully.');
+                    toggleGlobalModal('deleteExamModal', false);
+                    showPopupMessage('Examination deleted successfully.', 'success');
                     fetchExaminations();
                 } else {
-                    alert('Failed to delete examination: ' + (data.error || 'Unknown error'));
+                    showPopupMessage('Failed to delete examination: ' + (data.error || 'Unknown error'), 'error');
                 }
             })
             .catch(() => {
-                document.getElementById('deleteExamModal').style.display = 'none';
-                alert('Failed to delete examination due to network error.');
+                toggleGlobalModal('deleteExamModal', false);
+                showPopupMessage('Failed to delete examination due to network error.', 'error');
             });
     };
 }
@@ -1086,17 +1153,22 @@ function fetchExamSlotsAjax() {
                         if (!modal) {
                             modal = document.createElement('div');
                             modal.id = 'facultyAllocModal';
-                            modal.className = 'modal';
-                            modal.style.display = 'none';
-                            modal.innerHTML = `<div class="modal-content">
-                                <span id="closeFacultyAllocModal">&times;</span>
-                                <div id="facultyAllocModalContent"><h2>Assigned Faculty</h2><div>Loading...</div></div>
-                            </div>`;
+                            modal.className = 'global-modal-backdrop';
+                            modal.innerHTML = `
+                                <div class="global-modal-content">
+                                    <div class="modal-header-std">
+                                        <h2>Assigned Faculty</h2>
+                                        <button type="button" class="close-global-modal">&times;</button>
+                                    </div>
+                                    <div class="modal-body-std modal-table-container">
+                                        <div id="facultyAllocModalContent">Loading...</div>
+                                    </div>
+                                </div>`;
                             document.body.appendChild(modal);
                             modalContent = document.getElementById('facultyAllocModalContent');
                         }
-                        modal.style.display = 'flex';
-                        modalContent.innerHTML = '<h2>Assigned Faculty</h2><div>Loading...</div>';
+                        toggleGlobalModal('facultyAllocModal', true);
+                        modalContent.innerHTML = '<div>Loading...</div>';
                         fetch(`/ops/ajax/slot-faculty/?slot_id=${finalSlotId}`)
                             .then(resp => resp.json())
                             .then(data => {
@@ -1138,13 +1210,6 @@ function fetchExamSlotsAjax() {
                             .catch(() => {
                                 modalContent.innerHTML = `<div class='popup-message popup-error'>Failed to load faculty details (network error).</div>`;
                             });
-                        // Close logic
-                        document.getElementById('closeFacultyAllocModal').onclick = function () {
-                            modal.style.display = 'none';
-                        };
-                        modal.onclick = function (evt) {
-                            if (evt.target === modal) modal.style.display = 'none';
-                        };
                     }
                 }
         const roomAllocLink = e.target.closest('a[href*="/ops/exam_rooms_alloc/"]');
@@ -1168,17 +1233,22 @@ function fetchExamSlotsAjax() {
                 if (!modal) {
                     modal = document.createElement('div');
                     modal.id = 'roomAllocModal';
-                    modal.className = 'modal';
-                    modal.style.display = 'none';
-                    modal.innerHTML = `<div class="modal-content">
-                        <span id="closeRoomAllocModal">&times;</span>
-                        <div id="roomAllocModalContent"><h2>Allocated Rooms</h2><div>Loading...</div></div>
-                    </div>`;
+                    modal.className = 'global-modal-backdrop';
+                    modal.innerHTML = `
+                        <div class="global-modal-content">
+                            <div class="modal-header-std">
+                                <h2>Allocated Rooms</h2>
+                                <button type="button" class="close-global-modal">&times;</button>
+                            </div>
+                            <div class="modal-body-std modal-table-container">
+                                <div id="roomAllocModalContent">Loading...</div>
+                            </div>
+                        </div>`;
                     document.body.appendChild(modal);
                     modalContent = document.getElementById('roomAllocModalContent');
                 }
-                modal.style.display = 'flex';
-                modalContent.innerHTML = '<h2>Allocated Rooms</h2><div>Loading...</div>';
+                toggleGlobalModal('roomAllocModal', true);
+                modalContent.innerHTML = '<div>Loading...</div>';
                 fetch(`/ops/ajax/slot-rooms/?slot_id=${finalSlotId}`)
                     .then(resp => resp.json())
                     .then(data => {
@@ -1225,23 +1295,10 @@ function fetchExamSlotsAjax() {
                     .catch(() => {
                         modalContent.innerHTML = `<div class='popup-message popup-error'>Failed to load room details (network error).</div>`;
                     });
-                // Close logic
-                document.getElementById('closeRoomAllocModal').onclick = function () {
-                    modal.style.display = 'none';
-                };
-                modal.onclick = function (evt) {
-                    if (evt.target === modal) modal.style.display = 'none';
-                };
             }
         }
     });
-    // Close modal logic
-    document.getElementById('closeSlotCoursesModal').onclick = function () {
-        document.getElementById('slotCoursesModal').style.display = 'none';
-    };
-    document.getElementById('slotCoursesModal').onclick = function (e) {
-        if (e.target === this) this.style.display = 'none';
-    };
+    // Close modal logic handled globally
     // Slot edit modal logic
     document.addEventListener('click', function (e) {
         const editBtn = e.target.closest('.edit-slot-btn');
@@ -1260,19 +1317,14 @@ function fetchExamSlotsAjax() {
             document.getElementById('edit_end_time').value = row.children[4].textContent.trim();
             document.getElementById('edit_slot_code').value = row.children[5].textContent.trim();
             document.getElementById('edit_registration_type').value = row.children[6].textContent.trim();
-            document.getElementById('editSlotModal').style.display = 'flex';
+            toggleGlobalModal('editSlotModal', true);
         }
     });
-    document.getElementById('closeEditSlotModal').onclick = function () {
-        document.getElementById('editSlotModal').style.display = 'none';
-    };
-    document.getElementById('cancelEditSlotBtn').onclick = function (e) {
-        e.preventDefault();
-        document.getElementById('editSlotModal').style.display = 'none';
-    };
-    document.getElementById('editSlotModal').onclick = function (e) {
-        if (e.target === this) this.style.display = 'none';
-    };
+    // Cancel/Close logic handled globally or via id
+    const closeEditSlotModal = document.getElementById('closeEditSlotModal');
+    if (closeEditSlotModal) closeEditSlotModal.onclick = () => toggleGlobalModal('editSlotModal', false);
+    const cancelEditSlotBtn = document.getElementById('cancelEditSlotBtn');
+    if (cancelEditSlotBtn) cancelEditSlotBtn.onclick = (e) => { e.preventDefault(); toggleGlobalModal('editSlotModal', false); };
     var examId = window.examIdForSlots || '';
     var tbody = document.getElementById('exam-slots-list');
     if (!tbody) return;
@@ -1481,105 +1533,9 @@ function fetchExamSlotsAjax() {
                         statusLink.style.pointerEvents = '';
                         showPopupMessage('Error generating seating plan.', 'error');
                     });
-                // Spinner Modal Functions
-                function showSpinnerModal(message) {
-                    let modal = document.getElementById('spinner-modal');
-                    if (!modal) {
-                        modal = document.createElement('div');
-                        modal.id = 'spinner-modal';
-                        modal.innerHTML = `
-                            <div class="spinner-modal-content">
-                                <span class="spinner"></span>
-                                <div class="spinner-modal-text">${message}</div>
-                            </div>
-                        `;
-                        document.body.appendChild(modal);
-                    } else {
-                        modal.querySelector('.spinner-modal-text').innerHTML = message;
-                        modal.style.display = 'flex';
-                    }
-                }
-                function closeSpinnerModal() {
-                    let modal = document.getElementById('spinner-modal');
-                    if (modal) modal.style.display = 'none';
-                }
-                // Spinner Modal CSS
-                const spinnerModalStyle = document.createElement('style');
-                spinnerModalStyle.innerHTML = `
-                #spinner-modal {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    background: rgba(30,58,95,0.18);
-                    z-index: 99999;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .spinner-modal-content {
-                    background: #fff;
-                    border-radius: 16px;
-                    box-shadow: 0 8px 32px rgba(30,58,95,0.18);
-                    padding: 2.5em 2em;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    min-width: 340px;
-                    max-width: 90vw;
-                }
-                .spinner-modal-text {
-                    margin-top: 1.2em;
-                    font-size: 1.18em;
-                    color: #1E3A5F;
-                    text-align: center;
-                    font-family: 'Poppins', sans-serif;
-                }
-                `;
-                document.head.appendChild(spinnerModalStyle);
-                }
-            }
-        // Spinner CSS
-        const spinnerStyle = document.createElement('style');
-        spinnerStyle.innerHTML = `
-        .spinner {
-            width: 22px;
-            height: 22px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #2563eb;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        `;
-        document.head.appendChild(spinnerStyle);
-        });
-    function showPopupMessage(msg, type = 'error') {
-        let popup = document.getElementById('popup-messages');
-        if (!popup) {
-            popup = document.createElement('div');
-            popup.id = 'popup-messages';
-            document.body.appendChild(popup);
-        }
-        const div = document.createElement('div');
-        div.className = 'popup-message popup-' + type;
-        div.tabIndex = 0;
-        div.innerHTML = msg;
-        popup.appendChild(div);
-        // Remove on outside click
-        function outsideClickHandler(e) {
-            if (!div.contains(e.target)) {
-                div.remove();
-                document.removeEventListener('mousedown', outsideClickHandler);
-            }
-        }
-        document.addEventListener('mousedown', outsideClickHandler);
-    }
+            } // Close statusSpanGenerate
+        } // Close statusLink
+    }); // Close click listener
 
     // Intercept Room Allocation and Faculty Assignment clicks for status checks
     document.addEventListener('click', function (e) {
@@ -1629,19 +1585,13 @@ function fetchExamSlotsAjax() {
             const slotCode = delBtn.dataset.slotCode;
             document.getElementById('deleteSlotWarning').innerHTML = `Are you sure you want to delete this slot?<br><b>Date:</b> ${slotDate} <b>Time:</b> ${slotTime} <b>Code:</b> ${slotCode}<br>This will <b>permanently delete</b> all exams scheduled under this slot.`;
             document.getElementById('deleteSlotId').value = slotId;
-            document.getElementById('deleteSlotModal').style.display = 'flex';
+            toggleGlobalModal('deleteSlotModal', true);
         }
     });
-    document.getElementById('closeDeleteSlotModal').onclick = function () {
-        document.getElementById('deleteSlotModal').style.display = 'none';
-    };
-    document.getElementById('cancelDeleteSlotBtn').onclick = function (e) {
-        e.preventDefault();
-        document.getElementById('deleteSlotModal').style.display = 'none';
-    };
-    document.getElementById('deleteSlotModal').onclick = function (e) {
-        if (e.target === this) this.style.display = 'none';
-    };
+    const closeDeleteSlotModal = document.getElementById('closeDeleteSlotModal');
+    if (closeDeleteSlotModal) closeDeleteSlotModal.onclick = () => toggleGlobalModal('deleteSlotModal', false);
+    const cancelDeleteSlotBtn = document.getElementById('cancelDeleteSlotBtn');
+    if (cancelDeleteSlotBtn) cancelDeleteSlotBtn.onclick = (e) => { e.preventDefault(); toggleGlobalModal('deleteSlotModal', false); };
     document.getElementById('confirmDeleteSlotLink').onclick = function (e) {
         e.preventDefault();
         const slotId = document.getElementById('deleteSlotId').value;
@@ -3534,7 +3484,7 @@ const SpecialDownloadManager = {
                 const sem = document.getElementById('spec_semester').value;
                 const type = document.getElementById('spec_registration_type').value;
 
-                hide();
+                toggleGlobalModal('specializedDownloadModal', false);
                 
                 // Use ExportManager to handle the data fetching and CSV generation
                 ExportManager.currentType = 'coursereg';
@@ -3584,7 +3534,7 @@ const SpecialDownloadManager = {
         const list = document.getElementById('spec_autocomplete_list');
         if (list) {
             list.innerHTML = '';
-            list.style.display = 'none';
+            toggleGlobalModal('specializedDownloadModal', false); // Ensure entire modal is handled
         }
     }
 };

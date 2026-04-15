@@ -1,30 +1,33 @@
 {% load static %}
-<h5 class="pages-main-head">Users List</h5>
 <div class="modal-body">
-	<div class="table-responsive max-h-80vh">
-		<table class="table table-bordered table-striped" id="users-table">
-			<thead class="sticky-header-1e3">
-				<tr>
-					<th>Username</th>
-					<th>Email</th>
-					<th>First Name</th>
-					<th>Last Name</th>
-					<th>Role</th>
-					<th>Last Login</th>
-				</tr>
-				   <tr id="filter-row">
-					   <th><input type="text" class="users-filter-input" data-field="username" placeholder="Filter Username"></th>
-					   <th><input type="text" class="users-filter-input" data-field="email" placeholder="Filter Email"></th>
-					   <th><input type="text" class="users-filter-input" data-field="first_name" placeholder="Filter First Name"></th>
-					   <th><input type="text" class="users-filter-input" data-field="last_name" placeholder="Filter Last Name"></th>
-					   <th><input type="text" class="users-filter-input" data-field="role" placeholder="Filter Role"></th>
-					   <th><input type="text" class="users-filter-input readonly-f1" readonly tabindex="-1"></th>
-				</tr>
-			</thead>
-			<tbody id="users-table-body">
-				<!-- Data will be loaded here by AJAX -->
-			</tbody>
-		</table>
-		<ul id="users-pagination" class="pagination"></ul>
-	</div>
+    <div class="modal-table-container">
+        <table class="table table-bordered table-striped" id="users-table">
+            <thead class="sticky-header-1e3">
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Role</th>
+                    <th>Last Login</th>
+                </tr>
+                <tr id="filter-row">
+                    <th><input type="text" class="users-filter-input" data-field="username"
+                            placeholder="Filter Username"></th>
+                    <th><input type="text" class="users-filter-input" data-field="email" placeholder="Filter Email">
+                    </th>
+                    <th><input type="text" class="users-filter-input" data-field="first_name"
+                            placeholder="Filter First Name"></th>
+                    <th><input type="text" class="users-filter-input" data-field="last_name"
+                            placeholder="Filter Last Name"></th>
+                    <th><input type="text" class="users-filter-input" data-field="role" placeholder="Filter Role"></th>
+                    <th><input type="text" class="users-filter-input readonly-f1" readonly tabindex="-1"></th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body">
+                <!-- Data will be loaded here by AJAX -->
+            </tbody>
+        </table>
+    </div>
+    <ul id="users-pagination" class="pagination" style="margin-top: 15px;"></ul>
 </div>

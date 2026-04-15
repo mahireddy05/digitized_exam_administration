@@ -1,38 +1,53 @@
-{% extends "core/base_admin.html" %}
+{% extends base_template|default:"core/base_admin.html" %}
 {% load static %}
 
 {% block title %}Student Registration Report | Reports{% endblock %}
 
 {% block content %}
 <div class="pages-main">
-    <div class="reports-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div>
-            <h1 class="pages-main-head">Student Registration Summary</h1>
-            <p class="setting-paragraph">View academic registration trends by course and enrollment type.</p>
+    {% if not acd_year %}
+    <!-- Stage 1: Selection Stage -->
+    <div class="report-selection-stage">
+        <img src="https://img.icons8.com/ios/100/2563eb/student-male.png" alt="Select" style="margin-bottom: 20px;">
+        <h1 class="pages-main-head">Enrolment Summary</h1>
+        <p class="setting-paragraph" style="margin-bottom: 30px;">Select an academic year to view registration analytics.</p>
+        
+        <div class="filter-card">
+            <form method="get" action=".">
+                <div class="filter-group" style="margin-bottom: 20px; text-align: left;">
+                    <label for="acd_year" style="display: block; margin-bottom: 8px; font-weight: 600;">Academic Year:</label>
+                    <select name="acd_year" id="acd_year" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+                        <option value="">-- Choose Year --</option>
+                        {% for year in acd_years %}
+                        <option value="{{ year }}" {% if year == acd_year %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-report btn-view-report" style="width: 100%; justify-content: center; padding: 14px;">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> Generate Report
+                </button>
+            </form>
         </div>
-        <a href="javascript:window.print()" class="btn-report btn-view-report" style="width: auto; padding: 10px 20px;">
-            <img src="https://img.icons8.com/ios-filled/20/ffffff/print.png" alt="Print"> Print Report
-        </a>
+    </div>
+    {% else %}
+    <!-- Stage 2: Data Stage -->
+    <div class="report-header-results">
+        <div>
+            <h1 class="pages-main-head">Enrolment Summary</h1>
+            <p class="setting-paragraph">Academic Year: {{ acd_year }}</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'operations:report_student_coursereg' %}" class="modify-btn ajax-report-link">
+                <img src="https://img.icons8.com/ios/16/1e3a8a/settings.png" alt="modify"> Modify Filters
+            </a>
+            <a href="javascript:window.print()" class="btn-report btn-view-report" style="width: auto; padding: 10px 20px;">
+                <img src="https://img.icons8.com/ios-filled/20/ffffff/print.png" alt="Print"> Print
+            </a>
+        </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="filter-section" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px;">
-        <form method="get" action="." style="display: flex; gap: 20px; align-items: flex-end;">
-            <div class="filter-group" style="display: flex; flex-direction: column; gap: 5px;">
-                <label style="font-size: 0.85rem; font-weight: 600; color: #64748b;">Academic Year</label>
-                <select name="acd_year" onchange="this.form.submit()" style="padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; min-width: 200px;">
-                    <option value="">-- All Years --</option>
-                    {% for year in acd_years %}
-                    <option value="{{ year }}" {% if year == acd_year %}selected{% endif %}>{{ year }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <noscript><button type="submit" class="btn-report btn-view-report">Filter</button></noscript>
-        </form>
-    </div>
-
-    <div class="table-container" style="background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(30, 58, 95, 0.08);">
-        <table class="dashboard-popup-table" style="table-layout: auto;">
+    <div class="table-container">
+        <table class="dashboard-popup-table">
             <thead>
                 <tr>
                     <th style="width: 20%;">Course Code</th>
@@ -41,13 +56,13 @@
                     <th style="width: 20%;">Student Count</th>
                 </tr>
             </thead>
-            <tbody style="display: table-row-group; max-height: none;">
+            <tbody>
                 {% for item in summary %}
                 <tr>
                     <td><strong>{{ item.course__course_code }}</strong></td>
                     <td>{{ item.course__course_name }}</td>
                     <td>
-                        <span style="padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 700;
+                        <span class="status-badge" style="
                             {% if item.registration_type == 'REGULAR' %}background: #e0f2fe; color: #0369a1;{% else %}background: #fef2f2; color: #b91c1c;{% endif %}">
                             {{ item.registration_type }}
                         </span>
@@ -56,17 +71,25 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 40px; color: #64748b;">No registration data found for the selected academic year.</td>
+                    <td colspan="4" style="text-align: center; padding: 40px; color: #64748b;">No registration data found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% endif %}
 </div>
 
 <style>
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: inline-block;
+    }
     @media print {
-        .hamburger, #sidebar, .filter-section, .btn-view-report {
+        .hamburger, #sidebar, .controls, .btn-view-report, .report-navigation-bar, .modify-btn {
             display: none !important;
         }
         .pages-main { margin-left: 0 !important; padding: 0 !important; }

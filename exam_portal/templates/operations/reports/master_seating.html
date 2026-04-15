@@ -1,39 +1,55 @@
-{% extends "core/base_admin.html" %}
+{% extends base_template|default:"core/base_admin.html" %}
 {% load static %}
 
+{% block title %}Master Seating Matrix | Reports{% endblock %}
+
 {% block content %}
-<style>
-    .report-table { width: 100%; border-collapse: collapse; margin-top: 30px; table-layout: auto; }
-    .report-table th, .report-table td { padding: 12px; border: 1px solid #cbd5e1; text-align: left; }
-    .report-table th { background: #f1f5f9; font-weight: 600; color: #1E3A5F; }
-    .filter-box { margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
-    .filter-form { display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
-</style>
-
 <div class="pages-main">
-    <div class="pages-main-head">Master Seating Plan</div>
-    <div class="pages-main-subhead">Comprehensive list of student locations per exam slot</div>
-
-    <div class="filter-box">
-        <form method="GET" action="" class="filter-form">
-            <div style="flex: 1; min-width: 250px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Select Examination</label>
-                <select name="exam_id" class="form-control" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <option value="">-- Choose Examination --</option>
-                    {% for e in exams %}
-                    <option value="{{ e.id }}" {% if e.id|slugify == selected_exam_id|slugify %}selected{% endif %}>
-                        {{ e.exam_name }} ({{ e.academic_year }})
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="control-btn" style="padding: 10px 25px; height: 45px; border: none; background: #1E3A5F; color: #fff; cursor: pointer;">Generate Plan</button>
-        </form>
+    {% if not exam %}
+    <!-- Stage 1: Selection Stage -->
+    <div class="report-selection-stage">
+        <img src="https://img.icons8.com/ios/100/2563eb/grid.png" alt="Select" style="margin-bottom: 20px;">
+        <h1 class="pages-main-head">Seating Matrix</h1>
+        <p class="setting-paragraph" style="margin-bottom: 30px;">Select an examination to view the detailed student-wise seating plan.</p>
+        
+        <div class="filter-card">
+            <form method="get" action=".">
+                <div class="filter-group" style="margin-bottom: 20px; text-align: left;">
+                    <label for="exam_id" style="display: block; margin-bottom: 8px; font-weight: 600;">Choose Examination:</label>
+                    <select name="exam_id" id="exam_id" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+                        <option value="">-- Choose Examination --</option>
+                        {% for e in exams %}
+                        <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_exam_id %}selected{% endif %}>
+                            {{ e.exam_name }} ({{ e.academic_year }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-report btn-view-report" style="width: 100%; justify-content: center; padding: 14px;">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> Fetch Matrix
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <!-- Stage 2: Data Stage -->
+    <div class="report-header-results">
+        <div>
+            <h1 class="pages-main-head">Seating Matrix</h1>
+            <p class="setting-paragraph">{{ exam.exam_name }} ({{ exam.academic_year }})</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'operations:report_master_seating' %}" class="modify-btn ajax-report-link">
+                <img src="https://img.icons8.com/ios/16/1e3a8a/settings.png" alt="modify"> Modify Filters
+            </a>
+            <a href="javascript:window.print()" class="btn-report btn-view-report" style="width: auto; padding: 10px 20px;">
+                <img src="https://img.icons8.com/ios-filled/20/ffffff/print.png" alt="Print"> Print
+            </a>
+        </div>
     </div>
 
-    {% if exam %}
-    <div class="table">
-        <table class="report-table">
+    <div class="table-container">
+        <table class="dashboard-popup-table">
             <thead>
                 <tr>
                     <th>Date & Slot</th>
@@ -41,31 +57,76 @@
                     <th>Student ID</th>
                     <th>Name</th>
                     <th>Course Code</th>
-                    <th>Seat Number</th>
+                    <th>Row/Seat</th>
                 </tr>
             </thead>
             <tbody>
-                {% for item in report_data %}
+                {% for item in page_obj %}
                 <tr>
                     <td>{{ item.exam_slot.exam_date|date:"d M Y" }} ({{ item.exam_slot.slot_code }})</td>
                     <td><strong>{{ item.room.room_code }}</strong></td>
                     <td>{{ item.student_exam.student.student_id }}</td>
-                    <td>{{ item.student_exam.student.student_name|default:"N/A" }}</td>
+                    <td>{{ item.student_exam.student.student_name|default:item.student_exam.student.user.first_name }}</td>
                     <td>{{ item.student_exam.exam.course.course_code }}</td>
-                    <td>Row {{ item.row_no }}, Seat {{ item.seat_no }}</td>
+                    <td><span class="seat-badge">R{{ item.row_no }}:S{{ item.seat_no }}</span></td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" style="padding: 40px; text-align: center; color: #94a3b8;">No seating plan found for this exam.</td>
+                    <td colspan="6" style="padding: 40px; text-align: center; color: #94a3b8;">No seating data found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% else %}
-    <div style="text-align: center; padding: 80px 20px; color: #64748b; background: #fff; border-radius: 12px; margin-top: 20px; border: 1px dashed #cbd5e1;">
-        <h3>Please select an examination to view the master seating plan</h3>
+
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center;">
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?exam_id={{ selected_exam_id }}&page=1" class="page-link">&laquo; First</a>
+            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.previous_page_number }}" class="page-link">Previous</a>
+            {% endif %}
+
+            <span class="current-page">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+            {% if page_obj.has_next %}
+            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.next_page_number }}" class="page-link">Next</a>
+            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.paginator.num_pages }}" class="page-link">Last &raquo;</a>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
+    {% endif %}
 </div>
+
+<style>
+    .seat-badge {
+        background: #e0e7ef;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1e3a8a;
+    }
+    .pagination { display: flex; gap: 5px; align-items: center; }
+    .page-link {
+        padding: 5px 12px;
+        background: #f1f5f9;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #1e3a8a;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    .current-page { font-size: 0.9rem; font-weight: 600; color: #64748b; margin: 0 10px; }
+    
+    @media print {
+        .hamburger, #sidebar, .controls, .btn-view-report, .report-navigation-bar, .modify-btn, .pagination-container {
+            display: none !important;
+        }
+        .pages-main { margin-left: 0 !important; padding: 0 !important; }
+        .table-container { box-shadow: none !important; border: 1px solid #e2e8f0; }
+    }
+</style>
 {% endblock %}

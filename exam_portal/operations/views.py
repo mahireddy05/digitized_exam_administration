@@ -1053,15 +1053,18 @@ def report_timetable(request):
         except Examinations.DoesNotExist:
             pass
     
+    base_template = "core/base_partial.html" if request.headers.get('x-requested-with') == 'XMLHttpRequest' else "core/base_admin.html"
     return render(request, "operations/reports/timetable.html", {
         'exams': exams,
         'exam': exam,
         'slots': slots,
-        'selected_exam_id': exam_id
+        'selected_exam_id': exam_id,
+        'base_template': base_template
     })
 
 def report_room_occupancy(request):
     from .models import Examinations, ExamSlot, RoomAllocation, SeatingPlan
+    from django.db.models import Count
     from django.shortcuts import render
     exam_id = request.GET.get('exam_id')
     exams = Examinations.objects.all().order_by('-start_date')
@@ -1071,41 +1074,50 @@ def report_room_occupancy(request):
     if exam_id:
         try:
             exam = Examinations.objects.get(id=exam_id)
-            slots = ExamSlot.objects.filter(examination=exam).order_by('exam_date')
-            for slot in slots:
-                allocations = RoomAllocation.objects.filter(exam_slot=slot).select_related('room')
-                for alloc in allocations:
-                    seated_count = SeatingPlan.objects.filter(exam_slot=slot, room=alloc.room).count()
-                    utilization = round((seated_count / alloc.room.capacity) * 100, 1) if alloc.room.capacity > 0 else 0
-                    
-                    # Determine color class or hex
-                    if utilization > 90:
-                        util_color = "#ef4444"
-                        util_status = "high"
-                    elif utilization > 70:
-                        util_color = "#f59e0b"
-                        util_status = "med"
-                    else:
-                        util_color = "#10b981"
-                        util_status = "low"
+            # Bulk fetch all seating counts for this exam to avoid N+1
+            seating_counts = SeatingPlan.objects.filter(exam_slot__examination=exam) \
+                .values('exam_slot_id', 'room_id') \
+                .annotate(student_count=Count('id'))
+            
+            # Convert to a lookup dictionary: (slot_id, room_id) -> count
+            counts_map = {(c['exam_slot_id'], c['room_id']): c['student_count'] for c in seating_counts}
+            
+            # Fetch allocations with related data
+            allocations = RoomAllocation.objects.filter(exam_slot__examination=exam) \
+                .select_related('exam_slot', 'room') \
+                .order_by('exam_slot__exam_date', 'exam_slot__slot_code', 'room__room_code')
+            
+            for alloc in allocations:
+                seated_count = counts_map.get((alloc.exam_slot_id, alloc.room_id), 0)
+                capacity = alloc.room.capacity or 0
+                utilization = round((seated_count / capacity) * 100, 1) if capacity > 0 else 0
+                
+                # Determine color status
+                if utilization > 90:
+                    util_color = "#ef4444" # Red
+                elif utilization > 70:
+                    util_color = "#f59e0b" # Orange
+                else:
+                    util_color = "#10b981" # Green
 
-                    report_data.append({
-                        'slot': slot,
-                        'room': alloc.room,
-                        'capacity': alloc.room.capacity,
-                        'seated': seated_count,
-                        'utilization': utilization,
-                        'util_color': util_color,
-                        'util_status': util_status
-                    })
+                report_data.append({
+                    'slot': alloc.exam_slot,
+                    'room': alloc.room,
+                    'capacity': capacity,
+                    'seated': seated_count,
+                    'utilization': utilization,
+                    'util_color': util_color
+                })
         except Examinations.DoesNotExist:
             pass
             
+    base_template = "core/base_partial.html" if request.headers.get('x-requested-with') == 'XMLHttpRequest' else "core/base_admin.html"
     return render(request, "operations/reports/room_occupancy.html", {
         'exams': exams,
         'exam': exam,
         'report_data': report_data,
-        'selected_exam_id': exam_id
+        'selected_exam_id': exam_id,
+        'base_template': base_template
     })
 
 def report_student_coursereg(request):
@@ -1113,20 +1125,25 @@ def report_student_coursereg(request):
     from django.db.models import Count
     from django.shortcuts import render
     acd_year = request.GET.get('acd_year')
-    acd_years = StudentCourse.objects.values_list('academic_year', flat=True).distinct().order_by('-academic_year')
     
-    regs = StudentCourse.objects.all()
+    # Performance Optimization: Only scan for distinct years if needed or use a faster approach
+    # Since academic_year is indexed, this is generally okay, but we only need it for the dropdown
+    acd_years = StudentCourse.objects.order_by('-academic_year').values_list('academic_year', flat=True).distinct()
+    
+    summary = []
     if acd_year:
-        regs = regs.filter(academic_year=acd_year)
+        # Optimized group-by query
+        summary = StudentCourse.objects.filter(academic_year=acd_year) \
+                      .values('course__course_code', 'course__course_name', 'registration_type') \
+                      .annotate(count=Count('id')) \
+                      .order_by('course__course_code')
     
-    summary = regs.values('course__course_code', 'course__course_name', 'registration_type') \
-                  .annotate(count=Count('id')) \
-                  .order_by('course__course_code')
-    
+    base_template = "core/base_partial.html" if request.headers.get('x-requested-with') == 'XMLHttpRequest' else "core/base_admin.html"
     return render(request, "operations/reports/student_coursereg.html", {
         'summary': summary,
         'acd_year': acd_year,
-        'acd_years': acd_years
+        'acd_years': acd_years,
+        'base_template': base_template
     })
 
 def report_invigilation(request):
@@ -1145,11 +1162,18 @@ def report_invigilation(request):
         except Examinations.DoesNotExist:
             pass
             
+    from django.core.paginator import Paginator
+    paginator = Paginator(report_data, 25)  # 25 per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    base_template = "core/base_partial.html" if request.headers.get('x-requested-with') == 'XMLHttpRequest' else "core/base_admin.html"
     return render(request, "operations/reports/invigilation.html", {
         'exams': exams,
         'exam': exam,
-        'report_data': report_data,
-        'selected_exam_id': exam_id
+        'page_obj': page_obj,
+        'selected_exam_id': exam_id,
+        'base_template': base_template
     })
 
 def report_master_seating(request):
@@ -1168,11 +1192,18 @@ def report_master_seating(request):
         except Examinations.DoesNotExist:
             pass
             
+    from django.core.paginator import Paginator
+    paginator = Paginator(report_data, 50)  # 50 per page for seating
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    base_template = "core/base_partial.html" if request.headers.get('x-requested-with') == 'XMLHttpRequest' else "core/base_admin.html"
     return render(request, "operations/reports/master_seating.html", {
         'exams': exams,
         'exam': exam,
-        'report_data': report_data,
-        'selected_exam_id': exam_id
+        'page_obj': page_obj,
+        'selected_exam_id': exam_id,
+        'base_template': base_template
     })
 
 def report_attendance(request):
@@ -1239,10 +1270,17 @@ def report_attendance(request):
         except Examinations.DoesNotExist:
             pass
             
+    from django.core.paginator import Paginator
+    paginator = Paginator(report_data, 100)  # 100 per page for attendance
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    base_template = "core/base_partial.html" if request.headers.get('x-requested-with') == 'XMLHttpRequest' else "core/base_admin.html"
     return render(request, "operations/reports/attendance.html", {
         'exams': exams,
         'exam': exam,
-        'report_data': report_data,
+        'page_obj': page_obj,
         'stats': stats,
-        'selected_exam_id': exam_id
+        'selected_exam_id': exam_id,
+        'base_template': base_template
     })

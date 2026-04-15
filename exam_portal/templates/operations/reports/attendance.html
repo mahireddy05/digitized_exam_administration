@@ -1,68 +1,74 @@
-{% extends "core/base_admin.html" %}
+{% extends base_template|default:"core/base_admin.html" %}
 {% load static %}
 
+{% block title %}Attendance Logs | Reports{% endblock %}
+
 {% block content %}
-<style>
-    .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: auto; }
-    .report-table th, .report-table td { padding: 12px; border: 1px solid #cbd5e1; text-align: left; }
-    .report-table th { background: #f1f5f9; font-weight: 600; color: #1E3A5F; }
-    .filter-box { margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
-    .filter-form { display: flex; align-items: flex-end; gap: 15px; flex-wrap: wrap; }
-    
-    .stats-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px; }
-    .stat-card { padding: 15px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; text-align: center; }
-    .stat-value { font-size: 1.5rem; font-weight: 700; color: #1E3A5F; display: block; }
-    .stat-label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
-    
-    .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
-    .status-present { background: #dcfce7; color: #166534; }
-    .status-absent { background: #fee2e2; color: #991b1b; }
-    .status-unmarked { background: #f1f5f9; color: #64748b; border: 1px dashed #cbd5e1; }
-</style>
-
 <div class="pages-main">
-    <div class="pages-main-head">Attendance Report</div>
-    <div class="pages-main-subhead">Reconciliation of student attendance against faculty assignments</div>
-
-    <div class="filter-box">
-        <form method="GET" action="" class="filter-form">
-            <div style="flex: 1; min-width: 250px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Select Examination</label>
-                <select name="exam_id" class="form-control" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                    <option value="">-- Choose Examination --</option>
-                    {% for e in exams %}
-                    <option value="{{ e.id }}" {% if e.id|slugify == selected_exam_id|slugify %}selected{% endif %}>
-                        {{ e.exam_name }} ({{ e.academic_year }})
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <button type="submit" class="control-btn" style="padding: 10px 25px; height: 45px; border: none; background: #1E3A5F; color: #fff; cursor: pointer;">Generate Report</button>
-        </form>
+    {% if not exam %}
+    <!-- Stage 1: Selection Stage -->
+    <div class="report-selection-stage">
+        <img src="https://img.icons8.com/ios/100/2563eb/attendance-mark.png" alt="Select" style="margin-bottom: 20px;">
+        <h1 class="pages-main-head">Attendance Logs</h1>
+        <p class="setting-paragraph" style="margin-bottom: 30px;">Select an examination to reconcile student attendance and faculty marks.</p>
+        
+        <div class="filter-card">
+            <form method="get" action=".">
+                <div class="filter-group" style="margin-bottom: 20px; text-align: left;">
+                    <label for="exam_id" style="display: block; margin-bottom: 8px; font-weight: 600;">Choose Examination:</label>
+                    <select name="exam_id" id="exam_id" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+                        <option value="">-- Choose Examination --</option>
+                        {% for e in exams %}
+                        <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_exam_id %}selected{% endif %}>
+                            {{ e.exam_name }} ({{ e.academic_year }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-report btn-view-report" style="width: 100%; justify-content: center; padding: 14px;">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> Fetch Logs
+                </button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <!-- Stage 2: Data Stage -->
+    <div class="report-header-results">
+        <div>
+            <h1 class="pages-main-head">Attendance Logs</h1>
+            <p class="setting-paragraph">{{ exam.exam_name }} ({{ exam.academic_year }})</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'operations:report_attendance' %}" class="modify-btn ajax-report-link">
+                <img src="https://img.icons8.com/ios/16/1e3a8a/settings.png" alt="modify"> Modify Filters
+            </a>
+            <a href="javascript:window.print()" class="btn-report btn-view-report" style="width: auto; padding: 10px 20px;">
+                <img src="https://img.icons8.com/ios-filled/20/ffffff/print.png" alt="Print"> Print
+            </a>
+        </div>
     </div>
 
-    {% if exam %}
-    <div class="stats-container">
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
         <div class="stat-card">
-            <span class="stat-value">{{ stats.total }}</span>
             <span class="stat-label">Total Registered</span>
+            <span class="stat-value">{{ stats.total }}</span>
         </div>
         <div class="stat-card">
-            <span class="stat-value" style="color: #166534;">{{ stats.present }}</span>
-            <span class="stat-label">Present</span>
+            <span class="stat-label" style="color: #059669;">Present</span>
+            <span class="stat-value" style="color: #059669;">{{ stats.present }}</span>
         </div>
         <div class="stat-card">
-            <span class="stat-value" style="color: #991b1b;">{{ stats.absent }}</span>
-            <span class="stat-label">Absent</span>
+            <span class="stat-label" style="color: #dc2626;">Absent</span>
+            <span class="stat-value" style="color: #dc2626;">{{ stats.absent }}</span>
         </div>
         <div class="stat-card">
+            <span class="stat-label" style="color: #64748b;">Not Marked</span>
             <span class="stat-value" style="color: #64748b;">{{ stats.unmarked }}</span>
-            <span class="stat-label">Not Marked</span>
         </div>
     </div>
 
-    <div class="table">
-        <table class="report-table">
+    <div class="table-container">
+        <table class="dashboard-popup-table">
             <thead>
                 <tr>
                     <th>Student ID</th>
@@ -74,24 +80,24 @@
                 </tr>
             </thead>
             <tbody>
-                {% for item in report_data %}
+                {% for item in page_obj %}
                 <tr>
                     <td>{{ item.student.student_id }}</td>
                     <td>{{ item.student.student_name|default:"N/A" }}</td>
                     <td>{{ item.slot.slot_code }} | <strong>{{ item.room.room_code }}</strong></td>
                     <td>
                         {% if item.assigned_to %}
-                        <span style="font-size: 0.85rem; color: #1E3A5F;">{{ item.assigned_to.faculty_name }}</span>
+                        <span style="font-size: 0.85rem; color: #1e3a8a;">{{ item.assigned_to.faculty_name }}</span>
                         {% else %}
-                        <span style="color: #94a3b8; font-style: italic;">No allocation</span>
+                        <span class="text-muted italic">No allocation</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if item.marked_by %}
-                        <span style="font-size: 0.85rem; color: #166534;">{{ item.marked_by.faculty_name }}</span>
-                        <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">{{ item.time|date:"d/m H:i" }}</div>
+                        <span style="font-size: 0.85rem; color: #059669; font-weight: 500;">{{ item.marked_by.faculty_name }}</span>
+                        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">{{ item.time|date:"d/m H:i" }}</div>
                         {% else %}
-                        <span style="color: #94a3b8; font-style: italic;">-</span>
+                        <span class="text-muted">-</span>
                         {% endif %}
                     </td>
                     <td>
@@ -105,16 +111,69 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" style="padding: 40px; text-align: center; color: #94a3b8;">No attendance data found for this exam.</td>
+                    <td colspan="6" style="padding: 40px; text-align: center; color: #94a3b8;">No attendance logs found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% else %}
-    <div style="text-align: center; padding: 80px 20px; color: #64748b; background: #fff; border-radius: 12px; margin-top: 20px; border: 1px dashed #cbd5e1;">
-        <h3>Please select an examination to view the attendance report</h3>
+
+    <!-- Pagination -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center;">
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?exam_id={{ selected_exam_id }}&page=1" class="page-link">&laquo; First</a>
+            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.previous_page_number }}" class="page-link">Previous</a>
+            {% endif %}
+
+            <span class="current-page">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+            {% if page_obj.has_next %}
+            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.next_page_number }}" class="page-link">Next</a>
+            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.paginator.num_pages }}" class="page-link">Last &raquo;</a>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
+    {% endif %}
 </div>
+
+<style>
+    .stat-card {
+        padding: 20px;
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .stat-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 5px; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: #1e3a8a; }
+
+    .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
+    .status-present { background: #dcfce7; color: #059669; }
+    .status-absent { background: #fef2f2; color: #dc2626; }
+    .status-unmarked { background: #f1f5f9; color: #64748b; border: 1px dashed #cbd5e1; }
+
+    .pagination { display: flex; gap: 5px; align-items: center; }
+    .page-link {
+        padding: 5px 12px;
+        background: #f1f5f9;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #1e3a8a;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    .current-page { font-size: 0.9rem; font-weight: 600; color: #64748b; margin: 0 10px; }
+    
+    @media print {
+        .hamburger, #sidebar, .controls, .btn-view-report, .report-navigation-bar, .modify-btn, .pagination-container {
+            display: none !important;
+        }
+        .pages-main { margin-left: 0 !important; padding: 0 !important; }
+        .table-container { box-shadow: none !important; border: 1px solid #e2e8f0; }
+    }
+</style>
 {% endblock %}
