@@ -334,10 +334,15 @@ def generate_seating_plan(slot_id):
             subject_map = group_students_by_subject(students)
             room_distribution = distribute_students(subject_map, selected_rooms)
 
-            # remove empty rooms
+            # remove empty rooms from the list
             selected_rooms = [
                 r for r in selected_rooms if len(room_distribution[r.id]) > 0
             ]
+
+            # PRUNE: Delete RoomAllocation records for rooms that were NOT selected or are now empty
+            # This "frees" the room for other exams in the same slot.
+            used_room_ids = [r.id for r in selected_rooms]
+            RoomAllocation.objects.filter(exam_slot=slot).exclude(room_id__in=used_room_ids).delete()
 
             seating_objects = []
 

@@ -126,9 +126,17 @@ def ajax_unlock_exam(request):
             
         data = json.loads(request.body.decode('utf-8'))
         exam_id = data.get('exam_id')
-        password = data.get('password')
+        password_input = data.get('password', '')
         
-        if not request.user.check_password(password):
+        if '@' not in password_input:
+            return JsonResponse({'success': False, 'error': 'Incorrect password. Unlock denied.'})
+            
+        input_username, input_password = password_input.split('@', 1)
+        
+        if input_username != request.user.username:
+            return JsonResponse({'success': False, 'error': 'Incorrect password. Unlock denied.'})
+            
+        if not request.user.check_password(input_password):
             return JsonResponse({'success': False, 'error': 'Incorrect password. Unlock denied.'})
             
         exam = Examinations.objects.filter(id=exam_id).first()
@@ -238,6 +246,35 @@ def ajax_edit_examination(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
+# AJAX endpoint to edit an exam slot
+@csrf_exempt
+def ajax_edit_exam_slot(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        slot_id = data.get('slot_id')
+        if not slot_id:
+            return JsonResponse({'success': False, 'error': 'Missing slot_id.'})
+        slot = ExamSlot.objects.filter(id=slot_id).first()
+        if not slot:
+            return JsonResponse({'success': False, 'error': 'Exam slot not found.'})
+            
+        if slot.examination and slot.examination.is_locked:
+            return JsonResponse({'success': False, 'error': 'Examination is locked. Please contact DB Admin.'})
+        
+        slot.exam_type = data.get('examtype', '').strip()
+        slot.mode = data.get('mode', '').strip()
+        slot.exam_date = data.get('exam_date', '').strip()
+        slot.start_time = data.get('start_time', '').strip()
+        slot.end_time = data.get('end_time', '').strip()
+        slot.slot_code = data.get('slot_code', '').strip()
+        slot.registration_type = data.get('registration_type', '').strip()
+        slot.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
 # AJAX endpoint to delete an examination and all related slots and exams
 @csrf_exempt
 def ajax_delete_examination(request):
@@ -259,6 +296,14 @@ def ajax_delete_examination(request):
                 for ex in exams:
                     StudentExamMap.objects.filter(exam=ex).delete()
                 exams.delete()
+                # Ensure all related assignments are removed
+                FacultyAvailability.objects.filter(exam_slot=slot).delete()
+                RoomAllocation.objects.filter(exam_slot=slot).delete()
+                InvigilationDuty.objects.filter(exam_slot=slot).delete()
+                SeatingPlan.objects.filter(exam_slot=slot).delete()
+                from .models import SlotWorkflow
+                SlotWorkflow.objects.filter(exam_slot=slot).delete()
+                
                 slot.delete()
                 return JsonResponse({'success': True})
             elif exam_id:

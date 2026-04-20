@@ -1,69 +1,77 @@
 {% extends "core/base_admin.html" %}
 {% load static %}
 {% block content %}
-<!-- Edit Slot Modal -->
-<div id="editSlotModal" class="modal modal-z-1000 modal-backdrop-black-4">
-    <div class="modal-content-base">
-        <span id="closeEditSlotModal" class="close-modal-x">&times;</span>
-        <h2 class="mt-0">Edit Exam Slot</h2>
-        <form id="editSlotForm">
+<!-- Edit Slot Modal (Premium Aurora v3.0) -->
+<div id="editSlotModal" class="global-modal-backdrop">
+    <div class="global-modal-content narrow">
+        <div class="modal-header-std">
+            <h2 style="font-size: 1.25rem;">
+                <img src="https://img.icons8.com/ios-filled/24/2563eb/edit--v1.png" alt="edit" style="width: 20px; height: 20px;">
+                Edit Slot: <span id="editSlotHeaderName" style="color: #64748b;"></span>
+            </h2>
+            <button type="button" class="close-global-modal close-modal" id="closeEditSlotModal">&times;</button>
+        </div>
+        <form id="editSlotForm" method="POST" action="{% url 'operations:ajax_edit_exam_slot' %}">
             {% csrf_token %}
             <input type="hidden" id="editSlotId" name="slot_id">
-            <div class="mb-1em">
-                <label for="edit_examtype">Exam Type:</label>
-                <select id="edit_examtype" name="examtype" required>
-                    <option value="Regular">Regular</option>
-                    <option value="Supplementary">Supplementary</option>
-                    <option value="Improvement">Improvement</option>
-                </select>
+            <div class="modal-body-std" style="padding: 25px;">
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="edit_examtype" class="form-label">Exam Type</label>
+                        <select id="edit_examtype" name="examtype" class="form-control" required>
+                            <option value="REGULAR">Regular</option>
+                            <option value="SUPPLY">Supplementary</option>
+                            <option value="IMPROVE">Improvement</option>
+                            <option value="BACKLOG">Backlog</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_mode" class="form-label">Mode</label>
+                        <select id="edit_mode" name="mode" class="form-control" required>
+                            <option value="Theoretical">Theoretical</option>
+                            <option value="Practical">Practical</option>
+                            <option value="Viva">Viva</option>
+                            <option value="Quiz">Quiz</option>
+                            <option value="Assignment">Assignment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_exam_date" class="form-label">Exam Date</label>
+                        <input type="date" id="edit_exam_date" name="exam_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_registration_type" class="form-label">Registration Type</label>
+                        <select id="edit_registration_type" name="registration_type" class="form-control" required>
+                            <option value="">Select Reg. Type</option>
+                            {% for rt in reg_types %}
+                            <option value="{{ rt }}">{{ rt }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_start_time" class="form-label">Start Time</label>
+                        <input type="time" id="edit_start_time" name="start_time" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_end_time" class="form-label">End Time</label>
+                        <input type="time" id="edit_end_time" name="end_time" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_slot_code" class="form-label">Slot Code</label>
+                        <select id="edit_slot_code" name="slot_code" class="form-control" required>
+                            <option value="AM">AM</option>
+                            <option value="FN">FN</option>
+                            <option value="MN">MN</option>
+                            <option value="PM">PM</option>
+                            <option value="AN">AN</option>
+                            <option value="EV">EV</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <div class="mb-1em">
-                <label for="edit_mode">Mode:</label>
-                <select id="edit_mode" name="mode" required>
-                    <option value="Theoretical">Theoretical</option>
-                    <option value="Practical">Practical</option>
-                    <option value="Viva">Viva</option>
-                    <option value="Quiz">Quiz</option>
-                    <option value="Assignment">Assignment</option>
-                </select>
-            </div>
-            <div class="mb-1em">
-                <label for="edit_exam_date">Exam Date:</label>
-                <br>
-                <input type="date" id="edit_exam_date" name="exam_date" required>
-            </div>
-            <div class="mb-1em">
-                <label for="edit_registration_type">Registration Type:</label>
-                <select id="edit_registration_type" name="registration_type" required>
-                    <option value="">Select Reg. Type</option>
-                    {% for rt in reg_types %}
-                    <option value="{{ rt }}">{{ rt }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="mb-1em">
-                <label for="edit_start_time">Start Time:</label>
-                <br>
-                <input type="time" id="edit_start_time" name="start_time" required>
-            </div>
-            <div class="mb-1em">
-                <label for="edit_end_time">End Time:</label>
-                <br>
-                <input type="time" id="edit_end_time" name="end_time" required>
-            </div>
-            <div class="mb-1em">
-                <label for="edit_slot_code">Slot Code:</label>
-                <select id="edit_slot_code" name="slot_code" required>
-                    <option value="AM">AM</option>
-                    <option value="PM">PM</option>
-                    <option value="FN">FN</option>
-                    <option value="AN">AN</option>
-                    <option value="EVENING">EVENING</option>
-                </select>
-            </div>
-            <div class="mb-1em">
-                <a href="#" id="saveEditSlotBtn" class="action-link">Save</a>
-                <a href="#" id="cancelEditSlotBtn" class="action-link">Cancel</a>
+            <div class="modal-footer-std">
+                <button type="button" id="cancelEditSlotBtn" class="btn-std btn-secondary">Cancel</button>
+                <button type="submit" class="btn-std btn-primary" style="padding-left: 30px; padding-right: 30px;">Save Changes</button>
             </div>
         </form>
     </div>
@@ -203,19 +211,31 @@
                 </tr>
             </tbody>
         </table>
-        <!-- Delete Slot Modal -->
-        <div id="deleteSlotModal" class="modal modal-z-1000 modal-backdrop-black-4 d-flex-center">
-            <div class="modal-content-base">
-                <span id="closeDeleteSlotModal" class="close-modal-x">&times;</span>
-                <h2 class="mt-0">Confirm Slot Deletion</h2>
-                <div id="deleteSlotWarning" class="warning-text-red"></div>
-                <form id="deleteSlotForm">
-                    {% csrf_token %}
-                    <input type="hidden" id="deleteSlotId" name="slot_id">
-                    <div id="deleteSlotDetails" class="mb-1em"></div>
-                    <a href="#" id="confirmDeleteSlotLink" class="action-link">Delete</a>
-                    <a href="#" id="cancelDeleteSlotBtn" class="action-link">Cancel</a>
-                </form>
+        <!-- Delete Slot Modal (Premium Aurora v3.0) -->
+        <div id="deleteSlotModal" class="global-modal-backdrop">
+            <div class="global-modal-content narrow">
+                <div class="modal-header-std">
+                    <h2>
+                        <img src="https://img.icons8.com/ios-filled/24/ef4444/trash.png" alt="delete">
+                        Confirm Deletion
+                    </h2>
+                    <button type="button" class="close-global-modal close-modal" id="closeDeleteSlotModal">&times;</button>
+                </div>
+                <div class="modal-body-std" style="padding: 25px;">
+                    <div id="deleteSlotWarning" class="warning-text-red" style="font-weight: 700; margin-bottom: 15px; font-size: 1.1rem;"></div>
+                    <div id="deleteSlotDetails" style="margin-bottom: 20px; color: #475569; font-size: 0.95rem; line-height: 1.5;"></div>
+                    <p style="color: #64748b; font-size: 0.9rem; background: #fff1f2; padding: 12px; border-radius: 8px; border-left: 4px solid #f43f5e;">
+                        <strong>Warning:</strong> This action cannot be undone. All data related to this slot (allocations, seating, faculty) will be permanently removed.
+                    </p>
+                    <form id="deleteSlotForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="deleteSlotId" name="slot_id">
+                    </form>
+                </div>
+                <div class="modal-footer-std">
+                    <button type="button" id="cancelDeleteSlotBtn" class="btn-std btn-secondary">Keep Slot</button>
+                    <a href="#" id="confirmDeleteSlotLink" class="btn-std btn-danger" style="text-decoration: none;">Delete Permanently</a>
+                </div>
             </div>
         </div>
         <script>

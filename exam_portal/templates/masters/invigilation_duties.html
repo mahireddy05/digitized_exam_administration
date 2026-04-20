@@ -2,37 +2,135 @@
 {% load static %}
 {% block content %}
 <div class="pages-main">
-    <h1 class="pages-main-head">My Invigilation Duties</h1>
+    <h1 class="pages-main-head">My Invigilation Assignments</h1>
     <div class="exam-cards-wrapper">
         {% if duties %}
-            {% for duty in duties %}
-            <div class="exam-card relative">
-                <div class="exam-card-header">
-                    <span class="exam-name">{{ duty.exam_name }}</span>
-                    <div class="exam-status-indicator">
-                    {% if duty.status == 'completed' %}
-                        <span class="status-dot completed"></span>
-                        <span class="status-label completed">Completed</span>
-                    {% else %}
-                        <span class="status-dot upcoming"></span>
-                        <span class="status-label upcoming">Upcoming</span>
-                    {% endif %}
-                </div>
-                </div>
-                <div class="exam-card-body">
-                    <div><strong>Faculty Id :</strong> {{ duty.faculty_id }}</div>
-                    <div><strong>Exam Date :</strong> {{ duty.exam_date|date:'d-M-Y' }}</div>
-                    <div><strong>Exam Type :</strong> {{ duty.exam_type }}</div>
-                    <div><strong>Room No :</strong> {{ duty.room_no }}</div>
-                    <div><strong>Time :</strong> {{ duty.start_time|time:'h:i A' }} - {{ duty.end_time|time:'h:i A' }}</div>
-                    <div><strong>Exam Slot :</strong> {{ duty.exam_slot }}</div>
-                    <div><strong>Duration :</strong> {{ duty.duration }}</div>
+        {% for duty in duties %}
+        <div class="exam-card {% if duty.attendance_status == 'UPCOMING' %}upcoming{% elif duty.attendance_status == 'ACTIVE' or duty.attendance_status == 'WAITING' or duty.attendance_status == 'MARKED' %}active{% elif duty.attendance_status == 'PENDING' %}deadline{% endif %}">
+            <div class="exam-card-header">
+                <h2 class="exam-name">{{ duty.exam_name }}</h2>
+                <div class="status-pill {% if duty.attendance_status == 'MARKED' or duty.attendance_status == 'COMPLETED' %}active{% elif duty.attendance_status == 'UPCOMING' %}upcoming{% elif duty.attendance_status == 'PENDING' %}deadline{% else %}active{% endif %}">
+                    <span class="live-dot"></span> 
+                    {% if duty.attendance_status == 'PENDING' %}Pending{% elif duty.attendance_status == 'MARKED' %}Marked{% else %}{{ duty.attendance_status }}{% endif %}
                 </div>
             </div>
-            {% endfor %}
+            
+            <div class="exam-card-body">
+                <div class="exam-info-item">
+                    <span class="info-label">Faculty ID</span>
+                    <span class="info-value">{{ duty.faculty_id }}</span>
+                </div>
+                <div class="exam-info-item">
+                    <span class="info-label">Room No</span>
+                    <span class="info-value">{{ duty.room_no }}</span>
+                </div>
+                <div class="exam-info-item">
+                    <span class="info-label">Date</span>
+                    <span class="info-value">{{ duty.exam_date|date:'d M Y' }}</span>
+                </div>
+                <div class="exam-info-item">
+                    <span class="info-label">Slot</span>
+                    <span class="info-value">{{ duty.exam_slot }}</span>
+                </div>
+                <div class="exam-info-item" style="grid-column: span 2;">
+                    <span class="info-label">Exam Window </span>
+                    <span class="info-value">
+                        {{ duty.start_time|time:'h:i A' }} - {{duty.end_time|time:'h:i A'}} 
+                        <span style="color:#94a3b8; font-weight:400; margin-left:4px;">({{ duty.duration }})</span>
+                    </span>
+                </div>
+
+                <!-- Ultra-Premium Timer Ribbon -->
+                <div class="timer-ribbon">
+                    <span class="timer-label" id="timer-label-{{ forloop.index }}">--</span>
+                    <span class="timer-clock" id="timer-clock-{{ forloop.index }}" 
+                          data-start="{{ duty.start_iso }}" 
+                          data-open="{{ duty.open_iso }}" 
+                          data-deadline="{{ duty.deadline_iso }}">
+                        --:--:--
+                    </span>
+                </div>
+            </div>
+
+            <div class="exam-card-footer">
+                <a href="{% url 'operations:seatingplan' %}?slot_id={{ duty.exam_slot_id }}&room_id={{ duty.room_id }}"
+                    class="btn btn-premium">View Specific Details</a>
+            </div>
+        </div>
+        {% endfor %}
         {% else %}
-            <div class="no-seating-box">No invigilation duties found for this faculty.</div>
+        <div class="no-assignment-box" style="text-align: center; padding: 40px;">
+            No room invigilation assignments found for this faculty.
+        </div>
         {% endif %}
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- Ultra-Premium Timer Logic ---
+        function updateAllTimers() {
+            const clocks = document.querySelectorAll('.timer-clock');
+            const now = new Date();
+
+            clocks.forEach(clock => {
+                const start = new Date(clock.getAttribute('data-start'));
+                const open = new Date(clock.getAttribute('data-open'));
+                const deadline = new Date(clock.getAttribute('data-deadline'));
+                const label = document.getElementById('timer-label-' + clock.id.split('-').pop());
+
+                let targetDate, labelText, isPulse = false;
+
+                if (now < start) {
+                    targetDate = start;
+                    labelText = "Exam Starts";
+                } else if (now < open) {
+                    targetDate = open;
+                    labelText = "⏳ To start marking attendance";
+                    isPulse = true;
+                } else if (now < deadline) {
+                    targetDate = deadline;
+                    labelText = "Post by";
+                    isPulse = true;
+                } else {
+                    clock.innerText = "00:00:00";
+                    label.innerText = "⏳ Attendance not marked";
+                    clock.classList.remove('pulse');
+                    return;
+                }
+
+                const diff = targetDate - now;
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+
+                clock.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                label.innerText = labelText;
+                if (isPulse) clock.classList.add('pulse');
+                else clock.classList.remove('pulse');
+            });
+        }
+
+        setInterval(updateAllTimers, 1000);
+        updateAllTimers();
+    });
+</script>
+
+<style>
+.live-dot {
+    width: 6px;
+    height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    animation: live-pulse-anim 1.5s infinite;
+}
+
+@keyframes live-pulse-anim {
+    0% { transform: scale(0.9); opacity: 0.6; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0.6; }
+}
+</style>
 {% endblock %}

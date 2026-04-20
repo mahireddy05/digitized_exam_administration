@@ -6,64 +6,63 @@
     <div class="exam-cards-wrapper">
         {% if duties %}
         {% for duty in duties %}
-        <div class="exam-card">
+        <div class="exam-card {% if duty.attendance_status == 'UPCOMING' %}upcoming{% elif duty.attendance_status == 'ACTIVE' or duty.attendance_status == 'WAITING' or duty.attendance_status == 'MARKED' %}active{% elif duty.attendance_status == 'PENDING' %}deadline{% endif %}">
             <div class="exam-card-header">
                 <h2 class="exam-name">{{ duty.exam_name }}</h2>
-                <div class="exam-status-indicator">
-                    {% if duty.status == 'completed' %}
-                    <span class="status-dot completed"></span>
-                    <span class="status-label completed">Completed</span>
-                    {% else %}
-                    <span class="status-dot upcoming"></span>
-                    <span class="status-label upcoming">Upcoming</span>
-                    {% endif %}
+                <div class="status-pill {% if duty.attendance_status == 'MARKED' or duty.attendance_status == 'COMPLETED' %}active{% elif duty.attendance_status == 'UPCOMING' %}upcoming{% elif duty.attendance_status == 'PENDING' %}deadline{% else %}active{% endif %}">
+                    <span class="live-dot"></span> 
+                    {% if duty.attendance_status == 'PENDING' %}Pending{% elif duty.attendance_status == 'MARKED' %}Marked{% else %}{{ duty.attendance_status }}{% endif %}
                 </div>
             </div>
+            
             <div class="exam-card-body">
-                <div class="exam-info-row">
-                    <span class="exam-info-label">Faculty ID :</span>
-                    <span class="exam-info-value">{{ duty.faculty_id }}</span>
+                <div class="exam-info-item">
+                    <span class="info-label">Faculty ID</span>
+                    <span class="info-value">{{ duty.faculty_id }}</span>
                 </div>
-                <div class="exam-info-row">
-                    <span class="exam-info-label">Exam Date :</span>
-                    <span class="exam-info-value">{{ duty.exam_date|date:'d M Y' }}</span>
+                <div class="exam-info-item">
+                    <span class="info-label">Room No</span>
+                    <span class="info-value">{{ duty.room_no }}</span>
                 </div>
-                <div class="exam-info-row">
-                    <span class="exam-info-label">Exam Type :</span>
-                    <span class="exam-info-value">{{ duty.exam_type }}</span>
+                <div class="exam-info-item">
+                    <span class="info-label">Date</span>
+                    <span class="info-value">{{ duty.exam_date|date:'d M Y' }}</span>
                 </div>
-                <div class="exam-info-row">
-                    <span class="exam-info-label">Room No :</span>
-                    <span class="exam-info-value">{{ duty.room_no }}</span>
+                <div class="exam-info-item">
+                    <span class="info-label">Slot</span>
+                    <span class="info-value">{{ duty.exam_slot }}</span>
                 </div>
-                <div class="exam-info-row">
-                    <span class="exam-info-label">Time :</span>
-                    <span class="exam-info-value">
-                        {{ duty.start_time|time:'h:i A' }} - {{duty.end_time|time:'h:iA'}}</span>
+                <div class="exam-info-item" style="grid-column: span 2;">
+                    <span class="info-label">Exam Window </span>
+                    <span class="info-value">
+                        {{ duty.start_time|time:'h:i A' }} - {{duty.end_time|time:'h:iA'}} 
+                        <span style="color:#94a3b8; font-weight:400; margin-left:4px;">({{ duty.duration }})</span>
+                    </span>
                 </div>
-                <div class="exam-info-row">
-                    <span class="exam-info-label">Slot :</span>
-                    <span class="exam-info-value">{{ duty.exam_slot }}</span>
-                </div>
-                <div class="exam-info-row">
-                    <span class="exam-info-label">Duration :</span>
-                    <span class="exam-info-value">{{ duty.duration }}</span>
+
+                <!-- Ultra-Premium Timer Ribbon -->
+                <div class="timer-ribbon">
+                    <span class="timer-label" id="timer-label-{{ forloop.index }}">--</span>
+                    <span class="timer-clock" id="timer-clock-{{ forloop.index }}" 
+                          data-start="{{ duty.start_iso }}" 
+                          data-open="{{ duty.open_iso }}" 
+                          data-deadline="{{ duty.deadline_iso }}"
+                          data-has-posted="{{ duty.has_posted|yesno:'true,false' }}"
+                          data-btn-id="btn-att-{{ forloop.index }}">
+                        --:--:--
+                    </span>
                 </div>
             </div>
-            <div class="exam-card-footer">
-                <a href="{% url 'operations:seatingplan' %}?slot_id={{ duty.exam_slot_id }}&room_id={{ duty.room_id }}"
-                    class="btn btn-primary flex-1-text-center">Seating Plan</a>
 
-                {% if duty.can_click %}
-                <a href="javascript:void(0)" class="btn {{ duty.btn_class }} btn-post-attendance flex-1-5-text-center"
-                    data-url="{% url 'operations:mark_attendance' %}?slot_id={{ duty.exam_slot_id }}&room_id={{ duty.room_id }}&partial=1">
-                    {{ duty.attendance_label }}
+            <div class="exam-card-footer">
+                <a href="javascript:void(0)" 
+                   id="btn-att-{{ forloop.index }}" 
+                   class="btn btn-premium btn-post-attendance {% if not duty.can_click %}disabled{% endif %}"
+                   data-url="{% url 'operations:mark_attendance' %}?slot_id={{ duty.exam_slot_id }}&room_id={{ duty.room_id }}&partial=1">
+                    Attendance
                 </a>
-                {% else %}
-                <button class="btn {{ duty.btn_class }} flex-1-5-text-center cursor-not-allowed opacity-0-7" disabled>
-                    {{ duty.attendance_label }}
-                </button>
-                {% endif %}
+                <a href="{% url 'operations:seatingplan' %}?slot_id={{ duty.exam_slot_id }}&room_id={{ duty.room_id }}"
+                    class="btn btn-glass">Seating Plan</a>
             </div>
         </div>
         {% endfor %}
@@ -109,42 +108,6 @@
             </p>
         </div>
 
-        <div class="summary-cards-flex">
-            <!-- Present Card -->
-            <div class="summary-card-present">
-                <div class="summary-card-icon-present">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z"
-                            stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M12 15C8.13401 15 5 18.134 5 22H19C19 18.134 15.866 15 12 15Z" stroke="#16a34a"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M18 10L19.5 11.5L22 9" stroke="#16a34a" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                    </svg>
-                </div>
-                <span class="summary-card-label-present">Present</span>
-                <span id="countPresent" class="summary-card-count-present">0</span>
-            </div>
-
-            <!-- Absent Card -->
-            <div class="summary-card-absent">
-                <div class="summary-card-icon-absent">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z"
-                            stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M12 15C8.13401 15 5 18.134 5 22H19C19 18.134 15.866 15 12 15Z" stroke="#dc2626"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M18 8L22 12M22 8L18 12" stroke="#dc2626" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                    </svg>
-                </div>
-                <span class="summary-card-label-absent">Absent</span>
-                <span id="countAbsent" class="summary-card-count-absent">0</span>
-            </div>
-        </div>
-
         <button class="btn btn-primary summary-done-btn" onclick="location.reload()">
             Done & Return
         </button>
@@ -155,10 +118,8 @@
     function openAttendanceModal(url) {
         const modal = document.getElementById('attendanceModal');
         const modalBody = document.getElementById('modalBody');
-        modal.style.display = 'grid'; // Changed to grid for middle-top positioning
+        modal.style.display = 'grid';
         document.body.classList.add('modal-open');
-
-        // Reset body
         modalBody.innerHTML = '<div style="text-align:center; padding: 40px; color:#64748b;">Loading attendance sheet...</div>';
 
         fetch(url)
@@ -167,7 +128,7 @@
                 modalBody.innerHTML = html;
             })
             .catch(err => {
-                modalBody.innerHTML = '<div style="color:red; text-align:center; padding: 40px;">Error loading attendance sheet. Please try again.</div>';
+                modalBody.innerHTML = '<div style="color:red; text-align:center; padding: 40px;">Error loading attendance sheet.</div>';
                 console.error(err);
             });
     }
@@ -182,72 +143,101 @@
         const buttons = document.querySelectorAll('.btn-post-attendance');
         buttons.forEach(btn => {
             btn.addEventListener('click', function (e) {
+                if(this.classList.contains('disabled')) {
+                    e.preventDefault();
+                    return;
+                }
                 e.preventDefault();
-                const url = this.getAttribute('data-url');
-                openAttendanceModal(url);
+                openAttendanceModal(this.getAttribute('data-url'));
             });
         });
 
-        // Close on overlay click
-        const overlay = document.getElementById('attendanceModal');
-        overlay.addEventListener('click', function (e) {
-            if (e.target === this) {
-                closeAttendanceModal();
-            }
-        });
+        // --- Ultra-Premium Timer Logic ---
+        function updateAllTimers() {
+            const clocks = document.querySelectorAll('.timer-clock');
+            const now = new Date();
 
-        // Delegate form submission for dynamically loaded content
-        document.body.addEventListener('submit', function (e) {
-            if (e.target && e.target.closest('#modalBody form')) {
-                e.preventDefault();
-                const form = e.target;
-                const formData = new FormData(form);
-                const url = form.action + '&partial=1';
+            clocks.forEach(clock => {
+                const start = new Date(clock.getAttribute('data-start'));
+                const open = new Date(clock.getAttribute('data-open'));
+                const deadline = new Date(clock.getAttribute('data-deadline'));
+                const hasPosted = clock.getAttribute('data-has-posted') === 'true';
+                const btnId = clock.getAttribute('data-btn-id');
+                const label = document.getElementById('timer-label-' + clock.id.split('-').pop());
+                const btn = document.getElementById(btnId);
 
-                // Show loading state on button
-                const submitBtn = form.querySelector('button[type="submit"]');
-                const originalBtnText = submitBtn.innerHTML;
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<div class="spinner-small"></div> Processing...';
+                let targetDate, labelText, isPulse = false;
 
-                fetch(url, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
+                if (now < start) {
+                    targetDate = start;
+                    labelText = "Exam Starts";
+                } else if (hasPosted) {
+                    clock.innerText = "00:00:00";
+                    label.innerText = "Successfully posted";
+                    clock.classList.remove('pulse');
+                    if (btn) {
+                        btn.innerText = "Edit Attendance";
+                        btn.classList.remove('disabled');
                     }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            closeAttendanceModal();
-                            showSummaryModal(data);
-                        } else {
-                            alert("Error: " + (data.error || "Unknown error occurred"));
-                            submitBtn.disabled = false;
-                            submitBtn.innerHTML = originalBtnText;
-                        }
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        alert("Submission failed. Please check your connection.");
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = originalBtnText;
-                    });
-            }
-        });
+                    return;
+                } else if (now < open) {
+                    targetDate = open;
+                    labelText = "⏳ To start marking attendance";
+                    isPulse = true;
+                } else if (now < deadline) {
+                    targetDate = deadline;
+                    labelText = "Post by";
+                    isPulse = true;
+                } else {
+                    clock.innerText = "00:00:00";
+                    label.innerText = "⏳ Attendance not marked";
+                    clock.classList.remove('pulse');
+                    if (btn && btn.innerText !== "View Attendance") {
+                        btn.classList.add('disabled');
+                        btn.innerText = "Closed";
+                    }
+                    return;
+                }
+
+                const diff = targetDate - now;
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+
+                clock.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                label.innerText = labelText;
+                if (isPulse) clock.classList.add('pulse');
+                else clock.classList.remove('pulse');
+            });
+        }
+
+        setInterval(updateAllTimers, 1000);
+        updateAllTimers();
     });
-
-    function showSummaryModal(data) {
-        const modal = document.getElementById('summaryModal');
-        document.getElementById('summaryMessage').innerText = data.message;
-        document.getElementById('summaryRoom').innerText = data.room_code;
-        document.getElementById('summaryTime').innerText = data.exam_time;
-        document.getElementById('countPresent').innerText = data.present;
-        document.getElementById('countAbsent').innerText = data.absent;
-
-        modal.style.display = 'grid';
-        document.body.classList.add('modal-open');
-    }
 </script>
+
+<style>
+.live-dot {
+    width: 6px;
+    height: 6px;
+    background: currentColor;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    animation: live-pulse-anim 1.5s infinite;
+}
+
+@keyframes live-pulse-anim {
+    0% { transform: scale(0.9); opacity: 0.6; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0.6; }
+}
+
+.btn.disabled {
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: grayscale(0.8);
+    opacity: 0.6;
+}
+</style>
 {% endblock %}

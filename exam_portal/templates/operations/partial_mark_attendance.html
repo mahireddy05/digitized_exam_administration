@@ -38,9 +38,9 @@
                     <td>{{ p.student_exam.exam.course.course_code }}</td>
                     <td class="text-center">
                         <input type="checkbox" name="absent_{{ p.student_exam.id }}"
-                            class="att-check-input-style {% if read_only %}cursor-not-allowed{% else %}cursor-pointer{% endif %}" {% if
-                            attendance_data|get_item:p.student_exam.id == 'ABSENT' %}checked{% endif %} {% if read_only
-                            %}disabled{% endif %}>
+                            class="att-check-input-style {% if read_only %}cursor-not-allowed{% else %}cursor-pointer{% endif %}" 
+                            {% if attendance_data|get_item:p.student_exam.id == 'ABSENT' %}checked{% endif %} 
+                            {% if read_only %}disabled{% endif %}>
                     </td>
                 </tr>
                 {% empty %}

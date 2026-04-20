@@ -244,6 +244,10 @@ def room_alloc_view(request):
                     assigned_cap = SeatingPlan.objects.filter(exam_slot=slot, room=room).count()
                     invigilator_objs = InvigilationDuty.objects.filter(exam_slot=slot, room=room).select_related('faculty')
                     invigilator_ids = [str(inv.faculty.faculty_id) for inv in invigilator_objs]
+                    # Enriched Status Logic
+                    occ_status = 'Full' if assigned_cap >= room.capacity else ('Vacant' if assigned_cap == 0 else 'Partial')
+                    staff_status = 'Staffed' if len(invigilator_ids) > 0 else 'Missing'
+                    
                     slot_rows.append({
                         'exam_type': slot.exam_type,
                         'mode': slot.mode,
@@ -259,6 +263,8 @@ def room_alloc_view(request):
                         'room_id': room.id,
                         'slot_total_students': slot_total_students,
                         'slot_assigned_students': slot_assigned_students,
+                        'occupancy_status': occ_status,
+                        'staffing_status': staff_status,
                     })
     return render(request, "operations/room_alloc_view.html", {'exam': exam_data, 'slot_rows': slot_rows})
 from django.views.decorators.http import require_POST
@@ -1006,7 +1012,6 @@ def exam_scheduling(request, slot_id):
     
     is_locked = slot.examination and slot.examination.is_locked
     if request.method == "POST" and is_locked:
-        from django.contrib import messages
         messages.error(request, "This examination is locked. Changes are not permitted.")
         return redirect('operations:schedule_exam', slot_id=slot_id)
 

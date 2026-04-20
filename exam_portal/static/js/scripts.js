@@ -180,6 +180,22 @@ document.addEventListener('click', function(e) {
             document.getElementById('edit_end_date').value = endDate;
 
             toggleGlobalModal('editExamModal', true);
+
+            // Set constraints for Edit Modal
+            const editStart = document.getElementById('edit_start_date');
+            const editEnd = document.getElementById('edit_end_date');
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (editStart) {
+                editStart.min = today;
+                editStart.onchange = function() {
+                    editEnd.min = this.value;
+                    if (editEnd.value && editEnd.value < this.value) editEnd.value = '';
+                };
+            }
+            if (editEnd && editStart.value) {
+                editEnd.min = editStart.value;
+            }
         }
     }
 
@@ -760,14 +776,11 @@ function fetchExamSlotsAjax() {
     // Combined Trigger Handler for all Exam Management Popups
     document.addEventListener('click', function(e) {
         // 1. Room Assignment Popup
-        const roomTrigger = e.target.closest('.room-assignment-badge') || 
-                           (e.target.closest('a[href*="/ops/exam_rooms_alloc/"]') && e.target.closest('a').querySelector('.exam-status-available'));
+        const roomTrigger = e.target.closest('.room-assignment-badge');
         
         if (roomTrigger) {
             e.preventDefault();
-            const badgeElement = e.target.closest('.room-assignment-badge') || e.target.closest('a').querySelector('.exam-status-available');
-            const slotId = badgeElement.getAttribute('data-slot-id') || 
-                          e.target.closest('tr').querySelector('.slot-courses-badge')?.getAttribute('data-slot-id');
+            const slotId = roomTrigger.getAttribute('data-slot-id');
 
             if (!slotId) return;
 
@@ -923,12 +936,10 @@ function fetchExamSlotsAjax() {
         }
 
         // 3. Faculty Assignment Popup
-        const facultyTrigger = e.target.closest('a[href*="/ops/exam_faculty_alloc/"]') && e.target.closest('a').querySelector('.exam-status-available');
+        const facultyTrigger = e.target.closest('.faculty-assignment-badge');
         if (facultyTrigger) {
             e.preventDefault();
-            const badgeElement = e.target.closest('a').querySelector('.exam-status-available');
-            const row = e.target.closest('tr');
-            const slotId = badgeElement.getAttribute('data-slot-id') || row?.querySelector('.slot-courses-badge')?.getAttribute('data-slot-id');
+            const slotId = facultyTrigger.getAttribute('data-slot-id');
 
             if (!slotId) return;
 
@@ -986,32 +997,258 @@ function fetchExamSlotsAjax() {
         }
     });
     // Close modal logic handled globally
-    // Slot edit modal logic
-    document.addEventListener('click', function (e) {
+    // Cancel/Close logic for Slot modals
+    const editSlotModal = document.getElementById('editSlotModal');
+    if (editSlotModal) {
+        editSlotModal.addEventListener('click', (e) => {
+            if (e.target.closest('.close-modal') || e.target.id === 'cancelEditSlotBtn') {
+                e.preventDefault();
+                toggleGlobalModal('editSlotModal', false);
+            }
+        });
+    }
+
+    const deleteSlotModal = document.getElementById('deleteSlotModal');
+    if (deleteSlotModal) {
+        deleteSlotModal.addEventListener('click', (e) => {
+            if (e.target.closest('.close-modal') || e.target.id === 'cancelDeleteSlotBtn') {
+                e.preventDefault();
+                toggleGlobalModal('deleteSlotModal', false);
+            }
+        });
+    }
+
+    // Consolidated Slot Action Handlers (Edit/Delete)
+    const slotActionHandler = function(e) {
+        // 1. Edit Slot Trigger
         const editBtn = e.target.closest('.edit-slot-btn');
         if (editBtn) {
             e.preventDefault();
-            const slotId = editBtn.dataset.slotId;
-            // Find the row for this slot
-            const row = editBtn.closest('tr');
-            if (!row) return;
-            // Fill modal fields from row
-            document.getElementById('editSlotId').value = slotId;
-            document.getElementById('edit_examtype').value = row.children[0].textContent.trim();
-            document.getElementById('edit_mode').value = row.children[1].textContent.trim();
-            document.getElementById('edit_exam_date').value = row.children[2].textContent.trim();
-            document.getElementById('edit_start_time').value = row.children[3].textContent.trim();
-            document.getElementById('edit_end_time').value = row.children[4].textContent.trim();
-            document.getElementById('edit_slot_code').value = row.children[5].textContent.trim();
-            document.getElementById('edit_registration_type').value = row.children[6].textContent.trim();
+            const d = editBtn.dataset;
+            document.getElementById('editSlotId').value = d.slotId;
+            document.getElementById('edit_examtype').value = d.examtype;
+            document.getElementById('edit_mode').value = d.mode;
+            document.getElementById('edit_exam_date').value = d.date;
+            document.getElementById('edit_registration_type').value = d.reg;
+            document.getElementById('edit_start_time').value = d.start;
+            document.getElementById('edit_end_time').value = d.end;
+            document.getElementById('edit_slot_code').value = d.code;
+            
+            // Set dynamic header name
+            const examNameInput = document.getElementById('examname');
+            const headerName = document.getElementById('editSlotHeaderName');
+            if (headerName && examNameInput) {
+                headerName.textContent = examNameInput.value;
+            }
+
+            // Set Date Constraints from Examination Range (passed via URL params)
+            const urlParams = new URLSearchParams(window.location.search);
+            const minDate = urlParams.get('start_date');
+            const maxDate = urlParams.get('end_date');
+            const editDateInput = document.getElementById('edit_exam_date');
+            if (editDateInput) {
+                if (minDate) editDateInput.min = minDate;
+                if (maxDate) editDateInput.max = maxDate;
+            }
+            
             toggleGlobalModal('editSlotModal', true);
+            return;
+        }
+
+        // 2. Delete Slot Trigger
+        const deleteBtn = e.target.closest('.delete-slot-btn');
+        if (deleteBtn) {
+            e.preventDefault();
+            const d = deleteBtn.dataset;
+            document.getElementById('deleteSlotId').value = d.slotId;
+            document.getElementById('deleteSlotWarning').innerHTML = `Are you sure you want to delete this <span style="background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px;">${d.slotType}</span> slot?`;
+            document.getElementById('deleteSlotDetails').innerHTML = `
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <strong>Date:</strong> ${d.slotDate}<br>
+                    <strong>Time:</strong> ${d.slotTime} (${d.slotCode})
+                </div>`;
+            toggleGlobalModal('deleteSlotModal', true);
+            return;
+        }
+
+        // 3. Confirm Delete Execution
+        const confirmDeleteBtn = e.target.closest('#confirmDeleteSlotLink');
+        if (confirmDeleteBtn) {
+            e.preventDefault();
+            const slotId = document.getElementById('deleteSlotId').value;
+            fetch('/ops/ajax/delete-examination/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || ''
+                },
+                body: JSON.stringify({ slot_id: slotId })
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.success) {
+                    toggleGlobalModal('deleteSlotModal', false);
+                    showPopupMessage('Exam slot deleted successfully.', 'success');
+                    fetchExamSlotsAjax(); // Refresh table
+                } else {
+                    showPopupMessage(data.error || 'Failed to delete slot.', 'error');
+                }
+            })
+            .catch(() => showPopupMessage('Network error. Please try again.', 'error'));
+        }
+    };
+
+    // Register slot action handler once
+    if (!window.slotActionsRegistered) {
+        document.addEventListener('click', slotActionHandler);
+        
+        // Final validation before AJAX submission
+        const editSlotForm = document.getElementById('editSlotForm');
+        if (editSlotForm) {
+            editSlotForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = {
+                    slot_id: document.getElementById('editSlotId').value,
+                    examtype: document.getElementById('edit_examtype').value,
+                    mode: document.getElementById('edit_mode').value,
+                    exam_date: document.getElementById('edit_exam_date').value,
+                    registration_type: document.getElementById('edit_registration_type').value,
+                    start_time: document.getElementById('edit_start_time').value,
+                    end_time: document.getElementById('edit_end_time').value,
+                    slot_code: document.getElementById('edit_slot_code').value
+                };
+
+                // Apply Slot-Time Rules
+                if (!validateSlotTime(formData.slot_code, formData.start_time, formData.end_time)) return;
+
+                fetch('/ops/ajax/edit-exam-slot/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || ''
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success) {
+                        toggleGlobalModal('editSlotModal', false);
+                        showPopupMessage('Exam slot updated successfully.', 'success');
+                        fetchExamSlotsAjax();
+                    } else {
+                        showPopupMessage(data.error || 'Failed to update slot.', 'error');
+                    }
+                })
+                .catch(() => showPopupMessage('Network error. Please try again.', 'error'));
+            });
+        }
+        window.slotActionsRegistered = true;
+    }
+
+    // --- Slot-Time Rule Definitions ---
+    function validateSlotTime(code, start, end) {
+        if (!start || !end) return true;
+        if (start >= end) {
+            showPopupMessage('Start time must be before end time.', 'error');
+            return false;
+        }
+
+        const rules = {
+            'FN': { min: '09:00', max: '13:00', label: 'Forenoon' },
+            'AN': { min: '13:30', max: '17:30', label: 'Afternoon' },
+            'EV': { min: '18:00', max: '21:00', label: 'Evening' },
+            'AM': { min: '07:00', max: '10:00', label: 'Morning' },
+            'PM': { min: '14:00', max: '18:00', label: 'Post-Meridiem' },
+            'MN': { min: '21:00', max: '03:00', label: 'Night/Early Morning' }
+        };
+
+        const rule = rules[code];
+        if (rule) {
+            if (code !== 'MN') {
+                if (start < rule.min || start > rule.max) {
+                    showPopupMessage(`Constraint: ${code} slots should normally start between ${rule.min} and ${rule.max}.`, 'error');
+                    // return false; // Optional: change to return true if only warning desired
+                }
+            } else {
+                if (start < rule.min && start > '06:00') {
+                    showPopupMessage(`Constraint: MN slots should be late night (after ${rule.min}).`, 'error');
+                }
+            }
+        }
+        return true;
+    }
+
+    // --- Global "Enter" for Modals ---
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const activeModal = document.querySelector('.global-modal-backdrop.active');
+            if (activeModal) {
+                // Ignore for textareas
+                if (e.target.tagName === 'TEXTAREA') return;
+
+                // Priority 1: Form search or dynamic fields
+                if (e.target.closest('.dropdown-content')) return;
+
+                const form = activeModal.querySelector('form');
+                if (form) {
+                    e.preventDefault();
+                    // If it's the delete modal, trigger confirm link
+                    if (activeModal.id === 'deleteSlotModal') {
+                        const confirmBtn = document.getElementById('confirmDeleteSlotLink');
+                        if (confirmBtn) confirmBtn.click();
+                        return;
+                    }
+                    // Trigger first submit button
+                    const submitBtn = form.querySelector('button[type="submit"], .btn-primary, #createExamSlotLink');
+                    if (submitBtn) submitBtn.click();
+                }
+            }
         }
     });
-    // Cancel/Close logic handled globally or via id
-    const closeEditSlotModal = document.getElementById('closeEditSlotModal');
-    if (closeEditSlotModal) closeEditSlotModal.onclick = () => toggleGlobalModal('editSlotModal', false);
-    const cancelEditSlotBtn = document.getElementById('cancelEditSlotBtn');
-    if (cancelEditSlotBtn) cancelEditSlotBtn.onclick = (e) => { e.preventDefault(); toggleGlobalModal('editSlotModal', false); };
+
+    // --- Date Constraints for Creation Forms ---
+    function initDateConstraints() {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // examination.html
+        const startInput = document.getElementById('start_date');
+        const endInput = document.getElementById('end_date');
+        if (startInput) {
+            startInput.min = today;
+            startInput.onchange = () => {
+                if (endInput) {
+                    endInput.min = startInput.value;
+                    if (endInput.value && endInput.value < startInput.value) endInput.value = '';
+                }
+            };
+        }
+
+        // exams.html creation form
+        const urlParams = new URLSearchParams(window.location.search);
+        const examDateInput = document.getElementById('exam_date');
+        const minE = urlParams.get('start_date');
+        const maxE = urlParams.get('end_date');
+        if (examDateInput) {
+            if (minE) examDateInput.min = minE;
+            if (maxE) examDateInput.max = maxE;
+        }
+
+        // Main Create Exam Slot Link also needs time validation
+        const createSlotLink = document.getElementById('createExamSlotLink');
+        if (createSlotLink) {
+            const originalOnclick = createSlotLink.onclick;
+            createSlotLink.addEventListener('click', function(e) {
+                const code = document.getElementById('slot_code')?.value;
+                const start = document.getElementById('start_time')?.value;
+                const end = document.getElementById('end_time')?.value;
+                if (!validateSlotTime(code, start, end)) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                }
+            }, true);
+        }
+    }
+    initDateConstraints();
     var examId = window.examIdForSlots || '';
     var tbody = document.getElementById('exam-slots-list');
     if (!tbody) return;
@@ -1048,51 +1285,65 @@ function fetchExamSlotsAjax() {
                 data.slots.forEach(function (slot) {
                     let statusCell = '';
                     const schedUrl = `/ops/exam-scheduling/${slot.id}/`;
-                    // Use 'courses_completed' flag from backend
+                    // Course Assignment Logic
                     if (slot.courses_completed) {
-                        statusCell = `<td><a href="${schedUrl}" class="slot-schedule-link" title="Go to scheduling"><span class="exam-status exam-status-available">Assigned <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=000000' alt='Assigned' class='status-icon'></span></a></td>`;
+                        statusCell = `<td><a href="${schedUrl}" class="slot-schedule-link" title="Go to scheduling"><span class="status-badge badge-success">Assigned <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff' alt='Assigned' style='width:18px;height:18px;'></span></a></td>`;
                     } else {
-                        statusCell = `<td><a href="${schedUrl}" class="slot-schedule-link" title="Go to scheduling"><span class="exam-status exam-status-pending">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=000000' alt='Pending' class='status-icon'></span></a></td>`;
+                        statusCell = `<td><a href="${schedUrl}" class="slot-schedule-link" title="Go to scheduling"><span class="status-badge badge-warning">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=92400e' alt='Pending' style='width:18px;height:18px;'></span></a></td>`;
                     }
 
-                    // Add edit and delete links
-                    const editLink = `<a href="#" class="edit-slot-btn" data-slot-id="${slot.id}" title="Edit"><img src="https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000" alt="Edit Slot" class="icon-edit"></a>`;
-                    const deleteLink = `<a href="#" class="delete-slot-btn" data-slot-id="${slot.id}" data-slot-date="${slot.exam_date}" data-slot-time="${slot.start_time}-${slot.end_time}" data-slot-code="${slot.slot_code}"><img src="https://img.icons8.com/?size=100&id=99971&format=png&color=000000" alt="Delete Slot" class="icon-delete"></a>`;
+                    // Add edit and delete links with full data attributes
+                    const editLink = `<a href="#" class="edit-slot-btn" 
+                        data-slot-id="${slot.id}" 
+                        data-examtype="${slot.exam_type}"
+                        data-mode="${slot.mode}"
+                        data-date="${slot.exam_date}"
+                        data-start="${slot.start_time}"
+                        data-end="${slot.end_time}"
+                        data-code="${slot.slot_code}"
+                        data-reg="${slot.registration_type}" 
+                        title="Edit"><img src="https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000" alt="Edit Slot" class="icon-edit"></a>`;
+                    
+                    const deleteLink = `<a href="#" class="delete-slot-btn" 
+                        data-slot-id="${slot.id}" 
+                        data-slot-date="${slot.exam_date}" 
+                        data-slot-time="${slot.start_time}-${slot.end_time}" 
+                        data-slot-code="${slot.slot_code}" 
+                        data-slot-type="${slot.exam_type}" 
+                        title="Delete"><img src="https://img.icons8.com/?size=100&id=99971&format=png&color=000000" alt="Delete Slot" class="icon-delete"></a>`;
                     
                     // Course Count Badge
-                    let badgeClass = slot.course_count > 0 ? 'badge-courses badge-courses-positive' : 'badge-courses badge-courses-zero';
+                    let bClass = slot.course_count > 0 ? 'badge-courses badge-courses-positive' : 'badge-courses badge-courses-zero';
                     let courseBadge = `<a href="#" class="slot-courses-badge" data-slot-id="${slot.id}">
-                        <span class="${badgeClass}">count : ${slot.course_count}</span>
+                        <span class="${bClass}">Count : ${slot.course_count}</span>
                     </a>`;
 
-                    // Room allocation badge - Strict Backend Data
+                    // Room allocation badge
                     let roomBadge = '';
                     if (slot.rooms_completed) {
-                        roomBadge = `<span class="exam-status exam-status-available">Assigned : ${slot.assigned_room_count}</span>`;
+                        roomBadge = `<span class="status-badge badge-success">Assigned : ${slot.assigned_room_count} <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff" alt="Assigned" style="width:18px;height:18px;"></span>`;
                     } else {
-                        roomBadge = `<span class="exam-status exam-status-pending">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=000000' alt='Pending' class='status-icon'></span>`;
+                        roomBadge = `<span class="status-badge badge-warning">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=92400e' alt='Pending' style='width:18px;height:18px;'></span>`;
                     }
 
-                    // Faculty assignment badge - Strict Backend Data
+                    // Faculty assignment badge
                     let facultyBadge = '';
                     if (slot.faculty_completed) {
-                        facultyBadge = `<span class="exam-status exam-status-available">Assigned : ${slot.assigned_faculty_count}</span>`;
+                        facultyBadge = `<span class="status-badge badge-success">Assigned : ${slot.assigned_faculty_count} <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff" alt="Assigned" style="width:18px;height:18px;"></span>`;
                     } else {
-                        facultyBadge = `<span class="exam-status exam-status-pending">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=000000' alt='Pending' class='status-icon'></span>`;
+                        facultyBadge = `<span class="status-badge badge-warning">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=92400e' alt='Pending' style='width:18px;height:18px;'></span>`;
                     }
 
-                    // Final Status Column - Purely Backend Response
+                    // Final Status Column
                     let newStatusCell = '';
                     if (slot.status === 'Publish') {
-                        newStatusCell = `<td><span class="exam-status exam-status-available" title="Updated by ${slot.updated_by}">Completed <span class='status-icon status-tick' aria-label='Completed'><svg viewBox="0 0 16 16" width="17" height="17" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="8" fill="#e6f9e6"/><path d="M4.5 8.5L7 11L11.5 6.5" stroke="#1a7f1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></td>`;
+                        newStatusCell = `<td><a href="#" class="slot-status-link" title="Status"><span class="status-badge badge-success" title="Updated by ${slot.updated_by}">Completed <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff" alt="Completed" style="width:18px;height:18px;vertical-align:middle;"></span></a></td>`;
                     } else if (slot.rooms_completed && slot.faculty_completed && slot.courses_completed && !slot.seating_completed) {
-                        // All prerequisites done but seating not generated
-                        newStatusCell = `<td><a href="#" class="slot-status-link" title="Status"><span class="exam-status exam-status-generate" title="Updated by ${slot.updated_by}">Generate <img src='https://img.icons8.com/?size=100&id=11841&format=png&color=ff9900' alt='Generate' class='status-icon'></span></a></td>`;
+                        newStatusCell = `<td><a href="#" class="slot-status-link" title="Status"><span class="status-badge badge-info" title="Updated by ${slot.updated_by}">Generate <img src='https://img.icons8.com/?size=100&id=11841&format=png&color=1e40af' alt='Generate' style='width:18px;height:18px;vertical-align:middle;'></span></a></td>`;
                     } else if (slot.is_generated) {
-                        // Seating generated but status is not Publish (likely due to physical record mismatch)
-                        newStatusCell = `<td><a href="#" class="slot-status-link" title="Status"><span class="exam-status exam-status-available" title="Updated by ${slot.updated_by}">Update <img src='https://img.icons8.com/?size=100&id=11841&format=png&color=ff9900' alt='Update' class='status-icon'></span></a></td>`;
+                        newStatusCell = `<td><a href="#" class="slot-status-link" title="Status"><span class="status-badge badge-warning" title="Incomplete sync">Partial <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=92400e' alt='Incomplete' style='width:18px;height:18px;vertical-align:middle;'></span></a></td>`;
                     } else {
-                        newStatusCell = `<td><a href="#" class="slot-status-link" title="Status"><span class="exam-status exam-status-pending" title="Updated by ${slot.updated_by}">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=000000' alt='Pending' class='status-icon'></span></a></td>`;
+                        newStatusCell = `<td><a href="#" class="slot-status-link" title="Status"><span class="status-badge badge-warning">Pending <img src='https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=92400e' alt='Pending' style='width:18px;height:18px;vertical-align:middle;'></span></a></td>`;
                     }
                     var row = `<tr data-slot-id="${slot.id}">
                         <td>${slot.exam_type || ''}</td>
@@ -1105,8 +1356,16 @@ function fetchExamSlotsAjax() {
                         ${statusCell}
                         <td>${courseBadge}</td>
                         <td>${slot.student_count || 0}</td>
-                        <td><a href="/ops/exam_rooms_alloc/?slot_id=${slot.id}">${roomBadge}</a></td>
-                        <td><a href="/ops/exam_faculty_alloc/?slot_id=${slot.id}">${facultyBadge}</a></td>
+                        <td>
+                            <a href="${slot.rooms_completed ? '#' : '/ops/exam_rooms_alloc/?slot_id=' + slot.id}" 
+                               class="${slot.rooms_completed ? 'room-assignment-badge' : ''}" 
+                               data-slot-id="${slot.id}">${roomBadge}</a>
+                        </td>
+                        <td>
+                            <a href="${slot.faculty_completed ? '#' : '/ops/exam_faculty_alloc/?slot_id=' + slot.id}" 
+                               class="${slot.faculty_completed ? 'faculty-assignment-badge' : ''}" 
+                               data-slot-id="${slot.id}">${facultyBadge}</a>
+                        </td>
                         ${newStatusCell}
                         <td>${editLink}${deleteLink}</td>
                     </tr>`;
@@ -1122,51 +1381,51 @@ function fetchExamSlotsAjax() {
         document.addEventListener('click', function(e) {
             const statusLink = e.target.closest('.slot-status-link');
             if (statusLink) {
-                const statusSpanGenerate = statusLink.querySelector('.exam-status-generate');
-                const statusSpanPending = statusLink.querySelector('.exam-status-pending');
+                const statusSpanGenerate = statusLink.querySelector('.badge-info');
+                const statusSpanWarning = statusLink.querySelector('.badge-warning');
+                const statusSpanSuccess = statusLink.querySelector('.badge-success');
                 const row = statusLink.closest('tr');
-                if (statusSpanPending) {
+
+                if (statusSpanSuccess) {
+                    showPopupMessage('Examination schedule is complete and published.', 'success');
+                } else if (statusSpanWarning) {
                     let missing = [];
                     if (row) {
-                        // Check registration type (index 6)
-                        // Check statusCell (index 7)
-                        // Check course count (index 8)
-                        const courseCountCell = row.children[8];
-                        if (courseCountCell && courseCountCell.textContent.trim() === 'count : 0') missing.push('Course Assignment');
-                        // Check room assignment (index 10)
+                        // Check Mapped status (index 7) - content of span
+                        const mappedCell = row.children[7];
+                        if (mappedCell && mappedCell.textContent.includes('Pending')) missing.push('Course Assignment (Mapping)');
+                        
+                        // Check Room allocation (index 10)
                         const roomCell = row.children[10];
-                        if (roomCell && roomCell.textContent.includes('Pending')) missing.push('Room Assignment');
-                        // Check faculty assignment (index 11)
+                        if (roomCell && roomCell.textContent.includes('Pending')) missing.push('Room Allocation');
+                        
+                        // Check Faculty assignment (index 11)
                         const facultyCell = row.children[11];
                         if (facultyCell && facultyCell.textContent.includes('Pending')) missing.push('Faculty Assignment');
                     }
-                    let msg = 'Status is Pending.<br>Some required actions are incomplete.';
+                    let msg = 'Status is Incomplete.<br>Please complete the following actions:';
                     if (missing.length > 0) {
-                        msg += '<br><span style="color:#b30000;font-weight:600;">Missing/Incomplete:</span><br>';
+                        msg += '<br><span style="color:#b30000;font-weight:600;">Missing Steps:</span><br>';
                         msg += missing.map(item => `<span style='display:block;margin-left:1em;'>${item}</span>`).join('');
+                    } else {
+                        msg = 'Seating plan sync is partial. Please check for any manual overrides.';
                     }
                     showPopupMessage(msg, 'warning');
                 } else if (statusSpanGenerate) {
-                    // Get slot_id from row attribute
                     const slotId = row.getAttribute('data-slot-id');
                     if (!slotId) {
                         showPopupMessage('Slot ID not found for generation.', 'error');
                         return;
                     }
-                    // Disable Generate button
+                    // Disable Generate button during request
                     statusLink.classList.add('disabled');
                     statusLink.style.pointerEvents = 'none';
-                    // Show modal spinner popup in center
-                    showSpinnerModal('Generating seating plan... Please wait.<br><span style="color:#b30000;font-weight:600;">Do not close or refresh the page until completed.</span><br><span id="est-time" style="color:#2563eb;font-weight:500;">Estimated time: 10-20 seconds</span>');
-                    let timer = 0;
-                    let estTime = 20; // Estimated max time in seconds
-                    const estTimeElem = document.getElementById('est-time');
-                    const interval = setInterval(() => {
-                        timer++;
-                        if (estTimeElem) {
-                            estTimeElem.textContent = `Estimated time: ${Math.max(estTime-timer, 1)} seconds`;
-                        }
-                    }, 1000);
+
+                    // Manually trigger the special Luminous Aurora Orb loader
+                    if (window.Loader) {
+                        window.Loader.show("Generating Seating Plan...", "Calculating results and assigning faculty...", true);
+                    }
+
                     fetch('/ops/ajax/generate-seating-plan/', {
                         method: 'POST',
                         headers: {
@@ -1177,47 +1436,25 @@ function fetchExamSlotsAjax() {
                     })
                     .then(response => response.json())
                     .then(data => {
-                        clearInterval(interval);
+                        if (window.Loader) window.Loader.hide();
                         statusLink.classList.remove('disabled');
                         statusLink.style.pointerEvents = '';
                         const statusCell = row.children[11]; // newStatusCell
+                        
                         if (data.status === 'success' || data.status === 'assigned') {
-                            closeSpinnerModal();
-                            statusCell.innerHTML = `<span class="exam-status exam-status-available exam-status-assigned">Assigned <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=000000' alt='Assigned' class='status-icon'></span>`;
-                            if (statusCell.querySelector('.exam-status')) {
-                                statusCell.querySelector('.exam-status').classList.remove('slot-status-link');
-                                statusCell.querySelector('.exam-status').style.cursor = 'default';
-                            }
-                            showPopupMessage('Seating plan and invigilation already completed! Status updated to Assigned.', 'success');
-                        } else if (data.status === 'update') {
-                            // Show missing assignments in spinner modal
-                            let missing = [];
-                            if (roomBadge && roomBadge.includes('Pending')) missing.push('Room Assignment');
-                            if (facultyBadge && facultyBadge.includes('Pending')) missing.push('Faculty Assignment');
-                            if (badgeClass && badgeClass.includes('badge-courses-zero')) missing.push('Course Assignment');
-                            let msg = 'Some assignments are missing. Please update seating/invigilation.';
-                            if (missing.length > 0) {
-                                msg += '<br><span style="color:#b30000;font-weight:600;">Missing/Incomplete:</span><br>';
-                                msg += missing.map(item => `<span style='display:block;margin-left:1em;'>${item}</span>`).join('');
-                            }
-                            showSpinnerModal(msg + '<br><button id="closeSpinnerBtn" style="margin-top:1em;padding:0.5em 1.2em;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:1em;cursor:pointer;">Close</button>');
-                            // Add close button handler
-                            setTimeout(() => {
-                                const closeBtn = document.getElementById('closeSpinnerBtn');
-                                if (closeBtn) closeBtn.onclick = () => closeSpinnerModal();
-                            }, 100);
-                            statusCell.innerHTML = `<a href="#" class="slot-status-link" title="Status"><span class="exam-status exam-status-available">Update <img src='https://img.icons8.com/?size=100&id=11841&format=png&color=ff9900' alt='Update' class='status-icon'></span></a>`;
+                            statusCell.innerHTML = `<span class="status-badge badge-success">Assigned <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff' alt='Assigned' style='width:18px;height:18px;vertical-align:middle;'></span>`;
+                            showPopupMessage('Seating plan generated successfully!', 'success');
+                            setTimeout(() => fetchExamSlotsAjax(), 1000);
                         } else {
-                            closeSpinnerModal();
-                            showPopupMessage('Error: ' + (data.error || 'Unknown error'), 'error');
+                            showPopupMessage(data.message || 'Generation update received.', 'info');
+                            fetchExamSlotsAjax();
                         }
                     })
                     .catch(() => {
-                        clearInterval(interval);
-                        closeSpinnerModal();
+                        if (window.Loader) window.Loader.hide();
                         statusLink.classList.remove('disabled');
                         statusLink.style.pointerEvents = '';
-                        showPopupMessage('Error generating seating plan.', 'error');
+                        showPopupMessage('Error generating seating plan. Please check network.', 'error');
                     });
             } // Close statusSpanGenerate
         } // Close statusLink
@@ -1311,14 +1548,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!document.getElementById('examination-table')) return;
 
     function pendingBadge() {
-        return `<span class="exam-status exam-status-pending" style="background:#fff3cd;color:#856404;padding:2px 0px 2px 10px;border-radius:6px;display:inline-flex;align-items:center">
-            Pending <img src="https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=000000" alt="Pending" class="status-icon" style="width:1.2em;height:1.2em;vertical-align:middle;margin-left:6px;">
-        </span>`;
+        return `<span class="status-badge badge-warning">Pending <img src="https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=92400e" alt="Pending" style="width:18px;height:18px;"></span>`;
     }
+
     function availableBadge(count) {
-        return `<span class="exam-status exam-status-available" style="background:#e6f9e6;color:#1a7f1a;padding:2px 10px 2px 10px;border-radius:6px;display:inline-flex;align-items:center;font-weight:600;">
-            Available : ${count}
-        </span>`;
+        return `<span class="status-badge badge-success">Assigned : ${count} <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff" alt="Assigned" style="width:18px;height:18px;"></span>`;
     }
     window.fetchExaminations = function fetchExaminations(page = 1) {
         // Always clear and hide deleteExamModal before reload
@@ -1375,19 +1609,19 @@ document.addEventListener('DOMContentLoaded', function () {
                                 let allCompleted = slotData.slots.length > 0 && slotData.slots.every(s => s.status === 'Publish');
                                 if (statusTd) {
                                     if (exam.published) {
-                                        // Published Status (Green) - Clicking allows unpublishing if not locked
+                                        // Published Status (Green)
                                         statusTd.innerHTML = `
                                             <a href="#" class="unpublish-exam-btn" data-exam-id="${exam.exam_id}" data-locked="${exam.is_locked}" style="text-decoration:none;">
-                                                <span class="exam-status" style="background:#e6f9e6;color:#1a7f1a;padding:4px 12px;border-radius:12px;display:inline-flex;align-items:center;font-weight:700;box-shadow:0 2px 4px rgba(22,163,74,0.1);">
-                                                    Published <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=16a34a" alt="Published" style="width:1.2em;height:1.2em;margin-left:8px;">
+                                                <span class="status-badge badge-success">
+                                                    Published <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=166534" alt="Published" style="width:14px;height:14px;">
                                                 </span>
                                             </a>`;
                                     } else if (allCompleted) {
-                                        // Ready to Publish (Amber) - Show button
+                                        // Ready to Publish (Amber)
                                         statusTd.innerHTML = `
                                             <a href="#" class="publish-exam-btn-trigger" data-exam-id="${exam.exam_id}" data-locked="${exam.is_locked}" style="text-decoration:none;">
-                                                <span class="exam-status" style="background:#fff7ed;color:#ea580c;padding:4px 12px;border-radius:12px;display:inline-flex;align-items:center;font-weight:700;border:1.5px solid #fdba74;transition:all 0.2s;">
-                                                    Publish <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=ea580c" alt="Publish" style="width:1.2em;height:1.2em;margin-left:8px;">
+                                                <span class="status-badge badge-warning">
+                                                    Publish <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=92400e" alt="Publish" style="width:14px;height:14px;">
                                                 </span>
                                             </a>`;
                                     } else {
@@ -1493,6 +1727,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
             setExamDateLimits();
+        }
+
+        // Global Constraints for Creation Form (examination.html)
+        const startInput = document.getElementById('start_date');
+        const endInput = document.getElementById('end_date');
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (startInput) {
+            startInput.min = today;
+            startInput.addEventListener('change', function() {
+                if (endInput) {
+                    endInput.min = this.value;
+                    if (endInput.value && endInput.value < this.value) endInput.value = '';
+                }
+            });
         }
     }
     fetchExaminations();
@@ -3104,6 +3353,13 @@ const SpecialDownloadManager = {
                 const val = e.target.value;
                 this.fetchAutocomplete(val);
             });
+            // Support Enter key for download
+            studentInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (triggerBtn) triggerBtn.click();
+                }
+            });
         }
 
         // Trigger Download
@@ -3287,6 +3543,17 @@ function initExamWorkflowHandlers() {
 
     // Lock/Unlock Confirmation Handler
     const confirmLockBtn = document.getElementById('confirmLockBtn');
+    const lockPassInput = document.getElementById('lockAdminPassword');
+
+    if (lockPassInput && confirmLockBtn) {
+        lockPassInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmLockBtn.click();
+            }
+        });
+    }
+
     if (confirmLockBtn) {
         confirmLockBtn.addEventListener('click', function() {
             const examId = document.getElementById('lockModalExamId').value;

@@ -251,55 +251,84 @@
   font-size: 1.05em;
 }
 
-/* Badge styles for dynamic status */
-
-/* Unified Badge Styles */
+/* Unified Badge & Status Styles (Aurora System) */
+.status-badge,
 .badge,
 .badge-courses,
+.exam-status,
 .exam-status-available,
-.exam-status-pending {
-  padding: 2px 10px;
+.exam-status-pending,
+.exam-status-generate {
+  padding: 6px 16px;
   border-radius: 10px;
-  font-weight: 400;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
-  min-width: 2.5em;
-  text-align: center;
-  cursor: pointer;
+  gap: 10px;
+  font-size: 12.5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
 }
 
-/* Publish badge styled like pending */
-.exam-status-publish {
-  background: #fff4e5;
-  color: #d97706;
-  border: 1.5px solid #ff9800;
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-weight: 400;
-  display: inline-flex;
-  align-items: center;
-  min-width: 2.5em;
-  text-align: center;
-  cursor: pointer;
+.status-badge img,
+.exam-status img {
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
+    transform: translateY(-0.5px);
 }
 
+/* Semantic Mappings */
+.badge-success, 
+.badge-occ-full,
+.exam-status-available { 
+    background: #16a34a; 
+    color: #ffffff; 
+    border-color: #15803d; 
+    box-shadow: 0 1px 3px rgba(22,163,74,0.2);
+}
+
+.badge-warning,
+.badge-occ-vacant,
+.exam-status-pending { 
+    background: #fef3c7; 
+    color: #92400e; 
+    border-color: #fde68a; 
+}
+
+.badge-info,
+.badge-occ-partial,
+.exam-status-generate { 
+    background: #dbeafe; 
+    color: #1e40af; 
+    border-color: #bfdbfe; 
+}
+
+.badge-danger,
+.badge-staff-missing { 
+    background: #fef2f2; 
+    color: #991b1b; 
+    border-color: #fee2e2; 
+}
+
+/* Staffing specific */
+.badge-staff-assigned { 
+    background: #f0f9ff; 
+    color: #0369a1; 
+    border-color: #e0f2fe; 
+}
+
+/* Specific Badge Overrides */
 .badge-courses-zero {
-  background: #f8d7da;
-  color: #721c24;
+  opacity: 0.6;
 }
 
-.badge-courses-positive,
-.exam-status-available {
-  background: #e6f9e6;
-  color: #1a7f1a;
-  border: 1.5px solid #38a169 !important;
+.badge-courses-positive {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
 }
 
-.exam-status-pending {
-  background: #ffe6e6 !important;
-  color: #b30000 !important;
-  border: 1.5px solid #b30000 !important;
-}
 
 /* Table cell center text */
 .text-center {
@@ -885,6 +914,7 @@ body {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
 }
 
 @media (max-width: 768px) {
@@ -2492,121 +2522,239 @@ table tbody tr td li {
 
 .exam-card {
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e2e8f0;
-  transition: transform 0.2s, box-shadow 0.2s;
-  width: 320px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1.5px solid #f1f5f9;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  width: 380px;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
 
-@media (max-width: 600px) {
-  .exam-card {
-    width: 100%;
-  }
+.exam-card.active {
+    animation: breathing-border-active 3s infinite ease-in-out;
 }
+
+.exam-card.deadline {
+    animation: breathing-border-deadline 2s infinite ease-in-out;
+}
+
+@keyframes breathing-border-active {
+    0%, 100% { border-color: #f1f5f9; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+    50% { border-color: #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+}
+
+@keyframes breathing-border-deadline {
+    0%, 100% { border-color: #f1f5f9; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
+    50% { border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.25); }
+}
+
+.exam-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    background: #cbd5e1;
+    transition: background 0.3s ease;
+}
+
+.exam-card.upcoming::before { background: #3b82f6; }
+.exam-card.active::before { background: #10b981; }
+.exam-card.deadline::before { background: #ef4444; }
 
 .exam-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
 }
 
 .exam-card-header {
-  padding: 15px 20px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 20px;
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #f8fafc;
 }
 
 .exam-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
   margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  flex: 1;
 }
 
-.exam-status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #f1f5f9;
+    color: #475569;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+.status-pill.upcoming { 
+    background: #eff6ff; 
+    color: #2563eb;
+    border: 1px solid #dbeafe;
+    animation: blue-glow 2s infinite alternate;
 }
 
-.status-dot.completed {
-  background: #10b981;
+.status-pill.active { 
+    background: #ecfdf5; 
+    color: #059669;
+    border: 1px solid #d1fae5;
+    animation: active-pulse 1.5s infinite;
 }
 
-.status-dot.upcoming {
-  background: #3b82f6;
+.status-pill.deadline { 
+    background: #fef2f2; 
+    color: #dc2626;
+    border: 1px solid #fee2e2;
+    animation: deadline-flicker 0.8s infinite;
 }
 
-.status-label.completed {
-  color: #059669;
+@keyframes active-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-.status-label.upcoming {
-  color: #2563eb;
+@keyframes deadline-flicker {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); box-shadow: 0 0 12px rgba(239, 68, 68, 0.3); }
+}
+
+@keyframes blue-glow {
+    from { box-shadow: 0 0 4px rgba(37, 99, 235, 0.1); }
+    to { box-shadow: 0 0 10px rgba(37, 99, 235, 0.3); }
 }
 
 .exam-card-body {
-  padding: 15px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  padding: 12px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
   flex-grow: 1;
 }
 
-.exam-info-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
+.exam-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.exam-info-label {
-  color: #64748b;
-  font-weight: 500;
+.info-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.02em;
 }
 
-.exam-info-value {
-  color: #1e293b;
-  font-weight: 600;
+.info-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.timer-ribbon {
+    grid-column: span 2;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #f1f5f9;
+}
+
+.timer-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.timer-clock {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.timer-clock.pulse {
+    animation: timerPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
 .exam-card-footer {
-  padding: 12px 20px;
-  background: #ffffff;
-  border-top: 1px solid #f1f5f9;
+  padding: 8px 20px 24px 20px;
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .exam-card-footer .btn {
-  padding: 6px 14px !important;
-  border-radius: 6px !important;
-  font-weight: 600 !important;
+  flex: 1;
+  width: auto;
+  padding: 12px 10px !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
   font-size: 12px !important;
-  text-decoration: none !important;
+  transition: all 0.3s ease;
+  border: none !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-.exam-card-footer .btn-primary {
-  background: #2563eb !important;
-  color: #fff !important;
+.btn-glass {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
 }
 
-.exam-card-footer .btn-secondary {
-  background: #10b981 !important;
-  color: #fff !important;
+.btn-glass:hover { background: #e2e8f0 !important; }
+
+.btn-premium {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.btn-premium:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+
+.btn-premium:disabled {
+    background: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    box-shadow: none;
+    cursor: not-allowed;
 }
 
 /* Attendance Marking System (Lighter Version) */

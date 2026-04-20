@@ -39,6 +39,7 @@
             <input type="date" id="end_date" name="end_date" value="{{ form_data.end_date|default:'' }}"
                 min="{{ form_data.start_date|default:today|date:'Y-m-d' }}">
 
+            <button type="submit" style="display: none;"></button>
         </form>
         <a href="#" class="action-link" id="createExaminationLink"
             onclick="document.getElementById('examinationForm').submit(); return false;">Create Exam</a>

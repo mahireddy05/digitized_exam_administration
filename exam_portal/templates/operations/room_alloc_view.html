@@ -74,33 +74,55 @@
                 <table class="room-table">
                     <thead>
                         <tr>
-                            <th>Room Name</th>
-                            <th>Actual Cap</th>
-                            <th>Assigned Cap</th>
-                            <th>Invigilators</th>
-                            <th>Actions</th>
+                            <th style="width: 15%;">Room</th>
+                            <th style="width: 20%;">Occupancy (Asg/Act)</th>
+                            <th style="width: 15%;">Usage Status</th>
+                            <th style="width: 15%;">Staffing</th>
+                            <th style="width: 20%;">Invigilators</th>
+                            <th style="width: 15%;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for row in slot.list %}
-                        <tr>
-                            <td><strong>{{ row.room_name }}</strong></td>
-                            <td>{{ row.actual_cap }}</td>
-                            <td>{{ row.assigned_cap }}</td>
+                        <tr class="{% if row.occupancy_status == 'Vacant' %}exam-row-locked{% endif %}">
+                            <td>
+                                <strong>{{ row.room_name }}</strong>
+                            </td>
+                            <td>
+                                <span style="font-weight: 600; color: #1e3a8a;">{{ row.assigned_cap }}</span> / {{ row.actual_cap }}
+                            </td>
+                            <td>
+                                {% if row.occupancy_status == 'Full' %}
+                                    <span class="status-badge badge-occ-full">Full</span>
+                                {% elif row.occupancy_status == 'Partial' %}
+                                    <span class="status-badge badge-occ-partial">Partial</span>
+                                {% else %}
+                                    <span class="status-badge badge-occ-vacant">Vacant</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.staffing_status == 'Staffed' %}
+                                    <span class="status-badge badge-staff-assigned">Staffed</span>
+                                {% else %}
+                                    <span class="status-badge badge-staff-missing">Missing</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% for id in row.invigilator_ids %}
-                                <span class="invigilator-badge">
-                                    {{id }}</span>
+                                <span class="invigilator-badge">{{ id }}</span>
                                 {% empty %}
-                                <span class="no-invigilator">None</span>
+                                <span style="font-style: italic; color: #94a3b8; font-size: 13px;">None</span>
                                 {% endfor %}
                             </td>
                             <td>
-                                <a href="{% url 'operations:seatingplan' %}?slot_id={{ row.slot_id }}&room_id={{ row.room_id }}"
-                                    class="action-btn btn-view">View</a>
-                                <a href="#"
-                                    onclick="silentPrint(this, '{{ row.slot_id }}', '{{ row.room_id }}'); return false;"
-                                    class="action-btn btn-print">Print</a>
+                                <div style="display: flex; gap: 8px;">
+                                    <a href="{% url 'operations:seatingplan' %}?slot_id={{ row.slot_id }}&room_id={{ row.room_id }}"
+                                        class="action-btn btn-view {% if row.occupancy_status == 'Vacant' %}disabled-action{% endif %}"
+                                        {% if row.occupancy_status == 'Vacant' %}onclick="return false;"{% endif %}>View</a>
+                                    <a href="#"
+                                        onclick="silentPrint(this, '{{ row.slot_id }}', '{{ row.room_id }}'); return false;"
+                                        class="action-btn btn-print {% if row.occupancy_status == 'Vacant' %}disabled-action{% endif %}">Print</a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
