@@ -1,9 +1,79 @@
 {% extends "core/base_admin.html" %}
 {% load static %}
 {% block content %}
-<div class="pages-main">
-    <h1 class="pages-main-head">Room Allocation</h1>
-    <div class="table-container-shadow">
+<link rel="stylesheet" href="{% static 'css/reports_styles.css' %}">
+<style>
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e3a5f;
+        padding-left: 5px;
+        margin: 30px 0 15px 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        /* Button right beside the text */
+    }
+
+    .section-title-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title img {
+        width: 20px;
+        height: 20px;
+    }
+
+    .toggle-btn {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #2563eb;
+        cursor: pointer;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        transition: all 0.2s;
+        user-select: none;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .toggle-btn:hover {
+        background: #dbeafe;
+        transform: translateY(-1px);
+    }
+
+    .completed-section {
+        opacity: 0.9;
+    }
+
+    /* Badge refinements for table layout */
+    .status-indicator-badge {
+        padding: 4px 10px !important;
+        margin-right: 0 !important;
+        min-width: 100px;
+        justify-content: center;
+    }
+</style>
+
+<div class="pages-main" style="padding-bottom: 50px;">
+    <h1 class="pages-main-head">Room Allocation Dashboard</h1>
+
+    <!-- Upcoming & Ongoing Exams -->
+    <div class="section-title">
+        <div class="section-title-left">
+            <img src="https://img.icons8.com/ios-filled/24/1e3a5f/calendar-plus.png" alt="upcoming">
+            Upcoming & Ongoing Examinations
+        </div>
+        <div class="toggle-btn" onclick="toggleSection('upcoming-container', this)">
+            <img src="https://img.icons8.com/ios-glyphs/12/2563eb/visible.png" alt="eye"
+                style="margin-right: 4px; vertical-align: middle;"> Hide
+        </div>
+    </div>
+    <div class="table-container-shadow" id="upcoming-container">
         <table class="styled-table min-w-900">
             <thead class="sticky-header-f8">
                 <tr>
@@ -11,6 +81,7 @@
                     <th>Exam Name</th>
                     <th>Academic Year</th>
                     <th>Semester</th>
+                    <th style="width: 150px;">Status</th>
                     <th>Start Date</th>
                     <th>End Date</th>
                     <th>Total Slots</th>
@@ -19,28 +90,129 @@
                 </tr>
             </thead>
             <tbody>
-                {% for exam in exams %}
+                {% for exam in upcoming_exams %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td style="font-weight: 600; color: #1e3a5f;">{{ exam.exam_name }}</td>
+                    <td>{{ exam.academic_year }}</td>
+                    <td>{{ exam.semester }}</td>
+                    <td>
+                        {% if exam.status == "ONGOING" %}
+                        <div class="status-indicator-badge status-badge-ongoing">
+                            <span class="flicker-dot flicker-dot-ongoing"></span> ONGOING
+                        </div>
+                        {% elif exam.status == "COMPLETED" %}
+                        <div class="status-indicator-badge status-badge-completed">
+                            COMPLETED
+                        </div>
+                        {% else %}
+                        <div class="status-indicator-badge status-badge-upcoming">
+                            UPCOMING
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>{{ exam.start_date }}</td>
+                    <td>{{ exam.end_date }}</td>
+                    <td>{{ exam.total_slots }}</td>
+                    <td>{{ exam.generated_slots }}</td>
+                    <td>
+                        <a href="{% url 'operations:room_alloc_view' %}?exam_id={{ exam.id }}" class="btn-premium"
+                            style="font-size: 0.85rem; padding: 6px 14px;">
+                            <img src="https://img.icons8.com/material-rounded/14/ffffff/visible.png" alt="view"
+                                style="filter: brightness(0) invert(1);"> View Allocations
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center" style="padding: 30px; color: #64748b;">No active or upcoming
+                        examinations found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Completed Exams -->
+    <div class="section-title" style="margin-top: 60px;">
+        <div class="section-title-left" style="color: #64748b;">
+            <img src="https://img.icons8.com/ios-filled/24/64748b/checked--v1.png" alt="completed">
+            Completed Examinations
+        </div>
+        <div class="toggle-btn" onclick="toggleSection('completed-container', this)">
+            <img src="https://img.icons8.com/ios-glyphs/12/2563eb/visible.png" alt="eye"
+                style="margin-right: 4px; vertical-align: middle;"> Hide
+        </div>
+    </div>
+    <div class="table-container-shadow completed-section" id="completed-container">
+        <table class="styled-table min-w-900">
+            <thead class="sticky-header-f8">
+                <tr style="background: #1E3A5F !important; opacity: 0.8;"> <!-- Standard Navy with slight dim -->
+                    <th>#</th>
+                    <th>Exam Name</th>
+                    <th>Academic Year</th>
+                    <th>Semester</th>
+                    <th style="width: 150px;">Status</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Total Slots</th>
+                    <th>Slots Generated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in completed_exams %}
                 <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ exam.exam_name }}</td>
                     <td>{{ exam.academic_year }}</td>
                     <td>{{ exam.semester }}</td>
+                    <td>
+                        <div class="status-indicator-badge status-badge-completed">
+                            COMPLETED
+                        </div>
+                    </td>
                     <td>{{ exam.start_date }}</td>
                     <td>{{ exam.end_date }}</td>
                     <td>{{ exam.total_slots }}</td>
                     <td>{{ exam.generated_slots }}</td>
                     <td>
                         <a href="{% url 'operations:room_alloc_view' %}?exam_id={{ exam.id }}"
-                            class="btn btn-primary">View Allocations</a>
+                            class="btn-premium-secondary"
+                            style="font-size: 0.85rem; padding: 6px 14px; background: #94a3b8; color: white !important; border: none; display: inline-flex; align-items: center; gap: 8px;">
+                            <img src="https://img.icons8.com/material-rounded/14/ffffff/history.png" alt="history"
+                                style="filter: brightness(0) invert(1);"> View History
+                        </a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="text-center">No exams found.</td>
+                    <td colspan="10" class="text-center" style="padding: 30px; color: #94a3b8;">No historical records
+                        available.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+    function toggleSection(containerId, btn) {
+        const container = document.getElementById(containerId);
+        const iconSrc = 'https://img.icons8.com/ios-glyphs/12/';
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            btn.innerHTML = `<img src="${iconSrc}2563eb/visible.png" alt="eye" style="margin-right: 4px; vertical-align: middle;"> Hide`;
+            btn.style.background = '#eff6ff';
+            btn.style.borderColor = '#bfdbfe';
+            btn.style.color = '#2563eb';
+        } else {
+            container.style.display = 'none';
+            btn.innerHTML = `<img src="${iconSrc}64748b/hide.png" alt="eye" style="margin-right: 4px; vertical-align: middle;"> Show`;
+            btn.style.background = '#f8fafc';
+            btn.style.borderColor = '#cbd5e1';
+            btn.style.color = '#64748b';
+        }
+    }
+</script>
 {% endblock %}

@@ -1548,25 +1548,28 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!document.getElementById('examination-table')) return;
 
     function pendingBadge() {
-        return `<span class="status-badge badge-warning">Pending <img src="https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=92400e" alt="Pending" style="width:18px;height:18px;"></span>`;
+        return `<span class="status-badge badge-warning">Pending <img src="https://img.icons8.com/?size=100&id=rKEYSosGdrkP&format=png&color=92400e" alt="" style="width:18px;height:18px;"></span>`;
     }
 
     function availableBadge(count) {
-        return `<span class="status-badge badge-success">Assigned : ${count} <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff" alt="Assigned" style="width:18px;height:18px;"></span>`;
+        return `<span class="status-badge badge-success">${count} Slots <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff" alt="" style="width:18px;height:18px;"></span>`;
     }
     window.fetchExaminations = function fetchExaminations(page = 1) {
-        // Always clear and hide deleteExamModal before reload
+        const tbody = document.querySelector('#examination-table tbody');
+        if (!tbody) return;
+
+        // Clear modal state if on management page
         const modal = document.getElementById('deleteExamModal');
         if (modal) {
             document.getElementById('deleteExamWarning').innerHTML = '';
             document.getElementById('deleteExamDetails').innerHTML = '';
             document.getElementById('deleteExamId').value = '';
         }
+
+        tbody.innerHTML = '';
         fetch(`/ops/ajax/examinations/?page=${page}`)
             .then(resp => resp.json())
             .then(data => {
-                const tbody = document.querySelector('#examination-table tbody');
-                tbody.innerHTML = '';
                 if (data.results && data.results.length) {
                     data.results.forEach((exam, idx) => {
                         const slotLink = `/ops/exams/?exam_id=${exam.exam_id}` +
@@ -1613,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                         statusTd.innerHTML = `
                                             <a href="#" class="unpublish-exam-btn" data-exam-id="${exam.exam_id}" data-locked="${exam.is_locked}" style="text-decoration:none;">
                                                 <span class="status-badge badge-success">
-                                                    Published <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=166534" alt="Published" style="width:14px;height:14px;">
+                                                    Published <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=166534" alt="" style="width:14px;height:14px;">
                                                 </span>
                                             </a>`;
                                     } else if (allCompleted) {
@@ -1621,7 +1624,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                         statusTd.innerHTML = `
                                             <a href="#" class="publish-exam-btn-trigger" data-exam-id="${exam.exam_id}" data-locked="${exam.is_locked}" style="text-decoration:none;">
                                                 <span class="status-badge badge-warning">
-                                                    Publish <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=92400e" alt="Publish" style="width:14px;height:14px;">
+                                                    Publish <img src="https://img.icons8.com/?size=100&id=79211&format=png&color=92400e" alt="" style="width:14px;height:14px;">
                                                 </span>
                                             </a>`;
                                     } else {
@@ -1744,7 +1747,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
-    fetchExaminations();
 });
 // ============ EXAM SCHEDULING AJAX (operations/exam_scheduling.html) ============
 document.addEventListener('DOMContentLoaded', function () {
@@ -3608,9 +3610,74 @@ function initExamWorkflowHandlers() {
     }
 }
 
-// Initialize Managers
+// ========== Dashboard & Sidenav Managers ==========
+const DashboardManager = {
+    init: function() {
+        const ctx = document.getElementById('userPieChart');
+        if (!ctx) return;
+        
+        const adminCount = parseInt(ctx.dataset.admin) || 0;
+        const facultyCount = parseInt(ctx.dataset.faculty) || 0;
+        const studentCount = parseInt(ctx.dataset.student) || 0;
+
+        if (window.myPieChart) window.myPieChart.destroy();
+        window.myPieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Admin', 'Faculty', 'Student'],
+                datasets: [{
+                    data: [adminCount, facultyCount, studentCount],
+                    backgroundColor: ['#2563eb', '#9333ea', '#10b981'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+};
+
+const SidenavManager = {
+    init: function() {
+        console.log("SidenavManager Initialized");
+    },
+    highlightActive: function() {
+        const currentPath = window.location.pathname;
+        const links = document.querySelectorAll('.sidebar-links a');
+        links.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.parentElement.classList.add('active');
+            }
+        });
+    }
+};
+
+// Initialize Managers and Trigger Data Loads
 document.addEventListener('DOMContentLoaded', () => {
-    ExportManager.init();
-    SpecialDownloadManager.init();
-    initExamWorkflowHandlers();
+    // 1. Core Managers
+    if (typeof DashboardManager !== 'undefined') DashboardManager.init();
+    if (typeof SidenavManager !== 'undefined') {
+        SidenavManager.init();
+        SidenavManager.highlightActive();
+    }
+    if (typeof ExportManager !== 'undefined') ExportManager.init();
+    if (typeof SpecialDownloadManager !== 'undefined') SpecialDownloadManager.init();
+    
+    // 2. Registry Tables Initialization
+    if (typeof usersTable !== 'undefined' && document.getElementById('users-table')) usersTable.init();
+    if (typeof studentsTable !== 'undefined' && document.getElementById('students-table')) studentsTable.init();
+    if (typeof facultyTable !== 'undefined' && document.getElementById('faculty-table')) facultyTable.init();
+    if (typeof batchesTable !== 'undefined' && document.getElementById('batches-table')) batchesTable.init();
+    if (typeof departmentsTable !== 'undefined' && document.getElementById('departments-table')) departmentsTable.init();
+    if (typeof programsTable !== 'undefined' && document.getElementById('programs-table')) programsTable.init();
+    
+    // 3. Operational Pages Initialization
+    if (typeof initExamWorkflowHandlers === 'function') initExamWorkflowHandlers();
+    if (typeof fetchExaminations === 'function') fetchExaminations();
 });

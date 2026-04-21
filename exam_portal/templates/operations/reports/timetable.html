@@ -1,22 +1,33 @@
-{% extends base_template|default:"core/base_admin.html" %}
+{% extends base_template %}
 {% load static %}
 
 {% block title %}Examination Timetable | Reports{% endblock %}
 
 {% block content %}
-<div class="pages-main">
+<div class="{% if base_template == 'core/base_admin.html' %}pages-main{% endif %}">
     {% if not exam %}
     <!-- Stage 1: Selection Stage -->
+    <div class="reports-header-flex"
+        style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h1 class="pages-main-head">Exam Schedule</h1>
+        {% if base_template == 'core/base_admin.html' %}
+        <a href="{% url 'operations:report' %}" class="btn-back-report">
+            <img src="https://img.icons8.com/ios-filled/16/1e3a8a/left.png" alt="back"> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
     <div class="report-selection-stage">
         <img src="https://img.icons8.com/ios/100/2563eb/calendar-2.png" alt="Select" style="margin-bottom: 20px;">
-        <h1 class="pages-main-head">Fetch Exam Schedule</h1>
-        <p class="setting-paragraph" style="margin-bottom: 30px;">Select an examination to view the master timetable.</p>
-        
+        <p class="setting-paragraph" style="margin-bottom: 30px;">Select an examination to view the master timetable.
+        </p>
+
         <div class="filter-card">
             <form method="get" action=".">
                 <div class="filter-group" style="margin-bottom: 20px; text-align: left;">
-                    <label for="exam_id" style="display: block; margin-bottom: 8px; font-weight: 600;">Choose Examination:</label>
-                    <select name="exam_id" id="exam_id" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+                    <label for="exam_id" style="display: block; margin-bottom: 8px; font-weight: 600;">Choose
+                        Examination:</label>
+                    <select name="exam_id" id="exam_id"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
                         <option value="">-- Choose Examination --</option>
                         {% for e in exams %}
                         <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_exam_id %}selected{% endif %}>
@@ -25,7 +36,8 @@
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="btn-report btn-view-report" style="width: 100%; justify-content: center; padding: 14px;">
+                <button type="submit" class="btn-report btn-view-report"
+                    style="width: 100%; justify-content: center; padding: 14px;">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> Fetch Timetable
                 </button>
             </form>
@@ -33,16 +45,25 @@
     </div>
     {% else %}
     <!-- Stage 2: Data Stage -->
+    <div class="reports-header-flex"
+        style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h1 class="pages-main-head">Exam Schedule</h1>
+        {% if base_template == 'core/base_admin.html' %}
+        <a href="{% url 'operations:report' %}" class="btn-back-report">
+            <img src="https://img.icons8.com/ios-filled/16/1e3a8a/left.png" alt="back"> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
     <div class="report-header-results">
         <div>
-            <h1 class="pages-main-head">Exam Schedule</h1>
             <p class="setting-paragraph">{{ exam.exam_name }} ({{ exam.academic_year }})</p>
         </div>
         <div style="display: flex; gap: 10px;">
             <a href="{% url 'operations:report_timetable' %}" class="modify-btn ajax-report-link">
                 <img src="https://img.icons8.com/ios/16/1e3a8a/settings.png" alt="modify"> Modify Filters
             </a>
-            <a href="javascript:window.print()" class="btn-report btn-view-report" style="width: auto; padding: 10px 20px;">
+            <a href="javascript:window.print()" class="btn-report btn-view-report"
+                style="width: auto; padding: 10px 20px;">
                 <img src="https://img.icons8.com/ios-filled/20/ffffff/print.png" alt="Print"> Print
             </a>
         </div>
@@ -63,18 +84,18 @@
             <tbody>
                 {% for slot in slots %}
                 <tr>
-                    <td><strong>{{ slot.exam_date|date:"d M Y" }}</strong></td>
-                    <td>{{ slot.slot_code }}</td>
-                    <td>{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</td>
-                    <td>{{ slot.exam_type }}</td>
-                    <td>{{ slot.mode }}</td>
-                    <td>
+                    <td style="width: 15%;"><strong>{{ slot.exam_date|date:"d M Y" }}</strong></td>
+                    <td style="width: 12%;">{{ slot.slot_code }}</td>
+                    <td style="width: 18%;">{{ slot.start_time|time:"H:i" }} - {{ slot.end_time|time:"H:i" }}</td>
+                    <td style="width: 15%;">{{ slot.exam_type }}</td>
+                    <td style="width: 10%;">{{ slot.mode }}</td>
+                    <td style="width: 30%;">
                         {% if slot.exams.all %}
-                            {% for e in slot.exams.all %}
-                                <span class="course-pill">{{ e.course.course_code }}</span>{% if not forloop.last %}, {% endif %}
-                            {% endfor %}
+                        {% for e in slot.exams.all %}
+                        <span class="course-pill">{{ e.course.course_code }}</span>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
                         {% else %}
-                            <span class="text-muted italic">No courses scheduled</span>
+                        <span class="text-muted italic">No courses scheduled</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -93,12 +114,27 @@
         font-size: 0.9rem;
         color: #1e3a8a;
     }
+
     @media print {
-        .hamburger, #sidebar, .controls, .btn-view-report, .report-navigation-bar, .modify-btn {
+
+        .hamburger,
+        #sidebar,
+        .controls,
+        .btn-view-report,
+        .report-navigation-bar,
+        .modify-btn {
             display: none !important;
         }
-        .pages-main { margin-left: 0 !important; padding: 0 !important; }
-        .table-container { box-shadow: none !important; border: 1px solid #e2e8f0; }
+
+        .pages-main {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+
+        .table-container {
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0;
+        }
     }
 </style>
 {% endblock %}

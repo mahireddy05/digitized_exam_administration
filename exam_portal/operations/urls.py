@@ -34,9 +34,9 @@ urlpatterns = [
     path("seatingplan/", views.seatingplan, name="seatingplan"),
     path("mark_attendance/", views.mark_attendance, name="mark_attendance"),
     path("reports/timetable/", views.report_timetable, name="report_timetable"),
-    path("reports/room-occupancy/", views.report_room_occupancy, name="report_room_occupancy"),
+
     path("reports/student-coursereg/", views.report_student_coursereg, name="report_student_coursereg"),
     path("reports/invigilation/", views.report_invigilation, name="report_invigilation"),
-    path("reports/master-seating/", views.report_master_seating, name="report_master_seating"),
     path("reports/attendance/", views.report_attendance, name="report_attendance"),
+    path("reports/student-analysis/", views.report_student_analysis, name="report_student_analysis"),
 ]

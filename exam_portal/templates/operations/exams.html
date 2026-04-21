@@ -6,7 +6,8 @@
     <div class="global-modal-content narrow">
         <div class="modal-header-std">
             <h2 style="font-size: 1.25rem;">
-                <img src="https://img.icons8.com/ios-filled/24/2563eb/edit--v1.png" alt="edit" style="width: 20px; height: 20px;">
+                <img src="https://img.icons8.com/ios-filled/24/2563eb/edit--v1.png" alt="edit"
+                    style="width: 20px; height: 20px;">
                 Edit Slot: <span id="editSlotHeaderName" style="color: #64748b;"></span>
             </h2>
             <button type="button" class="close-global-modal close-modal" id="closeEditSlotModal">&times;</button>
@@ -71,7 +72,8 @@
             </div>
             <div class="modal-footer-std">
                 <button type="button" id="cancelEditSlotBtn" class="btn-std btn-secondary">Cancel</button>
-                <button type="submit" class="btn-std btn-primary" style="padding-left: 30px; padding-right: 30px;">Save Changes</button>
+                <button type="submit" class="btn-std btn-primary" style="padding-left: 30px; padding-right: 30px;">Save
+                    Changes</button>
             </div>
         </form>
     </div>
@@ -79,9 +81,7 @@
 <div class="pages-main">
     <h1 class="pages-main-head">Exam Slot Management</h1>
     <div class="controls-1">
-        <form id="examSlotForm"
-            action="{% url 'operations:exams' %}{% if request.GET.exam_id or request.GET.exam_name or request.GET.start_date or request.GET.end_date %}?{% if request.GET.exam_id %}exam_id={{ request.GET.exam_id }}&{% endif %}{% if request.GET.exam_name %}exam_name={{ request.GET.exam_name|urlencode }}&{% endif %}{% if request.GET.start_date %}start_date={{ request.GET.start_date }}&{% endif %}{% if request.GET.end_date %}end_date={{ request.GET.end_date }}{% endif %}{% endif %}"
-            method="post" autocomplete="off">
+        <form id="examSlotForm" action="{{ request.get_full_path }}" method="post" autocomplete="off">
             {% csrf_token %}
             <input type="hidden" name="start_date" value="{{ q_start_date }}">
             <input type="hidden" name="end_date" value="{{ q_end_date }}">
@@ -219,13 +219,18 @@
                         <img src="https://img.icons8.com/ios-filled/24/ef4444/trash.png" alt="delete">
                         Confirm Deletion
                     </h2>
-                    <button type="button" class="close-global-modal close-modal" id="closeDeleteSlotModal">&times;</button>
+                    <button type="button" class="close-global-modal close-modal"
+                        id="closeDeleteSlotModal">&times;</button>
                 </div>
                 <div class="modal-body-std" style="padding: 25px;">
-                    <div id="deleteSlotWarning" class="warning-text-red" style="font-weight: 700; margin-bottom: 15px; font-size: 1.1rem;"></div>
-                    <div id="deleteSlotDetails" style="margin-bottom: 20px; color: #475569; font-size: 0.95rem; line-height: 1.5;"></div>
-                    <p style="color: #64748b; font-size: 0.9rem; background: #fff1f2; padding: 12px; border-radius: 8px; border-left: 4px solid #f43f5e;">
-                        <strong>Warning:</strong> This action cannot be undone. All data related to this slot (allocations, seating, faculty) will be permanently removed.
+                    <div id="deleteSlotWarning" class="warning-text-red"
+                        style="font-weight: 700; margin-bottom: 15px; font-size: 1.1rem;"></div>
+                    <div id="deleteSlotDetails"
+                        style="margin-bottom: 20px; color: #475569; font-size: 0.95rem; line-height: 1.5;"></div>
+                    <p
+                        style="color: #64748b; font-size: 0.9rem; background: #fff1f2; padding: 12px; border-radius: 8px; border-left: 4px solid #f43f5e;">
+                        <strong>Warning:</strong> This action cannot be undone. All data related to this slot
+                        (allocations, seating, faculty) will be permanently removed.
                     </p>
                     <form id="deleteSlotForm">
                         {% csrf_token %}
@@ -234,7 +239,8 @@
                 </div>
                 <div class="modal-footer-std">
                     <button type="button" id="cancelDeleteSlotBtn" class="btn-std btn-secondary">Keep Slot</button>
-                    <a href="#" id="confirmDeleteSlotLink" class="btn-std btn-danger" style="text-decoration: none;">Delete Permanently</a>
+                    <a href="#" id="confirmDeleteSlotLink" class="btn-std btn-danger"
+                        style="text-decoration: none;">Delete Permanently</a>
                 </div>
             </div>
         </div>
@@ -249,7 +255,6 @@
                 fetchExamSlotsAjax();
             });
         </script>
-        <a href="{% url 'operations:examination' %}" class="action-link">&larr; Back</a>
-    </div>
+        </div>
 </div>
 {% endblock %}

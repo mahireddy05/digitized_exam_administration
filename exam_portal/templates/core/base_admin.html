@@ -10,9 +10,10 @@
     <!-- Global CSS -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="{% static 'css/loader.css' %}?v=1.4">
+    <link rel="stylesheet" href="{% static 'css/reports_styles.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
     <link rel="icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
-
+    {% block extra_head %}{% endblock %}
 </head>
 
 <body>
@@ -232,17 +233,20 @@
         <div class="global-modal-content">
             <div class="modal-header-std">
                 <h2>
-                    <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=2563eb" alt="Export" style="width:24px;">
+                    <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=2563eb" alt="Export"
+                        style="width:24px;">
                     Export Data Options
                 </h2>
                 <button type="button" class="close-global-modal" id="closeExportModal">&times;</button>
             </div>
             <div class="modal-body-std">
-                <p style="color: #64748b; margin-bottom: 20px;">Choose how you would like to process and download your data:</p>
+                <p style="color: #64748b; margin-bottom: 20px;">Choose how you would like to process and download your
+                    data:</p>
                 <div class="export-options-grid">
                     <button type="button" class="export-option-card" id="exportCurrentBtn">
                         <div class="option-icon-wrapper">
-                            <img src="https://img.icons8.com/?size=100&id=fdX9cvS8MtuS&format=png&color=2563eb" alt="Current Page">
+                            <img src="https://img.icons8.com/?size=100&id=fdX9cvS8MtuS&format=png&color=2563eb"
+                                alt="Current Page">
                         </div>
                         <div class="option-details">
                             <h3>Current Displayed Data</h3>
@@ -251,7 +255,8 @@
                     </button>
                     <button type="button" class="export-option-card" id="exportCompleteBtn">
                         <div class="option-icon-wrapper">
-                            <img src="https://img.icons8.com/?size=100&id=85372&format=png&color=2563eb" alt="Complete Data">
+                            <img src="https://img.icons8.com/?size=100&id=85372&format=png&color=2563eb"
+                                alt="Complete Data">
                         </div>
                         <div class="option-details">
                             <h3>Complete Data</h3>
@@ -271,27 +276,36 @@
         <div class="global-modal-content narrow">
             <div class="modal-header-std">
                 <h2>
-                    <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=2563eb" alt="Download" style="width:24px;">
+                    <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=2563eb" alt="Download"
+                        style="width:24px;">
                     Filtered Export
                 </h2>
                 <button type="button" class="close-global-modal" id="closeSpecModal">&times;</button>
             </div>
             <div class="modal-body-std">
-                <p style="color: #64748b; margin-bottom: 20px;">Filter records to download specific registration data</p>
+                <p style="color: #64748b; margin-bottom: 20px;">Filter records to download specific registration data
+                </p>
                 <div class="spec-form-container">
                     <div class="spec-form-group" style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Student ID</label>
+                        <label
+                            style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Student
+                            ID</label>
                         <div class="spec-autocomplete-wrapper" style="position: relative;">
-                            <input type="text" id="spec_student_id" placeholder="Start typing Student ID..." autocomplete="off" 
-                                   style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; box-sizing: border-box;">
-                            <div id="spec_autocomplete_list" class="autocomplete-items" 
-                                 style="position: absolute; border: 1px solid #e2e8f0; background-color: white; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 99; top: 100%; left: 0; right: 0;"></div>
+                            <input type="text" id="spec_student_id" placeholder="Start typing Student ID..."
+                                autocomplete="off"
+                                style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; box-sizing: border-box;">
+                            <div id="spec_autocomplete_list" class="autocomplete-items"
+                                style="position: absolute; border: 1px solid #e2e8f0; background-color: white; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 99; top: 100%; left: 0; right: 0;">
+                            </div>
                         </div>
                     </div>
                     <div class="spec-form-row" style="display: flex; gap: 15px; margin-bottom: 15px;">
                         <div class="spec-form-group" style="flex: 1;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Academic Year</label>
-                            <select id="spec_academic_year" style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;">
+                            <label
+                                style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Academic
+                                Year</label>
+                            <select id="spec_academic_year"
+                                style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;">
                                 <option value="">All Years</option>
                                 {% for year in academic_years %}
                                 <option value="{{ year }}">{{ year }}</option>
@@ -299,8 +313,10 @@
                             </select>
                         </div>
                         <div class="spec-form-group" style="flex: 1;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Semester</label>
-                            <select id="spec_semester" style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;">
+                            <label
+                                style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Semester</label>
+                            <select id="spec_semester"
+                                style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;">
                                 <option value="">All Semesters</option>
                                 {% for sem in semesters %}
                                 <option value="{{ sem }}">{{ sem }}</option>
@@ -309,25 +325,31 @@
                         </div>
                     </div>
                     <div class="spec-form-group" style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Registration Type</label>
-                        <select id="spec_registration_type" style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;">
+                        <label
+                            style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #1e3a8a;">Registration
+                            Type</label>
+                        <select id="spec_registration_type"
+                            style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;">
                             <option value="">All Types</option>
                             {% for type in registration_types %}
                             <option value="{{ type }}">{{ type }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <button id="triggerSpecializedDownload" class="premium-download-btn" 
-                            style="width: 100%; padding: 14px; background: #2563eb; color: #fff; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 16px;">
-                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=ffffff" alt="Download" style="width: 20px;">
+                    <button id="triggerSpecializedDownload" class="premium-download-btn"
+                        style="width: 100%; padding: 14px; background: #2563eb; color: #fff; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; font-size: 16px;">
+                        <img src="https://img.icons8.com/?size=100&id=83159&format=png&color=ffffff" alt="Download"
+                            style="width: 20px;">
                         Download CSV
                     </button>
-                    <button type="button" class="btn-cancel-export" id="cancelSpecBtn" 
-                            style="width: 100%; margin-top: 12px; padding: 12px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">Cancel</button>
+                    <button type="button" class="btn-cancel-export" id="cancelSpecBtn"
+                        style="width: 100%; margin-top: 12px; padding: 12px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">Cancel</button>
                 </div>
             </div>
         </div>
     </div>
 </body>
+
+</html>
 
 </html>

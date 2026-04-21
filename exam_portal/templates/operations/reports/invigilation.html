@@ -1,122 +1,240 @@
-{% extends base_template|default:"core/base_admin.html" %}
+{% extends base_template %}
 {% load static %}
 
-{% block title %}Invigilation Chart | Reports{% endblock %}
+{% block title %}Invigilation Report | Reports{% endblock %}
 
 {% block content %}
-<div class="pages-main">
+<div class="{% if base_template == 'core/base_admin.html' %}pages-main{% endif %}">
     {% if not exam %}
     <!-- Stage 1: Selection Stage -->
+    <div class="reports-header-flex"
+        style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h1 class="pages-main-head">Invigilation Report</h1>
+        {% if base_template == 'core/base_admin.html' %}
+        <a href="{% url 'operations:report' %}" class="btn-back-report">
+            <img src="https://img.icons8.com/ios-filled/16/1e3a8a/left.png" alt="back"> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
     <div class="report-selection-stage">
         <img src="https://img.icons8.com/ios/100/2563eb/teacher.png" alt="Select" style="margin-bottom: 20px;">
-        <h1 class="pages-main-head">Duty Roster</h1>
-        <p class="setting-paragraph" style="margin-bottom: 30px;">Select an examination to view consolidated faculty assignments.</p>
-        
-        <div class="filter-card">
-            <form method="get" action=".">
-                <div class="filter-group" style="margin-bottom: 20px; text-align: left;">
-                    <label for="exam_id" style="display: block; margin-bottom: 8px; font-weight: 600;">Choose Examination:</label>
-                    <select name="exam_id" id="exam_id" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
-                        <option value="">-- Choose Examination --</option>
-                        {% for e in exams %}
-                        <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_exam_id %}selected{% endif %}>
-                            {{ e.exam_name }} ({{ e.academic_year }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn-report btn-view-report" style="width: 100%; justify-content: center; padding: 14px;">
-                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> Fetch Roster
-                </button>
-            </form>
-        </div>
+        <h2>Select Examination</h2>
+        <p>Choose an examination to generate the faculty duty roster and room assignments.</p>
+
+        <form method="get" class="report-filter-form">
+            <div class="form-group-report">
+                <select name="exam_id" required class="report-select-large">
+                    <option value="" disabled selected>-- Select Examination --</option>
+                    {% for e in exams %}
+                    <option value="{{ e.id }}" {% if e.id|stringformat:"s" == selected_exam_id %}selected{% endif %}>{{ e.exam_name }} ({{ e.academic_year }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-generate-report">
+                Generate Report
+            </button>
+        </form>
     </div>
     {% else %}
-    <!-- Stage 2: Data Stage -->
+    <!-- Stage 2: Data Stage (Hierarchical View) -->
+    <div class="reports-header-flex"
+        style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h1 class="pages-main-head">Invigilation Report</h1>
+        {% if base_template == 'core/base_admin.html' %}
+        <a href="{% url 'operations:report' %}" class="btn-back-report">
+            <img src="https://img.icons8.com/ios-filled/16/1e3a8a/left.png" alt="back"> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
+
     <div class="report-header-results">
         <div>
-            <h1 class="pages-main-head">Duty Roster</h1>
-            <p class="setting-paragraph">{{ exam.exam_name }} ({{ exam.academic_year }})</p>
+            <h2 style="margin: 0; font-size: 1.4rem; color: #1e3a8a;">{{ exam.exam_name }}</h2>
+                Academic Year: {{ exam.academic_year }} | Duration: {{ exam.start_date|date:"M d, Y" }} - {{ exam.end_date|date:"M d, Y" }}
         </div>
         <div style="display: flex; gap: 10px;">
             <a href="{% url 'operations:report_invigilation' %}" class="modify-btn ajax-report-link">
-                <img src="https://img.icons8.com/ios/16/1e3a8a/settings.png" alt="modify"> Modify Filters
+                <img src="https://img.icons8.com/ios/16/ffffff/settings.png" alt="modify"> Change Exam
             </a>
-            <a href="javascript:window.print()" class="btn-report btn-view-report" style="width: auto; padding: 10px 20px;">
-                <img src="https://img.icons8.com/ios-filled/20/ffffff/print.png" alt="Print"> Print
-            </a>
+            <button onclick="window.print()" class="print-btn-report">
+                <img src="https://img.icons8.com/ios-filled/16/ffffff/print.png" alt="print"> Print Roster
+            </button>
         </div>
     </div>
 
-    <div class="table-container">
-        <table class="dashboard-popup-table">
-            <thead>
-                <tr>
-                    <th>Date & Slot</th>
-                    <th>Room</th>
-                    <th>Faculty ID</th>
-                    <th>Faculty Name</th>
-                    <th>Department</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in page_obj %}
-                <tr>
-                    <td>{{ item.exam_slot.exam_date|date:"d M Y" }} ({{ item.exam_slot.slot_code }})</td>
-                    <td><strong>{{ item.room.room_code }}</strong></td>
-                    <td>{{ item.faculty.faculty_id }}</td>
-                    <td>{{ item.faculty.faculty_name }}</td>
-                    <td>{{ item.faculty.dept.dept_name|default:"N/A" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" style="padding: 40px; text-align: center; color: #94a3b8;">No invigilation duties found.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <div class="slot-cards-container">
+        {% for slot_group in grouped_slots %}
+        <div class="slot-card" id="card_{{ slot_group.slot.id }}">
+            <div class="slot-header" onclick="toggleCard('{{ slot_group.slot.id }}')">
+                <div class="slot-info-main">
+                    <div class="slot-date-badge">
+                        <span class="day">{{ slot_group.slot.exam_date|date:"d" }}</span>
+                        <span class="month">{{ slot_group.slot.exam_date|date:"M" }}</span>
+                    </div>
+                    <div class="slot-details-text">
+                        <h3 class="slot-title">{{ slot_group.slot.slot_code }} | {{ slot_group.slot.start_time|date:"H:i" }} - {{ slot_group.slot.end_time|date:"H:i" }}</h3>
+                        <p class="slot-meta">
+                            <span class="meta-item"><img src="https://img.icons8.com/ios-filled/12/64748b/classroom.png"
+                                    alt="room"> {{ slot_group.rooms|length }} Rooms</span>
+                            <span class="meta-item"><img src="https://img.icons8.com/ios-filled/12/64748b/teacher.png"
+                                    alt="fac"> {{ slot_group.total_faculty }} Assigned Faculty</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="slot-header-right">
+                    {% if slot_group.status == "ONGOING" %}
+                    <div class="status-indicator-badge status-badge-ongoing">
+                        <span class="flicker-dot flicker-dot-ongoing"></span> LIVE
+                    </div>
+                    {% elif slot_group.status == "COMPLETED" %}
+                    <div class="status-indicator-badge status-badge-completed">
+                        COMPLETED
+                    </div>
+                    {% else %}
+                    <div class="status-indicator-badge status-badge-upcoming">
+                        UPCOMING
+                    </div>
+                    {% endif %}
+                    <div class="dropdown-icon">▼</div>
+                </div>
+            </div>
 
-    <!-- Pagination -->
-    {% if page_obj.paginator.num_pages > 1 %}
-    <div class="pagination-container" style="margin-top: 20px; display: flex; justify-content: center;">
-        <div class="pagination">
-            {% if page_obj.has_previous %}
-            <a href="?exam_id={{ selected_exam_id }}&page=1" class="page-link">&laquo; First</a>
-            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.previous_page_number }}" class="page-link">Previous</a>
-            {% endif %}
-
-            <span class="current-page">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-
-            {% if page_obj.has_next %}
-            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.next_page_number }}" class="page-link">Next</a>
-            <a href="?exam_id={{ selected_exam_id }}&page={{ page_obj.paginator.num_pages }}" class="page-link">Last &raquo;</a>
-            {% endif %}
+            <div class="slot-body">
+                {% if slot_group.rooms %}
+                <div class="table-container no-shadow">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 50px; text-align: center;">#</th>
+                                <th style="width: 120px;">Room ID</th>
+                                <th style="width: 100px;">Block</th>
+                                <th>Assigned Invigilators (IDs & Names)</th>
+                                <th style="width: 100px; text-align: center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for room_data in slot_group.rooms %}
+                            <tr>
+                                <td style="text-align: center; color: #64748b; font-weight: 600;">{{ forloop.counter }}
+                                </td>
+                                <td style="font-weight: 700; color: #1e3a8a; vertical-align: top;">
+                                    {{ room_data.room.room_code }}
+                                </td>
+                                <td style="font-weight: 600; color: #475569; vertical-align: top;">
+                                    {{ room_data.room.block|default:"-" }}
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                        {% for fac in room_data.faculties %}
+                                        <div
+                                            style="background: #f1f5f9; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px;">
+                                            <span
+                                                style="font-family: monospace; font-weight: 700; color: #1e293b; background: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; border: 1px solid #cbd5e1;">
+                                                {{ fac.faculty_id }}
+                                            </span>
+                                            <span style="font-weight: 600; color: #1e3a8a; font-size: 0.9rem;">{{ fac.faculty_name }}</span>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td style="text-align: center; vertical-align: top;">
+                                    <span class="status-badge"
+                                        style="background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe;">ASSIGNED</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div
+                    style="padding: 30px; text-align: center; color: #94a3b8; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                    No duties allocated for this slot.
+                </div>
+                {% endif %}
+            </div>
         </div>
+        {% endfor %}
     </div>
-    {% endif %}
+
     {% endif %}
 </div>
 
 <style>
-    .pagination { display: flex; gap: 5px; align-items: center; }
-    .page-link {
-        padding: 5px 12px;
-        background: #f1f5f9;
-        border-radius: 4px;
-        text-decoration: none;
-        color: #1e3a8a;
-        font-weight: 500;
-        font-size: 0.9rem;
+    /* Inlined additions for the Invigilation report */
+    /* Interactive States */
+    .slot-body {
+        display: none;
     }
-    .current-page { font-size: 0.9rem; font-weight: 600; color: #64748b; margin: 0 10px; }
-    
+
+    .slot-card.expanded .slot-body {
+        display: block !important;
+    }
+
+    .slot-card.expanded .dropdown-icon {
+        transform: rotate(180deg);
+    }
+
+    .room-header {
+        border-bottom: none;
+    }
+
+    .room-group.expanded .room-header {
+        border-bottom: 1px solid #e2e8f0;
+    }
+
     @media print {
-        .hamburger, #sidebar, .controls, .btn-view-report, .report-navigation-bar, .modify-btn, .pagination-container {
+
+        .hamburger,
+        #sidebar,
+        .controls,
+        .btn-view-report,
+        .report-navigation-bar,
+        .modify-btn,
+        .pagination-container,
+        .btn-back-report {
             display: none !important;
         }
-        .pages-main { margin-left: 0 !important; padding: 0 !important; }
-        .table-container { box-shadow: none !important; border: 1px solid #e2e8f0; }
+
+        .pages-main {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+
+        .slot-card {
+            break-inside: avoid;
+            border: 1px solid #e2e8f0 !important;
+            margin-bottom: 20px;
+            box-shadow: none !important;
+        }
+
+        .slot-body {
+            display: block !important;
+            padding: 10px !important;
+        }
+
+        .room-content {
+            display: block !important;
+            padding: 5px !important;
+        }
+
+        .room-group {
+            border: 1px solid #cbd5e1 !important;
+            margin-bottom: 10px;
+            break-inside: avoid;
+        }
+
+        .faculty-cards-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 10px !important;
+        }
     }
 </style>
+
+<script>
+    function toggleCard(grouperId) {
+        const card = document.getElementById('card_' + grouperId);
+        if (card) card.classList.toggle('expanded');
+    }
+</script>
 {% endblock %}

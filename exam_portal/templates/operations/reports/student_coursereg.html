@@ -1,29 +1,53 @@
-{% extends base_template|default:"core/base_admin.html" %}
+{% extends base_template %}
 {% load static %}
 
 {% block title %}Student Registration Report | Reports{% endblock %}
 
 {% block content %}
-<div class="pages-main">
+<div class="{% if base_template == 'core/base_admin.html' %}pages-main{% endif %}">
     {% if not acd_year %}
     <!-- Stage 1: Selection Stage -->
+    <div class="reports-header-flex"
+        style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h1 class="pages-main-head">Enrolment Summary</h1>
+        {% if base_template == 'core/base_admin.html' %}
+        <a href="{% url 'operations:report' %}" class="btn-back-report">
+            <img src="https://img.icons8.com/ios-filled/16/1e3a8a/left.png" alt="back"> Back to Dashboard
+        </a>
+        {% endif %}
+    </div>
     <div class="report-selection-stage">
         <img src="https://img.icons8.com/ios/100/2563eb/student-male.png" alt="Select" style="margin-bottom: 20px;">
-        <h1 class="pages-main-head">Enrolment Summary</h1>
-        <p class="setting-paragraph" style="margin-bottom: 30px;">Select an academic year to view registration analytics.</p>
-        
+        <p class="setting-paragraph" style="margin-bottom: 30px;">Select an academic year and regulation to view
+            registration analytics.</p>
+
         <div class="filter-card">
             <form method="get" action=".">
                 <div class="filter-group" style="margin-bottom: 20px; text-align: left;">
-                    <label for="acd_year" style="display: block; margin-bottom: 8px; font-weight: 600;">Academic Year:</label>
-                    <select name="acd_year" id="acd_year" style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+                    <label for="acd_year" style="display: block; margin-bottom: 8px; font-weight: 600;">Academic
+                        Year:</label>
+                    <select name="acd_year" id="acd_year"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;" required>
                         <option value="">-- Choose Year --</option>
                         {% for year in acd_years %}
                         <option value="{{ year }}" {% if year == acd_year %}selected{% endif %}>{{ year }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="btn-report btn-view-report" style="width: 100%; justify-content: center; padding: 14px;">
+                <div class="filter-group" style="margin-bottom: 20px; text-align: left;">
+                    <label for="regulation"
+                        style="display: block; margin-bottom: 8px; font-weight: 600;">Regulation:</label>
+                    <select name="regulation" id="regulation"
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 1.5px solid #cbd5e1;" required>
+                        <option value="ALL" {% if regulation == 'ALL' or not regulation %}selected{% endif %}>-- All
+                            Regulations --</option>
+                        {% for reg in regulations %}
+                        <option value="{{ reg }}" {% if reg == regulation %}selected{% endif %}>{{ reg }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-report btn-view-report"
+                    style="width: 100%; justify-content: center; padding: 14px;">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> Generate Report
                 </button>
             </form>
@@ -31,16 +55,24 @@
     </div>
     {% else %}
     <!-- Stage 2: Data Stage -->
+    <div class="reports-header-flex" style="margin-bottom: 20px;">
+        <h1 class="pages-main-head">Enrolment Summary</h1>
+    </div>
     <div class="report-header-results">
         <div>
-            <h1 class="pages-main-head">Enrolment Summary</h1>
-            <p class="setting-paragraph">Academic Year: {{ acd_year }}</p>
+            <p class="setting-paragraph">Academic Year: {{ acd_year }} | Regulation: {{ regulation|default:"All" }}</p>
         </div>
         <div style="display: flex; gap: 10px;">
+            {% if base_template == 'core/base_admin.html' %}
+            <a href="{% url 'operations:report' %}" class="btn-back-report">
+                <img src="https://img.icons8.com/ios-filled/16/1e3a8a/left.png" alt="back"> Back to Dashboard
+            </a>
+            {% endif %}
             <a href="{% url 'operations:report_student_coursereg' %}" class="modify-btn ajax-report-link">
                 <img src="https://img.icons8.com/ios/16/1e3a8a/settings.png" alt="modify"> Modify Filters
             </a>
-            <a href="javascript:window.print()" class="btn-report btn-view-report" style="width: auto; padding: 10px 20px;">
+            <a href="javascript:window.print()" class="btn-report btn-view-report"
+                style="width: auto; padding: 10px 20px;">
                 <img src="https://img.icons8.com/ios-filled/20/ffffff/print.png" alt="Print"> Print
             </a>
         </div>
@@ -50,28 +82,36 @@
         <table class="dashboard-popup-table">
             <thead>
                 <tr>
-                    <th style="width: 20%;">Course Code</th>
+                    <th style="width: 15%;">Course Code</th>
                     <th style="width: 35%;">Course Name</th>
-                    <th style="width: 25%;">Registration Type</th>
-                    <th style="width: 20%;">Student Count</th>
+                    <th style="width: 20%;">Registration Type</th>
+                    <th style="width: 15%;">Regulation</th>
+                    <th style="width: 15%;">Student Count</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in summary %}
                 <tr>
-                    <td><strong>{{ item.course__course_code }}</strong></td>
-                    <td>{{ item.course__course_name }}</td>
-                    <td>
-                        <span class="status-badge" style="
-                            {% if item.registration_type == 'REGULAR' %}background: #e0f2fe; color: #0369a1;{% else %}background: #fef2f2; color: #b91c1c;{% endif %}">
+                    <td style="width: 15%;"><strong>{{ item.course__course_code }}</strong></td>
+                    <td style="width: 35%;">{{ item.course__course_name }}</td>
+                    <td style="width: 20%;">
+                        {% if item.registration_type == 'REGULAR' %}
+                        <span class="status-badge" style="background: #e0f2fe; color: #0369a1;">
                             {{ item.registration_type }}
                         </span>
+                        {% else %}
+                        <span class="status-badge" style="background: #fef2f2; color: #b91c1c;">
+                            {{ item.registration_type }}
+                        </span>
+                        {% endif %}
                     </td>
-                    <td style="font-weight: 700; color: #1e3a8a;">{{ item.count }}</td>
+                    <td style="width: 15%;"><span class="status-badge" style="background: #f1f5f9; color: #475569;">{{ item.student__batch__batch_code }}</span></td>
+                    <td style="width: 15%; font-weight: 700; color: #1e3a8a;">{{ item.count }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 40px; color: #64748b;">No registration data found.</td>
+                    <td colspan="5" style="text-align: center; padding: 40px; color: #64748b;">No registration data
+                        found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -88,12 +128,27 @@
         font-weight: 700;
         display: inline-block;
     }
+
     @media print {
-        .hamburger, #sidebar, .controls, .btn-view-report, .report-navigation-bar, .modify-btn {
+
+        .hamburger,
+        #sidebar,
+        .controls,
+        .btn-view-report,
+        .report-navigation-bar,
+        .modify-btn {
             display: none !important;
         }
-        .pages-main { margin-left: 0 !important; padding: 0 !important; }
-        .table-container { box-shadow: none !important; border: 1px solid #e2e8f0; }
+
+        .pages-main {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+
+        .table-container {
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0;
+        }
     }
 </style>
-{% endblock %}
+{% endblock %} <tr>

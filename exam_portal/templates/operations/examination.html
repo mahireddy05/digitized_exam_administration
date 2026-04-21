@@ -101,7 +101,7 @@
         <a href="#" class="publish-exam-btn action-link publish-exam-btn-style" id="publishExamBtn">Publish
             Exam</a>
     </div>
-    
+
     <!-- Edit Examination Modal (Premium Aurora v3.0) -->
     <div id="editExamModal" class="global-modal-backdrop">
         <div class="global-modal-content medium">
@@ -119,7 +119,8 @@
                     <div class="form-grid-2">
                         <div class="form-group">
                             <label for="edit_examname" class="form-label">Exam Name</label>
-                            <input type="text" id="edit_examname" name="examname" class="form-control" placeholder="e.g. Final Sem Oct-2025" required>
+                            <input type="text" id="edit_examname" name="examname" class="form-control"
+                                placeholder="e.g. Final Sem Oct-2025" required>
                         </div>
                         <div class="form-group">
                             <label for="edit_academic_year" class="form-label">Academic Year</label>
@@ -149,7 +150,8 @@
                 </div>
                 <div class="modal-footer-std">
                     <button type="button" id="cancelEditExamBtn" class="btn-std btn-secondary">Cancel</button>
-                    <button type="submit" class="btn-std btn-primary" style="padding-left: 30px; padding-right: 30px;">Save Changes</button>
+                    <button type="submit" class="btn-std btn-primary"
+                        style="padding-left: 30px; padding-right: 30px;">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -166,10 +168,14 @@
                 <button type="button" class="close-global-modal close-modal" id="closeDeleteExamModal">&times;</button>
             </div>
             <div class="modal-body-std" style="padding: 25px;">
-                <div id="deleteExamWarning" class="warning-text-red" style="font-weight: 700; margin-bottom: 15px; font-size: 1.1rem;"></div>
-                <div id="deleteExamDetails" style="margin-bottom: 20px; color: #475569; font-size: 0.95rem; line-height: 1.5;"></div>
-                <p style="color: #64748b; font-size: 0.9rem; background: #fff1f2; padding: 12px; border-radius: 8px; border-left: 4px solid #f43f5e;">
-                    <strong>Warning:</strong> This action cannot be undone. All data related to this examination will be permanently removed.
+                <div id="deleteExamWarning" class="warning-text-red"
+                    style="font-weight: 700; margin-bottom: 15px; font-size: 1.1rem;"></div>
+                <div id="deleteExamDetails"
+                    style="margin-bottom: 20px; color: #475569; font-size: 0.95rem; line-height: 1.5;"></div>
+                <p
+                    style="color: #64748b; font-size: 0.9rem; background: #fff1f2; padding: 12px; border-radius: 8px; border-left: 4px solid #f43f5e;">
+                    <strong>Warning:</strong> This action cannot be undone. All data related to this examination will be
+                    permanently removed.
                 </p>
                 <form id="deleteExamForm">
                     {% csrf_token %}
@@ -178,7 +184,8 @@
             </div>
             <div class="modal-footer-std">
                 <button type="button" id="cancelDeleteExamBtn" class="btn-std btn-secondary">Keep Exam</button>
-                <a href="#" id="confirmDeleteExamLink" class="btn-std btn-danger" style="text-decoration: none;">Delete Permanently</a>
+                <a href="#" id="confirmDeleteExamLink" class="btn-std btn-danger" style="text-decoration: none;">Delete
+                    Permanently</a>
             </div>
         </div>
     </div>
@@ -195,7 +202,8 @@
         </div>
         <div class="modal-body-std text-center">
             <div id="publishModalIcon" style="font-size: 50px; margin-bottom: 20px;">📢</div>
-            <p id="publishModalText" style="font-size: 1.1rem; color: #334155; line-height: 1.5;">Are you sure you want to publish this examination? This will make the schedule visible to all students and faculty.</p>
+            <p id="publishModalText" style="font-size: 1.1rem; color: #334155; line-height: 1.5;">Are you sure you want
+                to publish this examination? This will make the schedule visible to all students and faculty.</p>
             <input type="hidden" id="publishExamId">
             <input type="hidden" id="publishActionType">
         </div>
@@ -215,11 +223,15 @@
         </div>
         <div class="modal-body-std">
             <div id="lockModalIcon" style="font-size: 50px; margin-bottom: 20px; text-align: center;">🔒</div>
-            <p id="lockModalText" style="font-size: 1.1rem; color: #334155; line-height: 1.5; text-align: center;">Are you sure you want to perform this action?</p>
-            
+            <p id="lockModalText" style="font-size: 1.1rem; color: #334155; line-height: 1.5; text-align: center;">Are
+                you sure you want to perform this action?</p>
+
             <div id="passwordFieldContainer" style="display: none; margin-top: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569;">Administrator Password:</label>
-                <input type="password" id="lockAdminPassword" class="form-input" placeholder="Enter password to confirm unlock" style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #475569;">Administrator
+                    Password:</label>
+                <input type="password" id="lockAdminPassword" class="form-input"
+                    placeholder="Enter password to confirm unlock"
+                    style="width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;">
             </div>
 
             <input type="hidden" id="lockModalExamId">
@@ -237,12 +249,15 @@
     <div class="global-modal-content narrow">
         <div class="modal-header-std" style="background: #fff1f2; border-bottom-color: #fecaca;">
             <h2 style="color: #be123c;">🔒 Examination Locked</h2>
-            <button type="button" class="close-global-modal" style="color: #be123c; background: rgba(190, 18, 60, 0.1);">&times;</button>
+            <button type="button" class="close-global-modal"
+                style="color: #be123c; background: rgba(190, 18, 60, 0.1);">&times;</button>
         </div>
         <div class="modal-body-std text-center">
             <div style="font-size: 50px; margin-bottom: 20px;">🚫</div>
-            <p id="lockAlertText" style="font-size: 1.1rem; color: #334155; line-height: 1.5;">This examination is locked. Please contact the <strong>Database Administrator</strong> for any required changes.</p>
-            <div id="lockAuditInfo" style="margin-top: 15px; font-size: 0.9rem; color: #64748b; font-style: italic;"></div>
+            <p id="lockAlertText" style="font-size: 1.1rem; color: #334155; line-height: 1.5;">This examination is
+                locked. Please contact the <strong>Database Administrator</strong> for any required changes.</p>
+            <div id="lockAuditInfo" style="margin-top: 15px; font-size: 0.9rem; color: #64748b; font-style: italic;">
+            </div>
         </div>
         <div class="modal-footer-std">
             <button type="button" class="btn-std btn-secondary close-global-modal" style="width: 100%;">Close</button>
