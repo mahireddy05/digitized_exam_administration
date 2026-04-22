@@ -1,0 +1,201 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+{% load seating_extras %}
+
+{% block title %}Faculty Load Analysis | Admin Portal{% endblock %}
+
+{% block content %}
+<div class="pages-main">
+    <div class="advanced-dashboard-container">
+        <!-- Header Section -->
+        <div class="reports-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <a href="{% url 'operations:report' %}" class="control-btn">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/left.png" alt="back"> Back
+                </a>
+                <div>
+                    <h1 class="pages-main-head" style="margin: 0; font-size: 1.5rem;">Faculty Load Analysis</h1>
+                    <p style="color: #64748b; margin-top: 2px; font-size: 0.9rem;">Comprehensive workload and duty distribution report.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <form method="get" id="filter-form" style="display: flex; gap: 10px; align-items: center;">
+                    <div style="text-align: right;">
+                        <label style="font-size: 0.75rem; color: #64748b; display: block; font-weight: 700;">FILTER BY EXAM</label>
+                        <select name="exam_id" onchange="this.form.submit()" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; color: #1e3a8a; background: #f8fafc; outline: none;">
+                            <option value="">All Examinations</option>
+                            {% for exam in exams %}
+                                <option value="{{ exam.id }}" {% if selected_exam_id == exam.id|stringformat:"s" %}selected{% endif %}>{{ exam.exam_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+                <button class="control-btn" onclick="window.print()">
+                    <img src="https://img.icons8.com/ios-filled/14/ffffff/print.png" alt="print"> Print
+                </button>
+            </div>
+        </div>
+
+        <!-- Data Table Section -->
+        <div class="table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fac ID</th>
+                        <th>Name</th>
+                        <th>Designation</th>
+                        <th>Department</th>
+                        <th style="text-align: center;">Assigned Duties</th>
+                        <th style="text-align: center;">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for faculty in faculties %}
+                    <tr class="faculty-row">
+                        <td style="font-weight: 600;">{{ faculty.faculty_id }}</td>
+                        <td>{{ faculty.faculty_name }}</td>
+                        <td>{{ faculty.designation|default:"N/A" }}</td>
+                        <td>{{ faculty.dept.dept_name|default:"N/A" }}</td>
+                        <td style="text-align: center;">
+                            {% if faculty.assigned_duties > 5 %}
+                            <span style="background: #fff1f2; color: #be123c; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">
+                                {{ faculty.assigned_duties }} Duties
+                            </span>
+                            {% else %}
+                            <span style="background: #eff6ff; color: #1e40af; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">
+                                {{ faculty.assigned_duties }} Duties
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            <button class="toggle-details" data-target="details-{{ faculty.id }}" style="background: none; border: none; cursor: pointer; padding: 5px;">
+                                <img src="https://img.icons8.com/ios-filled/20/2563eb/expand-arrow.png" alt="expand" style="transition: transform 0.3s; margin-right: 0;">
+                            </button>
+                        </td>
+                    </tr>
+                    <tr id="details-{{ faculty.id }}" style="display: none; background: #fcfdfe;">
+                        <td colspan="6" style="padding: 0;">
+                            <div style="padding: 20px; border-left: 4px solid #2563eb; margin: 10px 20px; background: #fff; border-radius: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+                                <h4 style="margin: 0 0 15px 0; color: #1e3a8a; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px;">Detailed Invigilation Schedule</h4>
+                                
+                                {% with duties=faculty_duties|get_item:faculty.faculty_id %}
+                                    {% if duties %}
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                                        {% for duty in duties %}
+                                        <div class="duty-detail-card" style="padding: 0; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; transition: all 0.3s ease;">
+                                            <!-- Card Header with Accent -->
+                                            <div style="height: 4px; background: linear-gradient(90deg, #2563eb, #3b82f6);"></div>
+                                            <div style="padding: 15px;">
+                                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                                                    <div style="font-weight: 800; color: #1e3a8a; font-size: 1rem; line-height: 1.2;">{{ duty.exam }}</div>
+                                                    {% if duty.status == 'Completed' %}
+                                                    <span style="font-size: 0.65rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; background: #f1f5f9; color: #64748b;">
+                                                        {{ duty.status }}
+                                                    </span>
+                                                    {% elif duty.status == 'Ongoing' %}
+                                                    <span style="font-size: 0.65rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; background: #fffbeb; color: #b45309; border: 1px solid #fef3c7;">
+                                                        {{ duty.status }}
+                                                    </span>
+                                                    {% else %}
+                                                    <span style="font-size: 0.65rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; background: #ecfdf5; color: #047857; border: 1px solid #d1fae5;">
+                                                        {{ duty.status }}
+                                                    </span>
+                                                    {% endif %}
+
+                                                </div>
+                                                
+                                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                                    <!-- Date & Time Row -->
+                                                    <div style="display: flex; gap: 15px; align-items: center;">
+                                                        <div style="display: flex; align-items: center; gap: 8px; color: #475569; font-size: 0.85rem; background: #f8fafc; padding: 6px 10px; border-radius: 6px; flex: 1;">
+                                                            <img src="https://img.icons8.com/ios-filled/14/64748b/calendar.png" alt="date" style="margin: 0;">
+                                                            <span style="font-weight: 500;">{{ duty.date }}</span>
+                                                        </div>
+                                                        <div style="display: flex; align-items: center; gap: 8px; color: #475569; font-size: 0.85rem; background: #f8fafc; padding: 6px 10px; border-radius: 6px; flex: 1;">
+                                                            <img src="https://img.icons8.com/ios-filled/14/64748b/clock.png" alt="time" style="margin: 0;">
+                                                            <span style="font-weight: 500;">{{ duty.time }}</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Room Row -->
+                                                    <div style="display: flex; align-items: center; justify-content: space-between; background: #eff6ff; padding: 10px 15px; border-radius: 8px; border: 1px dashed #bfdbfe;">
+                                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                                            <div style="background: #2563eb; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                                                <img src="https://img.icons8.com/ios-filled/16/ffffff/room.png" alt="room" style="margin: 0;">
+                                                            </div>
+                                                            <div>
+                                                                <div style="font-size: 0.7rem; color: #1e40af; font-weight: 700; text-transform: uppercase;">Venue</div>
+                                                                <div style="font-size: 1rem; color: #1e3a8a; font-weight: 800;">
+                                                                    Room {{ duty.room }} {% if duty.block %}<span style="color: #3b82f6; font-size: 0.85rem; font-weight: 600;">({{ duty.block }})</span>{% endif %}
+                                                                </div>
+                                                            </div>
+
+                                                        </div>
+                                                        <img src="https://img.icons8.com/ios-filled/20/bfdbfe/arrow.png" alt="arrow" style="margin: 0; opacity: 0.5;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    {% else %}
+                                    <p style="color: #94a3b8; font-style: italic; margin: 0;">No duty details found for the selected period.</p>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="padding: 40px; text-align: center; color: #64748b;">No active faculty found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.toggle-details').forEach(button => {
+            button.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const targetRow = document.getElementById(targetId);
+                if (!targetRow) return;
+                
+                const icon = this.querySelector('img');
+                if (targetRow.style.display === 'none') {
+                    targetRow.style.display = 'table-row';
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    targetRow.style.display = 'none';
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    @media print {
+        .control-btn, #filter-form, .toggle-details { display: none !important; }
+        .table { box-shadow: none !important; border: 1px solid #e2e8f0; }
+        [id^="details-"] { display: table-row !important; }
+    }
+    .faculty-row:hover {
+        background: #f8fafc;
+    }
+    .duty-detail-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important;
+        border-color: #2563eb !important;
+    }
+    .table table th {
+
+        background-color: #1E3A5F !important;
+        color: white !important;
+    }
+</style>
+{% endblock %}

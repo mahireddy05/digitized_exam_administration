@@ -1,0 +1,108 @@
+{% extends "core/base_admin.html" %}
+{% load static %}
+
+{% block title %}Examination Overview | Admin Portal{% endblock %}
+
+{% block content %}
+<div class="pages-main">
+    <div class="advanced-dashboard-container">
+        <div class="reports-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <a href="{% url 'operations:report' %}" class="control-btn" style="background: #f1f5f9; color: #1e3a8a; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                    <img src="https://img.icons8.com/ios-filled/16/1e3a8a/left.png" alt="back"> Back
+                </a>
+                <div>
+                    <h1 class="pages-main-head" style="margin: 0; font-size: 1.5rem;">Examination Overview</h1>
+                    <p style="color: #64748b; margin-top: 2px; font-size: 0.9rem;">High-level system metrics and status distribution.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <button class="control-btn" style="background: #2563eb;" onclick="window.print()">
+                    <img src="https://img.icons8.com/ios-filled/14/ffffff/print.png" alt="print"> Print
+                </button>
+            </div>
+        </div>
+
+        <div class="kpi-grid">
+
+            <div class="kpi-card">
+                <img src="https://img.icons8.com/ios-filled/40/2563eb/test-results.png" class="kpi-icon">
+                <div class="kpi-value">{{ total_exams }}</div>
+                <div class="kpi-label">Total Exams</div>
+            </div>
+            <div class="kpi-card">
+                <img src="https://img.icons8.com/ios-filled/40/2563eb/student-male.png" class="kpi-icon">
+                <div class="kpi-value">{{ total_students }}</div>
+                <div class="kpi-label">Total Students</div>
+            </div>
+            <div class="kpi-card">
+                <img src="https://img.icons8.com/ios-filled/40/2563eb/room.png" class="kpi-icon">
+                <div class="kpi-value">{{ total_rooms }}</div>
+                <div class="kpi-label">Total Rooms</div>
+            </div>
+            <div class="kpi-card">
+                <img src="https://img.icons8.com/ios-filled/40/2563eb/teacher.png" class="kpi-icon">
+                <div class="kpi-value">{{ total_faculty }}</div>
+                <div class="kpi-label">Total Faculty</div>
+            </div>
+        </div>
+
+        <div class="report-visual-row">
+            <div class="chart-container">
+                <div class="chart-title">Exam Status Distribution</div>
+                <div class="chart-canvas-wrapper">
+                    <canvas id="statusDonut"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Daily Exam Trend</div>
+                <div class="chart-canvas-wrapper">
+                    <canvas id="examsPerDayBar"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const statusData = JSON.parse('{{ status_dist_json|safe }}');
+            const dailyData = JSON.parse('{{ exams_per_day_json|safe }}');
+
+            if (document.getElementById('statusDonut')) {
+                new Chart(document.getElementById('statusDonut'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Scheduled', 'Ongoing', 'Completed'],
+                        datasets: [{
+                            data: [statusData.scheduled || 0, statusData.ongoing || 0, statusData.completed || 0],
+                            backgroundColor: ['#2563eb', '#f59e0b', '#10b981']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false }
+                });
+            }
+
+            if (document.getElementById('examsPerDayBar')) {
+                new Chart(document.getElementById('examsPerDayBar'), {
+                    type: 'bar',
+                    data: {
+                        labels: dailyData.map(i => i.exam_date),
+                        datasets: [{
+                            label: 'Exams',
+                            data: dailyData.map(i => i.count),
+                            backgroundColor: '#2563eb'
+                        }]
+                    },
+                    options: { maintainAspectRatio: false }
+                });
+            }
+        } catch (e) {
+            console.error("Chart Error:", e);
+        }
+    });
+</script>
+
+{% endblock %}

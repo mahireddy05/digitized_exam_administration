@@ -14,18 +14,6 @@
         <h1 class="pages-main-head">Reports & Analytics</h1>
     </div>
 
-    <!-- AJAX Report Content Area (Hidden by default) -->
-    <div id="ajax-report-container" class="d-none">
-        <div class="report-navigation-bar" style="margin-bottom: 20px;">
-            <button id="back-to-reports" class="control-btn" style="background: #64748b; margin-bottom: 15px;">
-                <img src="https://img.icons8.com/ios-filled/16/ffffff/left.png" alt="back"> Back to Reports
-            </button>
-        </div>
-        <div id="report-view-content">
-            <!-- Dynamic content loaded here -->
-        </div>
-    </div>
-
     <div class="settings-container" id="reports-grid">
         <!-- Examination Scheduling -->
         <div class="settings-card">
@@ -36,8 +24,24 @@
             <h2 class="settings-card-head">Exam Schedule</h2>
             <p class="setting-paragraph">Master timetable of all exam slots, dates, and course distributions.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_timetable' %}" class="btn-report btn-view-report ajax-report-link">
+                <a href="{% url 'operations:report_timetable' %}" class="btn-report btn-view-report">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Table
+                </a>
+            </div>
+        </div>
+
+        <!-- Exam Overview Dashboard -->
+        <div class="settings-card">
+            <div class="category-label">Analytics</div>
+            <div class="report-card-icon">
+                <img src="https://img.icons8.com/ios-filled/50/2563eb/dashboard.png" alt="Overview">
+            </div>
+            <h2 class="settings-card-head">Advanced Dashboard</h2>
+            <p class="setting-paragraph">High-level insights into exam status, student distribution, and system metrics.
+            </p>
+            <div class="report-actions">
+                <a href="{% url 'operations:report_exam_overview' %}" class="btn-report btn-view-report">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> Open Dashboard
                 </a>
             </div>
         </div>
@@ -51,7 +55,7 @@
             <h2 class="settings-card-head">Attendance Report</h2>
             <p class="setting-paragraph">Status reports of student presence and reconciliation with faculty marks.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_attendance' %}" class="btn-report btn-view-report ajax-report-link">
+                <a href="{% url 'operations:report_attendance' %}" class="btn-report btn-view-report">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Report
                 </a>
             </div>
@@ -67,8 +71,7 @@
             <p class="setting-paragraph">Interactive visualizations of student demographics by department, regulation,
                 and standing.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_student_analysis' %}"
-                    class="btn-report btn-view-report ajax-report-link">
+                <a href="{% url 'operations:report_student_analysis' %}" class="btn-report btn-view-report">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Analytics
                 </a>
             </div>
@@ -83,14 +86,11 @@
             <h2 class="settings-card-head">Enrolment Summary</h2>
             <p class="setting-paragraph">Consolidated view of students registered across all courses and types.</p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_student_coursereg' %}"
-                    class="btn-report btn-view-report ajax-report-link">
+                <a href="{% url 'operations:report_student_coursereg' %}" class="btn-report btn-view-report">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Report
                 </a>
             </div>
         </div>
-
-
 
         <!-- Invigilation -->
         <div class="settings-card">
@@ -102,250 +102,30 @@
             <p class="setting-paragraph">Detailed breakdown of faculty duty assignments by examination slot and room.
             </p>
             <div class="report-actions">
-                <a href="{% url 'operations:report_invigilation' %}"
-                    class="btn-report btn-view-report ajax-report-link">
+                <a href="{% url 'operations:report_invigilation' %}" class="btn-report btn-view-report">
                     <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Roster
+                </a>
+            </div>
+        </div>
+
+        <!-- Faculty Load Analysis -->
+        <div class="settings-card">
+            <div class="category-label">Analytics</div>
+            <div class="report-card-icon">
+                <img src="https://img.icons8.com/ios-filled/50/2563eb/conference.png" alt="Faculty Load">
+            </div>
+            <h2 class="settings-card-head">Faculty Load Analysis</h2>
+            <p class="setting-paragraph">Analyze distribution of duties and identify faculty workload across exams.</p>
+            <div class="report-actions">
+                <a href="{% url 'operations:report_faculty_load' %}" class="btn-report btn-view-report">
+                    <img src="https://img.icons8.com/ios-filled/16/ffffff/visible.png" alt="view"> View Analysis
                 </a>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const grid = document.getElementById('reports-grid');
-        const container = document.getElementById('ajax-report-container');
-        const contentArea = document.getElementById('report-view-content');
-        const backBtn = document.getElementById('back-to-reports');
 
-        const loaderHTML = `
-        <div class="loader-container" style="display: flex; flex-direction: column; align-items: center; padding: 100px 0;">
-            <div class="premium-loader"></div>
-            <p style="margin-top: 20px; color: #1e3a8a; font-weight: 600;">Generating Report...</p>
-        </div>
-    `;
 
-        function loadReport(url) {
-            grid.style.display = 'none';
-            document.querySelector('.reports-header-flex').classList.add('d-none');
-            container.classList.remove('d-none');
-            contentArea.innerHTML = loaderHTML;
-
-            fetch(url, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                .then(response => response.text())
-                .then(html => {
-                    contentArea.innerHTML = html;
-                    // Execute scripts in loaded content
-                    const scripts = contentArea.querySelectorAll('script');
-                    scripts.forEach(oldScript => {
-                        const newScript = document.createElement('script');
-                        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                        oldScript.parentNode.replaceChild(newScript, oldScript);
-                    });
-                    // Initialize filters inside loaded content
-                    initializeReportFilters();
-                })
-                .catch(err => {
-                    console.error('Report Load Error:', err);
-                    contentArea.innerHTML = `<div class="alert-error">Failed to load report. Please try again.</div>`;
-                });
-        }
-
-        function initializeReportFilters() {
-            // Intercept form submissions inside the report
-            const forms = contentArea.querySelectorAll('form');
-            forms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const formData = new FormData(form);
-                    const params = new URLSearchParams(formData);
-                    const url = form.action + '?' + params.toString();
-                    loadReport(url);
-                    history.pushState({ url: url }, '', url);
-                });
-
-                // Handle auto-submit selects
-                const selects = form.querySelectorAll('select[onchange*="submit"]');
-                selects.forEach(select => {
-                    select.removeAttribute('onchange');
-                    select.addEventListener('change', () => form.dispatchEvent(new Event('submit')));
-                });
-            });
-
-            // Intercept internal AJAX links (e.g., Modify Filters)
-            const internalLinks = contentArea.querySelectorAll('.ajax-report-link');
-            internalLinks.forEach(link => {
-                link.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const url = this.getAttribute('href');
-                    loadReport(url);
-                    history.pushState({ url: url }, '', url);
-                });
-            });
-
-            // Intercept pagination links
-            const paginationLinks = contentArea.querySelectorAll('.pagination a');
-            paginationLinks.forEach(link => {
-                link.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    loadReport(this.href);
-                    history.pushState({ url: this.href }, '', this.href);
-                });
-            });
-        }
-
-        document.querySelectorAll('.ajax-report-link').forEach(link => {
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                const url = this.getAttribute('href');
-                loadReport(url);
-                history.pushState({ url: url }, '', url);
-            });
-        });
-
-        backBtn.addEventListener('click', () => {
-            grid.style.display = 'grid';
-            document.querySelector('.reports-header-flex').classList.remove('d-none');
-            container.classList.add('d-none');
-            history.pushState({}, '', "{% url 'operations:report' %}");
-        });
-
-        window.addEventListener('popstate', function (e) {
-            if (e.state && e.state.url) {
-                loadReport(e.state.url);
-            } else {
-                grid.style.display = 'grid';
-                document.querySelector('.reports-header-flex').classList.remove('d-none');
-                container.classList.add('d-none');
-            }
-        });
-    });
-</script>
-
-<style>
-    .loader-container {
-        min-height: 400px;
-    }
-
-    .premium-loader {
-        width: 60px;
-        height: 60px;
-        border: 5px solid #e2e8f0;
-        border-top-color: #2563eb;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .d-none {
-        display: none !important;
-    }
-
-    /* Report Table Styling Standard */
-    #report-view-content .table-container {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        overflow: auto;
-        /* Enable scrolling */
-        max-height: 70vh;
-        /* Vertical scroll if too many rows */
-    }
-
-    #report-view-content table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-
-    #report-view-content thead th {
-        position: sticky;
-        top: 0;
-        background: #f8fafc;
-        z-index: 10;
-        padding: 15px;
-        text-align: left;
-        font-weight: 600;
-        color: #1e3a8a;
-        border-bottom: 2px solid #e2e8f0;
-    }
-
-    #report-view-content tbody td {
-        padding: 15px;
-        border-bottom: 1px solid #f1f5f9;
-        color: #334155;
-    }
-
-    #report-view-content tbody tr:hover {
-        background: #f8fafc;
-    }
-
-    /* Filter-First Workflow Styles */
-    .report-selection-stage {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 400px;
-        background: #fff;
-        border-radius: 16px;
-        border: 2px dashed #e2e8f0;
-        padding: 40px;
-        text-align: center;
-    }
-
-    .filter-card {
-        background: #f8fafc;
-        padding: 30px;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        width: 100%;
-        max-width: 500px;
-    }
-
-    .report-header-results {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #e2e8f0;
-        padding-bottom: 15px;
-    }
-
-    .modify-btn {
-        background: #f1f5f9;
-        color: #1e3a8a;
-        border: 1px solid #cbd5e1;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-    }
-
-    .modify-btn:hover {
-        background: #e2e8f0;
-    }
-
-    .report-navigation-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-</style>
 
 {% endblock %}

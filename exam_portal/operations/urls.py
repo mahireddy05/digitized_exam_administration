@@ -39,4 +39,12 @@ urlpatterns = [
     path("reports/invigilation/", views.report_invigilation, name="report_invigilation"),
     path("reports/attendance/", views.report_attendance, name="report_attendance"),
     path("reports/student-analysis/", views.report_student_analysis, name="report_student_analysis"),
+    path("reports/faculty-load/", views.report_faculty_load, name="report_faculty_load"),
+    path("reports/exam-overview/", views.report_exam_overview, name="report_exam_overview"),
+    path("ajax/advanced-reports/", ajax.ajax_advanced_reports_data, name="ajax_advanced_reports_data"),
+
+
+
+
+    path("ajax/get-all-exams/", ajax.ajax_get_all_exams, name="ajax_get_all_exams"),
 ]

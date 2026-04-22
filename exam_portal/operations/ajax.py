@@ -546,3 +546,55 @@ def ajax_slot_rooms(request):
         'required_room_count': len(estimated_rooms),
         'required_capacity': estimated_capacity
     })
+
+@require_GET
+def ajax_advanced_reports_data(request):
+    """
+    Consolidated API to fetch real data for advanced reports.
+    Supports filtering by exam_id for relevant reports.
+    """
+    report_type = request.GET.get('report_type')
+    exam_id = request.GET.get('exam_id')
+    
+    if not report_type:
+        return JsonResponse({'success': False, 'error': 'Missing report_type'})
+
+    try:
+        data = {}
+        
+        # 6. FACULTY LOAD ANALYSIS (Specific Fields + Exam Filter)
+        if report_type == 'faculty-load':
+            q = Q()
+            if exam_id:
+                q = Q(exam_slot__examination_id=exam_id)
+            
+            # Aggregate duties per faculty
+            load_qs = InvigilationDuty.objects.filter(q).values(
+                'faculty__faculty_id', 'faculty__faculty_name'
+            ).annotate(
+                total_assigned_duties=Count('id')
+            ).order_by('-total_assigned_duties')
+            
+            load_data = []
+            for item in load_qs:
+                load_data.append({
+                    'faculty_id': item['faculty__faculty_id'],
+                    'faculty_name': item['faculty__faculty_name'],
+                    'total_assigned_duties': item['total_assigned_duties']
+                })
+            
+            data = {'load': load_data}
+
+        return JsonResponse({'success': True, 'data': data})
+
+    except Exception as e:
+        logging.error(f"Error in ajax_advanced_reports_data: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_GET
+def ajax_get_all_exams(request):
+    """Returns a list of all examinations for dropdown filters."""
+    exams = Examinations.objects.all().order_by('-start_date')
+    data = [{'id': e.id, 'exam_name': e.exam_name} for e in exams]
+    return JsonResponse({'success': True, 'exams': data})
+

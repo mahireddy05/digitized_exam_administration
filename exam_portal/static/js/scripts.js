@@ -44,16 +44,16 @@ function toggleGlobalModal(modalId, show = true) {
 }
 
 // Global listener for closing any standardized modal
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     // 1. Backdrop click to close (exact match on background)
     if (e.target.classList.contains('global-modal-backdrop')) {
         toggleGlobalModal(e.target.id, false);
     }
-    
+
     // 2. Standardized Closing Triggers (supports nested icons/spans)
-    const isClosingTrigger = 
-        e.target.closest('.close-global-modal') || 
-        e.target.closest('.close-modal') || 
+    const isClosingTrigger =
+        e.target.closest('.close-global-modal') ||
+        e.target.closest('.close-modal') ||
         e.target.closest('.btn-secondary') ||
         (e.target.id && e.target.id.toLowerCase().includes('cancel'));
 
@@ -81,7 +81,7 @@ function showPopupMessage(text, type = 'error') {
     msgDiv.className = 'popup-message popup-' + type;
     msgDiv.innerHTML = text;
     popup.appendChild(msgDiv);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
         msgDiv.classList.add('fade-out');
@@ -102,39 +102,39 @@ function checkExamPublishable() {
         },
         body: JSON.stringify({ exam_id: window.examIdForSlots || '' })
     })
-    .then(resp => resp.json())
-    .then(data => {
-        var publishExamWrapper = document.getElementById('publishExamWrapper');
-        if (publishExamWrapper) {
-            if (data.all_completed && !data.published) {
-                publishExamWrapper.style.display = 'block';
-            } else {
-                publishExamWrapper.style.display = 'none';
+        .then(resp => resp.json())
+        .then(data => {
+            var publishExamWrapper = document.getElementById('publishExamWrapper');
+            if (publishExamWrapper) {
+                if (data.all_completed && !data.published) {
+                    publishExamWrapper.style.display = 'block';
+                } else {
+                    publishExamWrapper.style.display = 'none';
+                }
             }
-        }
-        // Update exam status column
-        const table = document.getElementById('examination-table');
-        if (table) {
-            const tbody = table.querySelector('tbody');
-            if (tbody) {
-                Array.from(tbody.children).forEach(row => {
-                    const statusCell = row.children[7];
-                    if (data.published) {
-                        statusCell.innerHTML = '<span class="exam-status exam-status-published">Published</span>';
-                    } else if (data.all_completed) {
-                        statusCell.innerHTML = '<span class="exam-status exam-status-completed">Ready to Publish</span>';
-                    } else {
-                        statusCell.innerHTML = '<span class="exam-status exam-status-pending">Pending</span>';
-                    }
-                });
+            // Update exam status column
+            const table = document.getElementById('examination-table');
+            if (table) {
+                const tbody = table.querySelector('tbody');
+                if (tbody) {
+                    Array.from(tbody.children).forEach(row => {
+                        const statusCell = row.children[7];
+                        if (data.published) {
+                            statusCell.innerHTML = '<span class="exam-status exam-status-published">Published</span>';
+                        } else if (data.all_completed) {
+                            statusCell.innerHTML = '<span class="exam-status exam-status-completed">Ready to Publish</span>';
+                        } else {
+                            statusCell.innerHTML = '<span class="exam-status exam-status-pending">Pending</span>';
+                        }
+                    });
+                }
             }
-        }
-    });
+        });
 }
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     checkExamPublishable();
 });
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     if (e.target && e.target.id === 'publishExamBtn') {
         e.preventDefault();
         fetch('/ops/ajax/publish_exam/', {
@@ -145,23 +145,23 @@ document.addEventListener('click', function(e) {
             },
             body: JSON.stringify({ exam_id: window.examIdForSlots || '' })
         })
-        .then(resp => resp.json())
-        .then(data => {
-            if (data.success) {
-                showPopupMessage('Exam published successfully.', 'success');
-                checkExamPublishable();
-            } else {
-                showPopupMessage(data.error || 'Failed to publish exam.', 'error');
-            }
-        })
-        .catch(() => {
-            showPopupMessage('Network error. Please try again.', 'error');
-        });
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.success) {
+                    showPopupMessage('Exam published successfully.', 'success');
+                    checkExamPublishable();
+                } else {
+                    showPopupMessage(data.error || 'Failed to publish exam.', 'error');
+                }
+            })
+            .catch(() => {
+                showPopupMessage('Network error. Please try again.', 'error');
+            });
     }
 });
 // Global popup message utility
 // Robust Global Modal Triggers for Examination Table
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     // 1. Edit Exam Trigger
     const editBtn = e.target.closest('.edit-exam-link-trigger');
     if (editBtn) {
@@ -172,7 +172,7 @@ document.addEventListener('click', function(e) {
             document.getElementById('edit_examname').value = row.children[1].textContent.trim();
             document.getElementById('edit_academic_year').value = row.children[2].textContent.trim();
             document.getElementById('edit_semester').value = row.children[3].textContent.trim();
-            
+
             // Dates require YYYY-MM-DD format for input[type="date"]
             const startDate = row.children[4].dataset.raw || '';
             const endDate = row.children[5].dataset.raw || '';
@@ -185,10 +185,10 @@ document.addEventListener('click', function(e) {
             const editStart = document.getElementById('edit_start_date');
             const editEnd = document.getElementById('edit_end_date');
             const today = new Date().toISOString().split('T')[0];
-            
+
             if (editStart) {
                 editStart.min = today;
-                editStart.onchange = function() {
+                editStart.onchange = function () {
                     editEnd.min = this.value;
                     if (editEnd.value && editEnd.value < this.value) editEnd.value = '';
                 };
@@ -227,22 +227,22 @@ document.addEventListener('click', function(e) {
             },
             body: JSON.stringify({ exam_id: examId })
         })
-        .then(resp => resp.json())
-        .then(data => {
-            if (data.success) {
-                showPopupMessage('Examination deleted successfully.', 'success');
-                toggleGlobalModal('deleteExamModal', false);
-                if (typeof fetchExaminations === 'function') fetchExaminations();
-            } else {
-                showPopupMessage(data.error || 'Failed to delete examination.', 'error');
-            }
-        })
-        .catch(() => showPopupMessage('Network error occurred.', 'error'));
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.success) {
+                    showPopupMessage('Examination deleted successfully.', 'success');
+                    toggleGlobalModal('deleteExamModal', false);
+                    if (typeof fetchExaminations === 'function') fetchExaminations();
+                } else {
+                    showPopupMessage(data.error || 'Failed to delete examination.', 'error');
+                }
+            })
+            .catch(() => showPopupMessage('Network error occurred.', 'error'));
     }
 });
 
 // Edit Examination Form Submission (AJAX)
-document.addEventListener('submit', function(e) {
+document.addEventListener('submit', function (e) {
     if (e.target && e.target.id === 'editExamForm') {
         e.preventDefault();
         const form = e.target;
@@ -258,21 +258,21 @@ document.addEventListener('submit', function(e) {
             },
             body: JSON.stringify(data)
         })
-        .then(resp => resp.json())
-        .then(data => {
-            if (data.success) {
-                showPopupMessage('Examination updated successfully.', 'success');
-                toggleGlobalModal('editExamModal', false);
-                if (typeof fetchExaminations === 'function') fetchExaminations();
-            } else {
-                showPopupMessage(data.error || 'Failed to update examination.', 'error');
-            }
-        })
-        .catch(() => showPopupMessage('Network error occurred.', 'error'));
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.success) {
+                    showPopupMessage('Examination updated successfully.', 'success');
+                    toggleGlobalModal('editExamModal', false);
+                    if (typeof fetchExaminations === 'function') fetchExaminations();
+                } else {
+                    showPopupMessage(data.error || 'Failed to update examination.', 'error');
+                }
+            })
+            .catch(() => showPopupMessage('Network error occurred.', 'error'));
     }
 });
 // Robust publish badge click handler for dynamically rendered elements
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     const publishBtn = e.target.closest('.publish-exam-btn');
     if (publishBtn) {
         e.preventDefault();
@@ -285,18 +285,18 @@ document.addEventListener('click', function(e) {
             },
             body: JSON.stringify({ exam_id: examId })
         })
-        .then(resp => resp.json())
-        .then(data => {
-            if (data.success) {
-                showPopupMessage('Exam published successfully.', 'success');
-                fetchExaminations(); // Refresh table
-            } else {
-                showPopupMessage(data.error || 'Failed to publish exam.', 'error');
-            }
-        })
-        .catch(() => {
-            showPopupMessage('Network error. Please try again.', 'error');
-        });
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.success) {
+                    showPopupMessage('Exam published successfully.', 'success');
+                    fetchExaminations(); // Refresh table
+                } else {
+                    showPopupMessage(data.error || 'Failed to publish exam.', 'error');
+                }
+            })
+            .catch(() => {
+                showPopupMessage('Network error. Please try again.', 'error');
+            });
         return;
     }
 });
@@ -324,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // Collect all course codes
     var courseCodes = new Set();
-    seatingTable.querySelectorAll('td.seating-cell').forEach(function(cell) {
+    seatingTable.querySelectorAll('td.seating-cell').forEach(function (cell) {
         var courseDiv = cell.querySelector('.seating-course');
         if (courseDiv && courseDiv.textContent.trim()) {
             courseCodes.add(courseDiv.textContent.trim());
@@ -333,11 +333,11 @@ document.addEventListener('DOMContentLoaded', function () {
     var codeList = Array.from(courseCodes);
     var colorMap = {};
     var palette = getColorPalette(codeList.length);
-    codeList.forEach(function(code, idx) {
+    codeList.forEach(function (code, idx) {
         colorMap[code] = palette[idx];
     });
     // Color cells
-    seatingTable.querySelectorAll('td.seating-cell').forEach(function(cell) {
+    seatingTable.querySelectorAll('td.seating-cell').forEach(function (cell) {
         var courseDiv = cell.querySelector('.seating-course');
         if (courseDiv && courseDiv.textContent.trim()) {
             var code = courseDiv.textContent.trim();
@@ -353,18 +353,18 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 // ========== Room Allocation: Dynamic Allocated Capacity ========== 
 document.addEventListener('DOMContentLoaded', function () {
-        // Prevent allocation if cap not reached
-        // var allocationForm = document.querySelector('.rooms-table-section form');
-        // if (allocationForm) {
-        //     allocationForm.addEventListener('submit', function(e) {
-        //         let required = parseInt(requiredCap.textContent) || 0;
-        //         let allocated = parseInt(allocatedCap.textContent) || 0;
-        //         if (allocated < required) {
-        //             e.preventDefault();
-        //             showPopupMessage('Cannot allocate: Allocated capacity is less than required.<br>Please select more rooms to meet the required capacity.', 'error');
-        //         }
-        //     });
-        // }
+    // Prevent allocation if cap not reached
+    // var allocationForm = document.querySelector('.rooms-table-section form');
+    // if (allocationForm) {
+    //     allocationForm.addEventListener('submit', function(e) {
+    //         let required = parseInt(requiredCap.textContent) || 0;
+    //         let allocated = parseInt(allocatedCap.textContent) || 0;
+    //         if (allocated < required) {
+    //             e.preventDefault();
+    //             showPopupMessage('Cannot allocate: Allocated capacity is less than required.<br>Please select more rooms to meet the required capacity.', 'error');
+    //         }
+    //     });
+    // }
     var requiredRoom = document.getElementById('required-room-display');
     var allocatedRoom = document.getElementById('allocated-room-display');
     var roomCheckboxes = document.querySelectorAll('input[name="selected_rooms"]');
@@ -384,8 +384,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (requiredRoom && allocatedRoom && roomCheckboxes.length > 0) {
         if (clearBtn && roomCheckboxes.length > 0) {
-            clearBtn.addEventListener('click', function() {
-                roomCheckboxes.forEach(function(cb) {
+            clearBtn.addEventListener('click', function () {
+                roomCheckboxes.forEach(function (cb) {
                     cb.checked = false;
                     cb.disabled = false;
                 });
@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Enforce allocation rule on form submit
         var allocationForm = document.querySelector('.rooms-table-section form');
         if (allocationForm) {
-            allocationForm.addEventListener('submit', function(e) {
+            allocationForm.addEventListener('submit', function (e) {
                 // Parse required and allocated from display (format: count | capacity)
                 let requiredText = requiredRoom.textContent.split('|');
                 let allocatedText = allocatedRoom.textContent.split('|');
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Allow submission, but show a popup message and redirect to slot list
                     e.preventDefault();
                     showPopupMessage('No rooms were allocated for this slot.', 'error');
-                    setTimeout(function() {
+                    setTimeout(function () {
                         // Change the URL below to your exam slot list or dashboard as appropriate
                         window.location.href = '/ops/exam_slots/';
                     }, 2500);
@@ -425,96 +425,96 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
     }
-// Move updateAllocatedRoom and listeners outside the if block
-function updateAllocatedRoom() {
-    if (!allocatedRoom) return;
-    let total = 0;
-    let count = 0;
-    if (typeof roomCheckboxes === 'undefined') return;
-    roomCheckboxes.forEach(function(cb) {
-        if (cb.checked) {
-            total += parseInt(cb.getAttribute('data-capacity')) || 0;
-            count += 1;
-        }
-    });
-    allocatedRoom.textContent = count + ' | ' + total;
-    // Hide error if under required
-    if (typeof errorMsg !== 'undefined' && errorMsg) errorMsg.style.display = 'none';
-}
-if (typeof roomCheckboxes !== 'undefined' && typeof allocatedRoom !== 'undefined') {
-    updateAllocatedRoom();
-    roomCheckboxes.forEach(function(cb) {
-        cb.addEventListener('change', function(e) {
-            let total = 0;
-            let count = 0;
-            roomCheckboxes.forEach(function(box) {
-                if (box.checked) {
-                    total += parseInt(box.getAttribute('data-capacity')) || 0;
-                    count += 1;
-                }
-            });
-            // Parse required from requiredRoom (format: count | capacity)
-            let requiredText = requiredRoom.textContent.split('|');
-            let required = 0;
-            if (requiredText.length > 1) {
-                required = parseInt(requiredText[1].trim()) || 0;
+    // Move updateAllocatedRoom and listeners outside the if block
+    function updateAllocatedRoom() {
+        if (!allocatedRoom) return;
+        let total = 0;
+        let count = 0;
+        if (typeof roomCheckboxes === 'undefined') return;
+        roomCheckboxes.forEach(function (cb) {
+            if (cb.checked) {
+                total += parseInt(cb.getAttribute('data-capacity')) || 0;
+                count += 1;
             }
-            // Find minimum capacity among unchecked rooms
-            let minCap = Infinity;
-            roomCheckboxes.forEach(function(box) {
-                if (!box.checked) {
-                    let cap = parseInt(box.getAttribute('data-capacity')) || 0;
-                    if (cap < minCap) minCap = cap;
-                }
-            });
-            if (total >= required) {
-                // Allow this selection, but disable further selection
-                if (typeof errorMsg !== 'undefined' && errorMsg) {
-                    errorMsg.textContent = 'Required capacity attained or exceeded. Cannot select more rooms.';
-                    errorMsg.style.display = 'block';
-                }
-                roomCheckboxes.forEach(function(box) {
-                    if (!box.checked) box.disabled = true;
-                });
-            } else {
-                // Border condition: only allow min cap room if next selection would meet/exceed required and difference is less than 40
-                let remaining = required - total;
-                let minCapRooms = [];
-                roomCheckboxes.forEach(function(box) {
-                    if (!box.checked) {
-                        let cap = parseInt(box.getAttribute('data-capacity')) || 0;
-                        if (cap === minCap) minCapRooms.push(box);
+        });
+        allocatedRoom.textContent = count + ' | ' + total;
+        // Hide error if under required
+        if (typeof errorMsg !== 'undefined' && errorMsg) errorMsg.style.display = 'none';
+    }
+    if (typeof roomCheckboxes !== 'undefined' && typeof allocatedRoom !== 'undefined') {
+        updateAllocatedRoom();
+        roomCheckboxes.forEach(function (cb) {
+            cb.addEventListener('change', function (e) {
+                let total = 0;
+                let count = 0;
+                roomCheckboxes.forEach(function (box) {
+                    if (box.checked) {
+                        total += parseInt(box.getAttribute('data-capacity')) || 0;
+                        count += 1;
                     }
                 });
-                let restrictToMin = false;
-                if (remaining < 40) {
-                    roomCheckboxes.forEach(function(box) {
+                // Parse required from requiredRoom (format: count | capacity)
+                let requiredText = requiredRoom.textContent.split('|');
+                let required = 0;
+                if (requiredText.length > 1) {
+                    required = parseInt(requiredText[1].trim()) || 0;
+                }
+                // Find minimum capacity among unchecked rooms
+                let minCap = Infinity;
+                roomCheckboxes.forEach(function (box) {
+                    if (!box.checked) {
+                        let cap = parseInt(box.getAttribute('data-capacity')) || 0;
+                        if (cap < minCap) minCap = cap;
+                    }
+                });
+                if (total >= required) {
+                    // Allow this selection, but disable further selection
+                    if (typeof errorMsg !== 'undefined' && errorMsg) {
+                        errorMsg.textContent = 'Required capacity attained or exceeded. Cannot select more rooms.';
+                        errorMsg.style.display = 'block';
+                    }
+                    roomCheckboxes.forEach(function (box) {
+                        if (!box.checked) box.disabled = true;
+                    });
+                } else {
+                    // Border condition: only allow min cap room if next selection would meet/exceed required and difference is less than 40
+                    let remaining = required - total;
+                    let minCapRooms = [];
+                    roomCheckboxes.forEach(function (box) {
                         if (!box.checked) {
                             let cap = parseInt(box.getAttribute('data-capacity')) || 0;
-                            if (cap >= remaining) restrictToMin = true;
+                            if (cap === minCap) minCapRooms.push(box);
                         }
                     });
-                }
-                roomCheckboxes.forEach(function(box) {
-                    if (!box.checked) {
-                        let cap = parseInt(box.getAttribute('data-capacity')) || 0;
-                        if (restrictToMin) {
-                            if (cap === minCap) {
-                                box.disabled = false;
-                            } else {
-                                box.disabled = true;
+                    let restrictToMin = false;
+                    if (remaining < 40) {
+                        roomCheckboxes.forEach(function (box) {
+                            if (!box.checked) {
+                                let cap = parseInt(box.getAttribute('data-capacity')) || 0;
+                                if (cap >= remaining) restrictToMin = true;
                             }
-                        } else {
-                            box.disabled = false;
-                        }
+                        });
                     }
-                });
-                if (typeof errorMsg !== 'undefined' && errorMsg) errorMsg.style.display = 'none';
-            }
-            updateAllocatedRoom();
+                    roomCheckboxes.forEach(function (box) {
+                        if (!box.checked) {
+                            let cap = parseInt(box.getAttribute('data-capacity')) || 0;
+                            if (restrictToMin) {
+                                if (cap === minCap) {
+                                    box.disabled = false;
+                                } else {
+                                    box.disabled = true;
+                                }
+                            } else {
+                                box.disabled = false;
+                            }
+                        }
+                    });
+                    if (typeof errorMsg !== 'undefined' && errorMsg) errorMsg.style.display = 'none';
+                }
+                updateAllocatedRoom();
+            });
         });
-    });
-}
+    }
 });
 // ========== Faculty Allocation: Dynamic Allocated Faculty ========== 
 document.addEventListener('DOMContentLoaded', function () {
@@ -524,23 +524,23 @@ document.addEventListener('DOMContentLoaded', function () {
     var allocationForm = document.querySelector('.faculty-assigned form');
     function updateAllocatedFaculty() {
         let count = 0;
-        facultyCheckboxes.forEach(function(cb) {
+        facultyCheckboxes.forEach(function (cb) {
             if (cb.checked) count++;
         });
         if (allocatedFac) allocatedFac.textContent = count;
         // Only disable further selection if cap reached
         if (requiredFac && count < parseInt(requiredFac.textContent)) {
-            facultyCheckboxes.forEach(function(cb) {
+            facultyCheckboxes.forEach(function (cb) {
                 cb.disabled = false;
             });
         } else if (requiredFac) {
-            facultyCheckboxes.forEach(function(cb) {
+            facultyCheckboxes.forEach(function (cb) {
                 if (!cb.checked) cb.disabled = true;
             });
         }
     }
     if (allocationForm) {
-        allocationForm.addEventListener('submit', function(e) {
+        allocationForm.addEventListener('submit', function (e) {
             let required = parseInt(requiredFac.textContent) || 0;
             let allocated = parseInt(allocatedFac.textContent) || 0;
             if (allocated !== required) {
@@ -549,14 +549,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-    facultyCheckboxes.forEach(function(cb) {
+    facultyCheckboxes.forEach(function (cb) {
         cb.addEventListener('change', updateAllocatedFaculty);
     });
     updateAllocatedFaculty();
     var clearBtn = document.getElementById('clear-faculty-selection');
     if (clearBtn && facultyCheckboxes.length > 0) {
-        clearBtn.addEventListener('click', function() {
-            facultyCheckboxes.forEach(function(cb) {
+        clearBtn.addEventListener('click', function () {
+            facultyCheckboxes.forEach(function (cb) {
                 cb.checked = false;
                 cb.disabled = false;
             });
@@ -774,10 +774,10 @@ function fetchExamSlotsAjax() {
     }
 
     // Combined Trigger Handler for all Exam Management Popups
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         // 1. Room Assignment Popup
         const roomTrigger = e.target.closest('.room-assignment-badge');
-        
+
         if (roomTrigger) {
             e.preventDefault();
             const slotId = roomTrigger.getAttribute('data-slot-id');
@@ -815,7 +815,7 @@ function fetchExamSlotsAjax() {
                     }
                     let html = getPopupSlotInfoHTML(data.slot);
                     html += `<div class="popup-edit-btn-container"><a href="/ops/exam_rooms_alloc/?slot_id=${slotId}" class="btn-std btn-primary" style="text-decoration:none;">Update Allocation</a></div>`;
-                    
+
                     if (!data.rooms || data.rooms.length === 0) {
                         html += `<div class="text-center p-20">No rooms allocated for this slot.</div>`;
                     } else {
@@ -852,58 +852,58 @@ function fetchExamSlotsAjax() {
                 },
                 body: JSON.stringify({ exam_id: examId })
             })
-            .then(resp => resp.json())
-            .then(data => {
-                if (data.success) {
-                    showPopupMessage('Exam published successfully.', 'success');
-                    fetchExaminations(); // Force table refresh
-                } else {
-                    showPopupMessage(data.error || 'Failed to publish exam.', 'error');
-                }
-            })
-            .catch(() => {
-                showPopupMessage('Network error. Please try again.', 'error');
-            });
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success) {
+                        showPopupMessage('Exam published successfully.', 'success');
+                        fetchExaminations(); // Force table refresh
+                    } else {
+                        showPopupMessage(data.error || 'Failed to publish exam.', 'error');
+                    }
+                })
+                .catch(() => {
+                    showPopupMessage('Network error. Please try again.', 'error');
+                });
             return;
         }
-                                // Publish exam button click handler
-                                const publishBtn = e.target.closest('.publish-exam-btn');
-                                if (publishBtn) {
-                                    e.preventDefault();
-                                    const examId = publishBtn.dataset.examId;
-                                    fetch('/ops/ajax/publish_exam/', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || ''
-                                        },
-                                        body: JSON.stringify({ exam_id: examId })
-                                    })
-                                    .then(resp => resp.json())
-                                    .then(data => {
-                                        if (data.success) {
-                                            showPopupMessage('Exam published successfully.', 'success');
-                                            fetchExaminations(); // Force table refresh
-                                        } else {
-                                            showPopupMessage(data.error || 'Failed to publish exam.', 'error');
-                                        }
-                                    })
-                                    .catch(() => {
-                                        showPopupMessage('Network error. Please try again.', 'error');
-                                    });
-                                    return;
-                                }
+        // Publish exam button click handler
+        const publishBtn = e.target.closest('.publish-exam-btn');
+        if (publishBtn) {
+            e.preventDefault();
+            const examId = publishBtn.dataset.examId;
+            fetch('/ops/ajax/publish_exam/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || ''
+                },
+                body: JSON.stringify({ exam_id: examId })
+            })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success) {
+                        showPopupMessage('Exam published successfully.', 'success');
+                        fetchExaminations(); // Force table refresh
+                    } else {
+                        showPopupMessage(data.error || 'Failed to publish exam.', 'error');
+                    }
+                })
+                .catch(() => {
+                    showPopupMessage('Network error. Please try again.', 'error');
+                });
+            return;
+        }
         // 2. Slot courses badge click handler
         const courseBadgeTrigger = e.target.closest('.slot-courses-badge');
         if (courseBadgeTrigger) {
             e.preventDefault();
             const slotId = courseBadgeTrigger.getAttribute('data-slot-id');
             if (!slotId) return;
-            
+
             toggleGlobalModal('slotCoursesModal', true);
             const modalContent = document.getElementById('slotCoursesModalContent');
             modalContent.innerHTML = '<div class="text-center p-20">Loading course details...</div>';
-            
+
             fetch(`/ops/ajax/slot-courses/?slot_id=${slotId}`)
                 .then(resp => resp.json())
                 .then(data => {
@@ -974,7 +974,7 @@ function fetchExamSlotsAjax() {
                     }
                     let html = getPopupSlotInfoHTML(data.slot);
                     html += `<div class="popup-edit-btn-container"><a href="/ops/exam_faculty_alloc/?slot_id=${slotId}" class="btn-std btn-primary" style="text-decoration:none;">Update Faculty</a></div>`;
-                    
+
                     if (!data.faculty || data.faculty.length === 0) {
                         html += `<div class="text-center p-20">No faculty assigned for this slot.</div>`;
                     } else {
@@ -1019,7 +1019,7 @@ function fetchExamSlotsAjax() {
     }
 
     // Consolidated Slot Action Handlers (Edit/Delete)
-    const slotActionHandler = function(e) {
+    const slotActionHandler = function (e) {
         // 1. Edit Slot Trigger
         const editBtn = e.target.closest('.edit-slot-btn');
         if (editBtn) {
@@ -1033,7 +1033,7 @@ function fetchExamSlotsAjax() {
             document.getElementById('edit_start_time').value = d.start;
             document.getElementById('edit_end_time').value = d.end;
             document.getElementById('edit_slot_code').value = d.code;
-            
+
             // Set dynamic header name
             const examNameInput = document.getElementById('examname');
             const headerName = document.getElementById('editSlotHeaderName');
@@ -1050,7 +1050,7 @@ function fetchExamSlotsAjax() {
                 if (minDate) editDateInput.min = minDate;
                 if (maxDate) editDateInput.max = maxDate;
             }
-            
+
             toggleGlobalModal('editSlotModal', true);
             return;
         }
@@ -1084,28 +1084,28 @@ function fetchExamSlotsAjax() {
                 },
                 body: JSON.stringify({ slot_id: slotId })
             })
-            .then(resp => resp.json())
-            .then(data => {
-                if (data.success) {
-                    toggleGlobalModal('deleteSlotModal', false);
-                    showPopupMessage('Exam slot deleted successfully.', 'success');
-                    fetchExamSlotsAjax(); // Refresh table
-                } else {
-                    showPopupMessage(data.error || 'Failed to delete slot.', 'error');
-                }
-            })
-            .catch(() => showPopupMessage('Network error. Please try again.', 'error'));
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success) {
+                        toggleGlobalModal('deleteSlotModal', false);
+                        showPopupMessage('Exam slot deleted successfully.', 'success');
+                        fetchExamSlotsAjax(); // Refresh table
+                    } else {
+                        showPopupMessage(data.error || 'Failed to delete slot.', 'error');
+                    }
+                })
+                .catch(() => showPopupMessage('Network error. Please try again.', 'error'));
         }
     };
 
     // Register slot action handler once
     if (!window.slotActionsRegistered) {
         document.addEventListener('click', slotActionHandler);
-        
+
         // Final validation before AJAX submission
         const editSlotForm = document.getElementById('editSlotForm');
         if (editSlotForm) {
-            editSlotForm.addEventListener('submit', function(e) {
+            editSlotForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 const formData = {
                     slot_id: document.getElementById('editSlotId').value,
@@ -1129,17 +1129,17 @@ function fetchExamSlotsAjax() {
                     },
                     body: JSON.stringify(formData)
                 })
-                .then(resp => resp.json())
-                .then(data => {
-                    if (data.success) {
-                        toggleGlobalModal('editSlotModal', false);
-                        showPopupMessage('Exam slot updated successfully.', 'success');
-                        fetchExamSlotsAjax();
-                    } else {
-                        showPopupMessage(data.error || 'Failed to update slot.', 'error');
-                    }
-                })
-                .catch(() => showPopupMessage('Network error. Please try again.', 'error'));
+                    .then(resp => resp.json())
+                    .then(data => {
+                        if (data.success) {
+                            toggleGlobalModal('editSlotModal', false);
+                            showPopupMessage('Exam slot updated successfully.', 'success');
+                            fetchExamSlotsAjax();
+                        } else {
+                            showPopupMessage(data.error || 'Failed to update slot.', 'error');
+                        }
+                    })
+                    .catch(() => showPopupMessage('Network error. Please try again.', 'error'));
             });
         }
         window.slotActionsRegistered = true;
@@ -1179,7 +1179,7 @@ function fetchExamSlotsAjax() {
     }
 
     // --- Global "Enter" for Modals ---
-    document.addEventListener('keydown', function(e) {
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             const activeModal = document.querySelector('.global-modal-backdrop.active');
             if (activeModal) {
@@ -1209,7 +1209,7 @@ function fetchExamSlotsAjax() {
     // --- Date Constraints for Creation Forms ---
     function initDateConstraints() {
         const today = new Date().toISOString().split('T')[0];
-        
+
         // examination.html
         const startInput = document.getElementById('start_date');
         const endInput = document.getElementById('end_date');
@@ -1237,7 +1237,7 @@ function fetchExamSlotsAjax() {
         const createSlotLink = document.getElementById('createExamSlotLink');
         if (createSlotLink) {
             const originalOnclick = createSlotLink.onclick;
-            createSlotLink.addEventListener('click', function(e) {
+            createSlotLink.addEventListener('click', function (e) {
                 const code = document.getElementById('slot_code')?.value;
                 const start = document.getElementById('start_time')?.value;
                 const end = document.getElementById('end_time')?.value;
@@ -1303,7 +1303,7 @@ function fetchExamSlotsAjax() {
                         data-code="${slot.slot_code}"
                         data-reg="${slot.registration_type}" 
                         title="Edit"><img src="https://img.icons8.com/?size=100&id=kzmsQM0bM3Bl&format=png&color=000000" alt="Edit Slot" class="icon-edit"></a>`;
-                    
+
                     const deleteLink = `<a href="#" class="delete-slot-btn" 
                         data-slot-id="${slot.id}" 
                         data-slot-date="${slot.exam_date}" 
@@ -1311,7 +1311,7 @@ function fetchExamSlotsAjax() {
                         data-slot-code="${slot.slot_code}" 
                         data-slot-type="${slot.exam_type}" 
                         title="Delete"><img src="https://img.icons8.com/?size=100&id=99971&format=png&color=000000" alt="Delete Slot" class="icon-delete"></a>`;
-                    
+
                     // Course Count Badge
                     let bClass = slot.course_count > 0 ? 'badge-courses badge-courses-positive' : 'badge-courses badge-courses-zero';
                     let courseBadge = `<a href="#" class="slot-courses-badge" data-slot-id="${slot.id}">
@@ -1377,70 +1377,70 @@ function fetchExamSlotsAjax() {
             tbody.innerHTML = '<tr><td colspan="14" class="text-center">Error loading slots.</td></tr>';
         });
     // Utility to show popup message (top-right)
-        // Click handler for new status column
-        document.addEventListener('click', function(e) {
-            const statusLink = e.target.closest('.slot-status-link');
-            if (statusLink) {
-                const statusSpanGenerate = statusLink.querySelector('.badge-info');
-                const statusSpanWarning = statusLink.querySelector('.badge-warning');
-                const statusSpanSuccess = statusLink.querySelector('.badge-success');
-                const row = statusLink.closest('tr');
+    // Click handler for new status column
+    document.addEventListener('click', function (e) {
+        const statusLink = e.target.closest('.slot-status-link');
+        if (statusLink) {
+            const statusSpanGenerate = statusLink.querySelector('.badge-info');
+            const statusSpanWarning = statusLink.querySelector('.badge-warning');
+            const statusSpanSuccess = statusLink.querySelector('.badge-success');
+            const row = statusLink.closest('tr');
 
-                if (statusSpanSuccess) {
-                    showPopupMessage('Examination schedule is complete and published.', 'success');
-                } else if (statusSpanWarning) {
-                    let missing = [];
-                    if (row) {
-                        // Check Mapped status (index 7) - content of span
-                        const mappedCell = row.children[7];
-                        if (mappedCell && mappedCell.textContent.includes('Pending')) missing.push('Course Assignment (Mapping)');
-                        
-                        // Check Room allocation (index 10)
-                        const roomCell = row.children[10];
-                        if (roomCell && roomCell.textContent.includes('Pending')) missing.push('Room Allocation');
-                        
-                        // Check Faculty assignment (index 11)
-                        const facultyCell = row.children[11];
-                        if (facultyCell && facultyCell.textContent.includes('Pending')) missing.push('Faculty Assignment');
-                    }
-                    let msg = 'Status is Incomplete.<br>Please complete the following actions:';
-                    if (missing.length > 0) {
-                        msg += '<br><span style="color:#b30000;font-weight:600;">Missing Steps:</span><br>';
-                        msg += missing.map(item => `<span style='display:block;margin-left:1em;'>${item}</span>`).join('');
-                    } else {
-                        msg = 'Seating plan sync is partial. Please check for any manual overrides.';
-                    }
-                    showPopupMessage(msg, 'warning');
-                } else if (statusSpanGenerate) {
-                    const slotId = row.getAttribute('data-slot-id');
-                    if (!slotId) {
-                        showPopupMessage('Slot ID not found for generation.', 'error');
-                        return;
-                    }
-                    // Disable Generate button during request
-                    statusLink.classList.add('disabled');
-                    statusLink.style.pointerEvents = 'none';
+            if (statusSpanSuccess) {
+                showPopupMessage('Examination schedule is complete and published.', 'success');
+            } else if (statusSpanWarning) {
+                let missing = [];
+                if (row) {
+                    // Check Mapped status (index 7) - content of span
+                    const mappedCell = row.children[7];
+                    if (mappedCell && mappedCell.textContent.includes('Pending')) missing.push('Course Assignment (Mapping)');
 
-                    // Manually trigger the special Luminous Aurora Orb loader
-                    if (window.Loader) {
-                        window.Loader.show("Generating Seating Plan...", "Calculating results and assigning faculty...", true);
-                    }
+                    // Check Room allocation (index 10)
+                    const roomCell = row.children[10];
+                    if (roomCell && roomCell.textContent.includes('Pending')) missing.push('Room Allocation');
 
-                    fetch('/ops/ajax/generate-seating-plan/', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || ''
-                        },
-                        body: 'slot_id=' + encodeURIComponent(slotId)
-                    })
+                    // Check Faculty assignment (index 11)
+                    const facultyCell = row.children[11];
+                    if (facultyCell && facultyCell.textContent.includes('Pending')) missing.push('Faculty Assignment');
+                }
+                let msg = 'Status is Incomplete.<br>Please complete the following actions:';
+                if (missing.length > 0) {
+                    msg += '<br><span style="color:#b30000;font-weight:600;">Missing Steps:</span><br>';
+                    msg += missing.map(item => `<span style='display:block;margin-left:1em;'>${item}</span>`).join('');
+                } else {
+                    msg = 'Seating plan sync is partial. Please check for any manual overrides.';
+                }
+                showPopupMessage(msg, 'warning');
+            } else if (statusSpanGenerate) {
+                const slotId = row.getAttribute('data-slot-id');
+                if (!slotId) {
+                    showPopupMessage('Slot ID not found for generation.', 'error');
+                    return;
+                }
+                // Disable Generate button during request
+                statusLink.classList.add('disabled');
+                statusLink.style.pointerEvents = 'none';
+
+                // Manually trigger the special Luminous Aurora Orb loader
+                if (window.Loader) {
+                    window.Loader.show("Generating Seating Plan...", "Calculating results and assigning faculty...", true);
+                }
+
+                fetch('/ops/ajax/generate-seating-plan/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || ''
+                    },
+                    body: 'slot_id=' + encodeURIComponent(slotId)
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (window.Loader) window.Loader.hide();
                         statusLink.classList.remove('disabled');
                         statusLink.style.pointerEvents = '';
                         const statusCell = row.children[11]; // newStatusCell
-                        
+
                         if (data.status === 'success' || data.status === 'assigned') {
                             statusCell.innerHTML = `<span class="status-badge badge-success">Assigned <img src='https://img.icons8.com/?size=100&id=79211&format=png&color=ffffff' alt='Assigned' style='width:18px;height:18px;vertical-align:middle;'></span>`;
                             showPopupMessage('Seating plan generated successfully!', 'success');
@@ -1580,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const lockIcon = exam.is_locked ? 'https://img.icons8.com/?size=100&id=DZbPJ4lsqOdQ&format=png&color=000000' : 'https://img.icons8.com/?size=100&id=7Sm4QkMSvsON&format=png&color=000000';
                         const lockTitle = exam.is_locked ? `Locked by ${exam.locked_by_name} at ${exam.lock_updated_at}` : 'Click to lock';
                         const lockedClass = exam.is_locked ? 'exam-row-locked' : '';
-                        
+
                         tbody.innerHTML += `<tr id="${rowId}" class="${lockedClass}">
                             <td>${exam.number}</td>
                             <td>${exam.exam_name}</td>
@@ -1736,10 +1736,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const startInput = document.getElementById('start_date');
         const endInput = document.getElementById('end_date');
         const today = new Date().toISOString().split('T')[0];
-        
+
         if (startInput) {
             startInput.min = today;
-            startInput.addEventListener('change', function() {
+            startInput.addEventListener('change', function () {
                 if (endInput) {
                     endInput.min = this.value;
                     if (endInput.value && endInput.value < this.value) endInput.value = '';
@@ -1872,7 +1872,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const isChecked = group.is_already_scheduled ? 'checked' : '';
                         const rowStyle = group.is_already_scheduled ? 'background: #e6f9e6;' : '';
                         const assignedLabel = group.is_already_scheduled ? ' <span style="color:#1a7f1a; font-weight:600; font-size:0.85em;">(Already Assigned)</span>' : '';
-                        
+
                         return `
                         <tr style="${clashStyle}${rowStyle}">
                             <td><input type="checkbox" name="selected_groups" value="${group.course_code}|${group.regulation}|${group.academic_year}|${group.semester}" ${isChecked} ${disabledAttr} ${group.clash ? 'tabindex="-1" aria-disabled="true"' : ''}></td>
@@ -2207,7 +2207,7 @@ $(document).on('click', '.faculty-delete-btn', function () {
     facultyModal.css('display', 'flex');
 });
 
-$(document).on('click', '#cancelFacultyDeleteBtn', function() {
+$(document).on('click', '#cancelFacultyDeleteBtn', function () {
     $('#facultyDeleteModal').hide();
 });
 
@@ -2221,10 +2221,10 @@ $(document).on('submit', '#deleteFacultyForm', function (e) {
         url: url,
         type: 'POST',
         data: { csrfmiddlewaretoken: csrfToken },
-        success: function(resp) {
+        success: function (resp) {
             showPopup('Faculty deleted successfully.', 'success');
             $('#facultyDeleteModal').hide();
-            setTimeout(() => { 
+            setTimeout(() => {
                 if (typeof facultyTable !== 'undefined' && facultyTable.fetchFaculty) {
                     facultyTable.fetchFaculty(1);
                 } else {
@@ -2232,7 +2232,7 @@ $(document).on('submit', '#deleteFacultyForm', function (e) {
                 }
             }, 1000);
         },
-        error: function() {
+        error: function () {
             showPopup('Failed to delete faculty.', 'error');
             $('#facultyDeleteModal').hide();
         }
@@ -2274,7 +2274,7 @@ $(document).on('click', '.student-delete-btn', function () {
     studentModal.css('display', 'flex');
 });
 
-$(document).on('click', '#cancelStudentDeleteBtn', function() {
+$(document).on('click', '#cancelStudentDeleteBtn', function () {
     $('#studentDeleteModal').hide();
 });
 
@@ -2288,10 +2288,10 @@ $(document).on('submit', '#deleteStudentFormAjax', function (e) {
         url: url,
         type: 'POST',
         data: { csrfmiddlewaretoken: csrfToken },
-        success: function(resp) {
+        success: function (resp) {
             showPopup('Student deleted successfully.', 'success');
             $('#studentDeleteModal').hide();
-            setTimeout(() => { 
+            setTimeout(() => {
                 if (typeof studentsTable !== 'undefined' && studentsTable.fetchStudents) {
                     studentsTable.fetchStudents(1);
                 } else {
@@ -2299,7 +2299,7 @@ $(document).on('submit', '#deleteStudentFormAjax', function (e) {
                 }
             }, 1000);
         },
-        error: function() {
+        error: function () {
             showPopup('Failed to delete student.', 'error');
             $('#studentDeleteModal').hide();
         }
@@ -2963,16 +2963,16 @@ document.addEventListener('DOMContentLoaded', function () {
 const ExportManager = {
     currentType: '', // 'student', 'faculty', 'room', 'course'
     currentAction: '', // 'print', 'download'
-    
-    init: function() {
+
+    init: function () {
         console.log("ExportManager Initialized");
         const modal = document.getElementById('exportOptionsModal');
         if (!modal) return;
-        
+
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('button, a');
             if (!btn) return;
-            
+
             const id = btn.id || '';
             // Match IDs like printStudentBtn, downloadFacultyBtn, printRoomBtn, etc.
             if (id.startsWith('print') || id.startsWith('download')) {
@@ -2988,7 +2988,7 @@ const ExportManager = {
                 }
             }
         });
-        
+
         // Modal internal buttons
         const currentBtn = document.getElementById('exportCurrentBtn');
         const completeBtn = document.getElementById('exportCompleteBtn');
@@ -2999,57 +2999,57 @@ const ExportManager = {
         if (completeBtn) completeBtn.addEventListener('click', () => this.handleComplete());
         if (closeX) closeX.addEventListener('click', () => this.hideModal());
         if (cancelBtn) cancelBtn.addEventListener('click', () => this.hideModal());
-        
+
         // Close on backdrop click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) this.hideModal();
         });
     },
-    
-    showModal: function() {
+
+    showModal: function () {
         const modal = document.getElementById('exportOptionsModal');
         if (!modal) return;
 
         const title = document.getElementById('exportModalTitle');
         const text = document.getElementById('exportModalText');
-        
+
         const actionLabel = this.currentAction === 'print' ? 'Print' : 'Download';
         const typeLabel = this.currentType.charAt(0).toUpperCase() + this.currentType.slice(1);
-        
+
         if (title) title.innerText = `${actionLabel} ${typeLabel} Data`;
         if (text) text.innerText = `Choose the scope for your ${this.currentAction} action.`;
-        
+
         modal.classList.add('active');
         modal.style.display = 'block';
     },
-    
-    hideModal: function() {
+
+    hideModal: function () {
         const modal = document.getElementById('exportOptionsModal');
         if (modal) {
             modal.classList.remove('active');
             modal.style.display = 'none';
         }
     },
-    
-    handleCurrent: function() {
+
+    handleCurrent: function () {
         this.hideModal();
-        const table = document.querySelector('table'); 
+        const table = document.querySelector('table');
         if (!table) {
             if (typeof showPopupMessage === 'function') showPopupMessage('No table found to export.', 'error');
             return;
         }
-        
+
         // Clone and sanitize table for print
         const cloneTable = table.cloneNode(true);
         const headers = Array.from(cloneTable.querySelectorAll('thead th')).map(th => th.innerText.toLowerCase().trim());
         const excludeIndices = headers.map((h, i) => (h.includes('status') || h.includes('action')) ? i : -1).filter(i => i !== -1);
-        
+
         // Remove excluded columns from header and rows
         const rows = cloneTable.querySelectorAll('tr');
         rows.forEach(row => {
             const cells = Array.from(row.children);
             // Reverse order to avoid index shifting problems
-            excludeIndices.sort((a,b) => b-a).forEach(idx => {
+            excludeIndices.sort((a, b) => b - a).forEach(idx => {
                 if (cells[idx]) row.removeChild(cells[idx]);
             });
         });
@@ -3060,7 +3060,7 @@ const ExportManager = {
             const txt = theadFirstTh.innerText.toLowerCase().trim();
             // Check if existing column is an index (common patterns)
             const isExistingIdx = txt === '#' || txt.includes('s.no') || txt.includes('idx') || txt === 'id' || txt === 'sl.no';
-            
+
             if (isExistingIdx) {
                 // Rename existing to S.NO for consistency
                 theadFirstTh.innerText = 'S.NO';
@@ -3070,7 +3070,7 @@ const ExportManager = {
                 const th = document.createElement('th');
                 th.innerText = 'S.NO';
                 theadRow.insertBefore(th, theadRow.firstChild);
-                
+
                 const tbodyRows = cloneTable.querySelectorAll('tbody tr');
                 tbodyRows.forEach((tr, i) => {
                     const td = document.createElement('td');
@@ -3086,8 +3086,8 @@ const ExportManager = {
             this.downloadCSV(this.tableToCSV(cloneTable), `${this.currentType}_current_page.csv`);
         }
     },
-    
-    handleComplete: function(customParams = null) {
+
+    handleComplete: function (customParams = null) {
         this.hideModal();
         if (window.Loader) window.Loader.show(`Fetching complete ${this.currentType} data...`, "This may take a few seconds");
 
@@ -3097,10 +3097,10 @@ const ExportManager = {
             ajaxParams = new URLSearchParams(customParams);
         } else {
             const urlParams = new URLSearchParams(window.location.search);
-            const searchQuery = document.querySelector('input[name="search"], #search-fac') ? 
-                                (document.querySelector('input[name="search"]') || document.querySelector('#search-fac')).value : 
-                                (urlParams.get('search') || '');
-                                
+            const searchQuery = document.querySelector('input[name="search"], #search-fac') ?
+                (document.querySelector('input[name="search"]') || document.querySelector('#search-fac')).value :
+                (urlParams.get('search') || '');
+
             ajaxParams = new URLSearchParams({
                 type: this.currentType,
                 full_data: 'true',
@@ -3115,7 +3115,7 @@ const ExportManager = {
                 student_id: urlParams.get('student_id') || ''
             });
         }
-        
+
         fetch(`/masters/ajax/?${ajaxParams.toString()}`)
             .then(resp => resp.json())
             .then(data => {
@@ -3136,12 +3136,12 @@ const ExportManager = {
                 if (typeof showPopupMessage === 'function') showPopupMessage('Export failed. Please check console.', 'error');
             });
     },
-    
-    printTable: function(html) {
+
+    printTable: function (html) {
         const win = window.open('', '_blank', 'width=1100,height=800');
         const actionLabel = this.currentAction === 'print' ? 'Print' : 'Download';
         const typeLabel = this.currentType.charAt(0).toUpperCase() + this.currentType.slice(1);
-        
+
         win.document.write(`
         <html>
         <head>
@@ -3244,20 +3244,20 @@ const ExportManager = {
         `);
         win.document.close();
     },
-    
-    printData: function(results) {
+
+    printData: function (results) {
         if (!results.length) return;
-        
+
         // Define columns to skip
         const skipKeys = ['status', 'is_active', 'id', 'user_id', 'dept_id', 'batch_id', 'idx', '#', 's_no', 's.no'];
-        
+
         // Filter headers
         const rawHeaders = Object.keys(results[0]).filter(k => !skipKeys.includes(k.toLowerCase()));
-        
+
         let html = '<table><thead><tr><th>S.NO</th>';
         rawHeaders.forEach(h => html += `<th>${h.replace(/_/g, ' ').toUpperCase()}</th>`);
         html += '</tr></thead><tbody>';
-        
+
         results.forEach((row, index) => {
             html += `<tr><td>${index + 1}</td>`;
             rawHeaders.forEach(key => {
@@ -3266,12 +3266,12 @@ const ExportManager = {
             });
             html += '</tr>';
         });
-        
+
         html += '</tbody></table>';
         this.printTable(html);
     },
-    
-    tableToCSV: function(table) {
+
+    tableToCSV: function (table) {
         const rows = Array.from(table.querySelectorAll('tr'));
         return rows.map(row => {
             const cols = Array.from(row.querySelectorAll('th, td'));
@@ -3283,15 +3283,15 @@ const ExportManager = {
             }).join(',');
         }).filter(line => line.length > 2).join('\n');
     },
-    
-    jsonToCSV: function(json) {
+
+    jsonToCSV: function (json) {
         if (!json.length) return '';
-        
+
         const skipKeys = ['status', 'is_active', 'id', 'user_id', 'dept_id', 'batch_id', 'idx', '#', 's_no', 's.no'];
         const headers = Object.keys(json[0]).filter(k => !skipKeys.includes(k.toLowerCase()));
-        
+
         const headerRow = ['"S.NO"', ...headers.map(h => `"${h.replace(/_/g, ' ').toUpperCase()}"`)].join(',');
-        
+
         const rows = json.map((item, index) => {
             const rowData = [index + 1];
             headers.forEach(h => {
@@ -3300,11 +3300,11 @@ const ExportManager = {
             });
             return rowData.join(',');
         }).join('\n');
-        
+
         return headerRow + '\n' + rows;
     },
-    
-    downloadCSV: function(csv, filename) {
+
+    downloadCSV: function (csv, filename) {
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -3319,7 +3319,7 @@ const ExportManager = {
 
 // Specialized Course Registration Download Logic
 const SpecialDownloadManager = {
-    init: function() {
+    init: function () {
         const openBtn = document.getElementById('openSpecializedDownloadBtn');
         const modal = document.getElementById('specializedDownloadModal');
         const closeBtn = document.getElementById('closeSpecModal');
@@ -3374,7 +3374,7 @@ const SpecialDownloadManager = {
                 const type = document.getElementById('spec_registration_type').value;
 
                 toggleGlobalModal('specializedDownloadModal', false);
-                
+
                 // Use ExportManager to handle the data fetching and CSV generation
                 ExportManager.currentType = 'coursereg';
                 ExportManager.currentAction = 'download';
@@ -3390,7 +3390,7 @@ const SpecialDownloadManager = {
         }
     },
 
-    fetchAutocomplete: function(val) {
+    fetchAutocomplete: function (val) {
         if (val.length < 2) {
             this.closeAllLists();
             return;
@@ -3400,7 +3400,7 @@ const SpecialDownloadManager = {
             .then(data => {
                 this.closeAllLists();
                 if (!data.results || !data.results.length) return;
-                
+
                 const list = document.getElementById('spec_autocomplete_list');
                 list.style.display = 'block';
                 data.results.forEach(item => {
@@ -3419,7 +3419,7 @@ const SpecialDownloadManager = {
             });
     },
 
-    closeAllLists: function() {
+    closeAllLists: function () {
         const list = document.getElementById('spec_autocomplete_list');
         if (list) {
             list.innerHTML = '';
@@ -3439,26 +3439,26 @@ function initExamWorkflowHandlers() {
             e.preventDefault();
             const examId = lockBtn.dataset.examId;
             const isLocked = lockBtn.dataset.isLocked === 'true'; // Current state
-            
+
             document.getElementById('lockModalExamId').value = examId;
             document.getElementById('lockModalIsLocked').value = isLocked;
-            
+
             const title = isLocked ? 'Unlock Examination' : 'Lock Examination';
-            const text = isLocked 
-                ? 'Are you sure you want to <strong>Unlock</strong> this examination? This will allow modifications to scheduling and allocations. Please enter your password to confirm.' 
+            const text = isLocked
+                ? 'Are you sure you want to <strong>Unlock</strong> this examination? This will allow modifications to scheduling and allocations. Please enter your password to confirm.'
                 : 'Are you sure you want to <strong>Lock</strong> this examination? This will freeze all data and prevent any further modifications.';
             const icon = isLocked ? '🔓' : '🔒';
             const btnText = isLocked ? 'Confirm Unlock' : 'Confirm Lock';
-            
+
             document.getElementById('lockModalTitle').textContent = title;
             document.getElementById('lockModalText').innerHTML = text;
             document.getElementById('lockModalIcon').textContent = icon;
             document.getElementById('confirmLockBtn').textContent = btnText;
-            
+
             // Show password field only for unlocking
             document.getElementById('passwordFieldContainer').style.display = isLocked ? 'block' : 'none';
             document.getElementById('lockAdminPassword').value = ''; // Reset password
-            
+
             toggleGlobalModal('lockConfirmModal', true);
             return;
         }
@@ -3510,11 +3510,11 @@ function initExamWorkflowHandlers() {
 
     const confirmPublishBtn = document.getElementById('confirmPublishBtn');
     if (confirmPublishBtn) {
-        confirmPublishBtn.addEventListener('click', function() {
+        confirmPublishBtn.addEventListener('click', function () {
             const examId = document.getElementById('publishExamId').value;
             const actionType = document.getElementById('publishActionType').value;
             const endpoint = actionType === 'PUBLISH' ? '/ops/ajax/publish_exam/' : '/ops/ajax/unpublish_exam/';
-            
+
             this.textContent = 'Processing...';
             this.disabled = true;
 
@@ -3526,20 +3526,20 @@ function initExamWorkflowHandlers() {
                 },
                 body: JSON.stringify({ exam_id: examId })
             })
-            .then(resp => resp.json())
-            .then(data => {
-                if (data.success) {
-                    showPopupMessage(`Exam ${actionType === 'PUBLISH' ? 'published' : 'unpublished'} successfully.`, 'success');
-                    toggleGlobalModal('publishConfirmModal', false);
-                    fetchExaminations();
-                } else {
-                    showPopupMessage(data.error || 'Action failed.', 'error');
-                }
-            })
-            .finally(() => {
-                this.textContent = 'Confirm';
-                this.disabled = false;
-            });
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.success) {
+                        showPopupMessage(`Exam ${actionType === 'PUBLISH' ? 'published' : 'unpublished'} successfully.`, 'success');
+                        toggleGlobalModal('publishConfirmModal', false);
+                        fetchExaminations();
+                    } else {
+                        showPopupMessage(data.error || 'Action failed.', 'error');
+                    }
+                })
+                .finally(() => {
+                    this.textContent = 'Confirm';
+                    this.disabled = false;
+                });
         });
     }
 
@@ -3548,7 +3548,7 @@ function initExamWorkflowHandlers() {
     const lockPassInput = document.getElementById('lockAdminPassword');
 
     if (lockPassInput && confirmLockBtn) {
-        lockPassInput.addEventListener('keyup', function(e) {
+        lockPassInput.addEventListener('keyup', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 confirmLockBtn.click();
@@ -3557,12 +3557,12 @@ function initExamWorkflowHandlers() {
     }
 
     if (confirmLockBtn) {
-        confirmLockBtn.addEventListener('click', function() {
+        confirmLockBtn.addEventListener('click', function () {
             const examId = document.getElementById('lockModalExamId').value;
             const isLocked = document.getElementById('lockModalIsLocked').value === 'true';
             const password = document.getElementById('lockAdminPassword').value;
             const endpoint = isLocked ? '/ops/ajax/unlock_exam/' : '/ops/ajax/lock_exam/';
-            
+
             if (isLocked && !password) {
                 showPopupMessage('Password is required to unlock.', 'error');
                 return;
@@ -3582,23 +3582,23 @@ function initExamWorkflowHandlers() {
                 },
                 body: JSON.stringify(payload)
             })
-            .then(resp => resp.json())
-            .then(data => {
-                this.textContent = 'Confirm Action';
-                this.disabled = false;
-                if (data.success) {
-                    toggleGlobalModal('lockConfirmModal', false);
-                    showPopupMessage(`Examination ${isLocked ? 'Unlocked' : 'Locked'} successfully.`, 'success');
-                    fetchExaminations();
-                } else {
-                    showPopupMessage(data.error || 'Action failed.', 'error');
-                }
-            })
-            .catch(() => {
-                this.textContent = 'Confirm Action';
-                this.disabled = false;
-                showPopupMessage('Network error.', 'error');
-            });
+                .then(resp => resp.json())
+                .then(data => {
+                    this.textContent = 'Confirm Action';
+                    this.disabled = false;
+                    if (data.success) {
+                        toggleGlobalModal('lockConfirmModal', false);
+                        showPopupMessage(`Examination ${isLocked ? 'Unlocked' : 'Locked'} successfully.`, 'success');
+                        fetchExaminations();
+                    } else {
+                        showPopupMessage(data.error || 'Action failed.', 'error');
+                    }
+                })
+                .catch(() => {
+                    this.textContent = 'Confirm Action';
+                    this.disabled = false;
+                    showPopupMessage('Network error.', 'error');
+                });
         });
     }
 
@@ -3612,10 +3612,10 @@ function initExamWorkflowHandlers() {
 
 // ========== Dashboard & Sidenav Managers ==========
 const DashboardManager = {
-    init: function() {
+    init: function () {
         const ctx = document.getElementById('userPieChart');
         if (!ctx) return;
-        
+
         const adminCount = parseInt(ctx.dataset.admin) || 0;
         const facultyCount = parseInt(ctx.dataset.faculty) || 0;
         const studentCount = parseInt(ctx.dataset.student) || 0;
@@ -3644,10 +3644,10 @@ const DashboardManager = {
 };
 
 const SidenavManager = {
-    init: function() {
+    init: function () {
         console.log("SidenavManager Initialized");
     },
-    highlightActive: function() {
+    highlightActive: function () {
         const currentPath = window.location.pathname;
         const links = document.querySelectorAll('.sidebar-links a');
         links.forEach(link => {
@@ -3668,7 +3668,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (typeof ExportManager !== 'undefined') ExportManager.init();
     if (typeof SpecialDownloadManager !== 'undefined') SpecialDownloadManager.init();
-    
+
     // 2. Registry Tables Initialization
     if (typeof usersTable !== 'undefined' && document.getElementById('users-table')) usersTable.init();
     if (typeof studentsTable !== 'undefined' && document.getElementById('students-table')) studentsTable.init();
@@ -3676,8 +3676,192 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof batchesTable !== 'undefined' && document.getElementById('batches-table')) batchesTable.init();
     if (typeof departmentsTable !== 'undefined' && document.getElementById('departments-table')) departmentsTable.init();
     if (typeof programsTable !== 'undefined' && document.getElementById('programs-table')) programsTable.init();
-    
+
     // 3. Operational Pages Initialization
     if (typeof initExamWorkflowHandlers === 'function') initExamWorkflowHandlers();
     if (typeof fetchExaminations === 'function') fetchExaminations();
 });
+
+/**
+ * AdvancedReportManager
+ * Handles the generation and visualization of advanced reports
+ */
+const AdvancedReportManager = {
+    currentType: '',
+    currentExamId: '',
+
+    init: function() {
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('.advanced-report-link');
+            if (link) {
+                e.preventDefault();
+                const reportType = link.getAttribute('data-report');
+                this.loadReport(reportType);
+            }
+        });
+
+        // Delegate filter changes
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'report-exam-filter') {
+                this.currentExamId = e.target.value;
+                this.loadReport(this.currentType, true);
+            }
+        });
+    },
+
+    loadReport: function(type, isFilterChange = false) {
+        this.currentType = type;
+        const grid = document.getElementById('reports-grid');
+        const container = document.getElementById('ajax-report-container');
+        const contentArea = document.getElementById('report-view-content');
+        
+        if (!grid || !container || !contentArea) return;
+
+        if (!isFilterChange) {
+            grid.style.display = 'none';
+            const headerFlex = document.querySelector('.reports-header-flex');
+            if (headerFlex) headerFlex.classList.add('d-none');
+            container.classList.remove('d-none');
+            
+            contentArea.innerHTML = `
+                <div class="loader-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px;">
+                    <div class="premium-loader"></div>
+                    <p style="margin-top: 20px; color: #1e3a8a; font-weight: 600;">Fetching Real-time Data...</p>
+                </div>
+            `;
+        }
+
+        let url = `/ops/ajax/advanced-reports/?report_type=${type}`;
+        if (this.currentExamId) url += `&exam_id=${this.currentExamId}`;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    this.renderReport(type, contentArea, result.data);
+                } else {
+                    contentArea.innerHTML = `<div class="alert-error">Data Error: ${result.error}</div>`;
+                }
+                if (!isFilterChange) window.scrollTo({ top: 0, behavior: 'smooth' });
+            })
+            .catch(error => {
+                contentArea.innerHTML = `<div class="alert-error">Failed to connect to reporting server.</div>`;
+            });
+    },
+
+    renderReport: function(type, container, data) {
+        let html = `<div class="advanced-dashboard-container">`;
+        
+        // Add Filter Header
+        html += this.getReportHeaderHTML(type);
+
+        switch(type) {
+            case 'faculty-load':
+                html += this.getFacultyLoadHTML(data);
+                break;
+            default:
+                html += `<div class="alert-error">Report type "${type}" is being integrated.</div>`;
+        }
+
+        html += `</div>`;
+        container.innerHTML = html;
+
+        // Populate exams in filter
+        this.populateExamFilter();
+    },
+
+    getReportHeaderHTML: function(type) {
+        const title = 'Faculty Load Analysis';
+
+        return `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                <div>
+                    <h1 style="color: #1e3a8a; margin: 0; font-size: 1.5rem;">${title}</h1>
+                    <p style="color: #64748b; margin: 5px 0 0 0; font-size: 0.9rem;">Real-time system data visualization</p>
+                </div>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div style="text-align: right;">
+                        <label style="font-size: 0.75rem; color: #64748b; display: block; font-weight: 700;">FILTER BY EXAM</label>
+                        <select id="report-exam-filter" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.9rem; color: #1e3a8a; outline: none; background: #f8fafc;">
+                            <option value="">All Examinations</option>
+                        </select>
+                    </div>
+                    <button class="control-btn" style="background: #2563eb; height: fit-content;" onclick="window.print()">
+                        <img src="https://img.icons8.com/ios-filled/14/ffffff/print.png" alt="print"> Print
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    populateExamFilter: function() {
+        const select = document.getElementById('report-exam-filter');
+        if (!select || select.options.length > 1) return;
+
+        fetch('/ops/ajax/get-all-exams/')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    data.exams.forEach(exam => {
+                        const opt = document.createElement('option');
+                        opt.value = exam.id;
+                        opt.textContent = exam.exam_name;
+                        if (this.currentExamId == exam.id) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                }
+            });
+    },
+
+    getFacultyLoadHTML: function(data) {
+        let rows = '';
+        if (data.load && data.load.length > 0) {
+            data.load.forEach(item => {
+                rows += `
+                    <tr>
+                        <td style="padding: 15px; font-weight: 600;">${item.faculty_id}</td>
+                        <td style="padding: 15px;">${item.faculty_name}</td>
+                        <td style="padding: 15px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="flex-grow: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                    <div style="width: ${Math.min(item.total_assigned_duties * 10, 100)}%; height: 100%; background: #2563eb;"></div>
+                                </div>
+                                <span class="warning-badge" style="min-width: 80px; justify-content: center;">${item.total_assigned_duties} Duties</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            rows = '<tr><td colspan="3" style="text-align:center; padding:40px; color:#64748b;">No faculty duties found.</td></tr>';
+        }
+
+        return `
+            <div class="report-visual-row" style="grid-template-columns: 1fr;">
+                <div style="background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    <div class="chart-title">Load Breakdown</div>
+                    <div class="table-container">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 15px; text-align: left;">Faculty ID</th>
+                                    <th style="padding: 15px; text-align: left;">Faculty Name</th>
+                                    <th style="padding: 15px; text-align: left;">Assigned Duties</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    createKPI: function(label, value, icon) {
+        return `<div class="kpi-card"><img src="https://img.icons8.com/ios-filled/40/2563eb/${icon}.png" class="kpi-icon"><div class="kpi-value">${value}</div><div class="kpi-label">${label}</div></div>`;
+    }
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => AdvancedReportManager.init());
+

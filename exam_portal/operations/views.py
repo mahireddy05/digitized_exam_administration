@@ -1302,6 +1302,48 @@ def report_invigilation(request):
         except Examinations.DoesNotExist:
             pass
             
+    if exam_id and request.GET.get('export') == 'csv':
+        import csv
+        from django.http import HttpResponse
+        
+        # Determine which slots to export
+        slot_ids = request.GET.getlist('slot_ids')
+        if slot_ids:
+            slots_to_export = ExamSlot.objects.filter(id__in=slot_ids, examination_id=exam_id).order_by('exam_date', 'start_time')
+        else:
+            slots_to_export = ExamSlot.objects.filter(examination_id=exam_id).order_by('exam_date', 'start_time')
+            
+        response = HttpResponse(content_type='text/csv')
+        filename = f"Invigilation_Report_{exam_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        writer = csv.writer(response)
+        # Header Row
+        writer.writerow(['S.No', 'Date', 'Slot Code', 'Timing', 'Room No', 'Block', 'Faculty ID', 'Faculty Name'])
+        
+        counter = 1
+        for slot in slots_to_export:
+            # Timing string
+            timing = f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}"
+
+            # Find all duties for this slot
+            duties = InvigilationDuty.objects.filter(exam_slot=slot).select_related('faculty', 'room').order_by('room__room_code', 'faculty__faculty_name')
+            
+            for duty in duties:
+                writer.writerow([
+                    counter,
+                    slot.exam_date.strftime('%d-%m-%Y'),
+                    slot.slot_code,
+                    timing,
+                    duty.room.room_code,
+                    duty.room.block if duty.room.block else '-',
+                    duty.faculty.faculty_id,
+                    duty.faculty.faculty_name
+                ])
+                counter += 1
+                
+        return response
+
     base_template = "core/base_partial.html" if request.headers.get('x-requested-with') == 'XMLHttpRequest' else "core/base_admin.html"
     return render(request, "operations/reports/invigilation.html", {
         'exams': exams,
@@ -1310,6 +1352,7 @@ def report_invigilation(request):
         'selected_exam_id': exam_id,
         'base_template': base_template
     })
+
 
 def report_student_analysis(request):
     import json
@@ -1411,6 +1454,54 @@ def report_attendance(request):
     grouped_slots = []
     now = timezone.now()
     
+    if exam_id and request.GET.get('export') == 'csv':
+        import csv
+        from django.http import HttpResponse
+        try:
+            exam = Examinations.objects.get(id=exam_id)
+            selected_slots = request.GET.getlist('slot_ids')
+            
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="Attendance_{exam.exam_name.replace(" ", "_")}.csv"'
+            writer = csv.writer(response)
+            
+            # Header Rows
+            writer.writerow([f"ATTENDANCE REPORT: {exam.exam_name} ({exam.academic_year})"])
+            writer.writerow([])
+            writer.writerow(['S.No', 'Student ID', 'Student Name', 'Course Code', 'Course Name', 'Room No', 'Timing', 'Slot Code', 'Attendance Status'])
+            
+            s_no = 1
+            slots_qs = ExamSlot.objects.filter(examination=exam).order_by('exam_date', 'slot_code')
+            if selected_slots:
+                slots_qs = slots_qs.filter(id__in=selected_slots)
+
+            for slot in slots_qs:
+                seating = SeatingPlan.objects.filter(exam_slot=slot).select_related(
+                    'student_exam__student', 
+                    'room', 
+                    'student_exam__exam__course'
+                ).order_by('room__room_code', 'student_exam__student__student_id')
+                
+                for s in seating:
+                    att = Attendance.objects.filter(student_exam=s.student_exam).first()
+                    status = att.status if att else 'UNMARKED'
+                    writer.writerow([
+                        s_no,
+                        s.student_exam.student.student_id,
+                        s.student_exam.student.std_name,
+                        s.student_exam.exam.course.course_code if s.student_exam.exam.course else "N/A",
+                        s.student_exam.exam.course.course_name if s.student_exam.exam.course else "N/A",
+                        s.room.room_code,
+                        f"{slot.start_time.strftime('%H:%M')} - {slot.end_time.strftime('%H:%M')}",
+                        slot.slot_code,
+                        status
+                    ])
+                    s_no += 1
+            return response
+        except Examinations.DoesNotExist:
+            pass
+
+
     if exam_id:
         try:
             exam = Examinations.objects.get(id=exam_id)
@@ -1443,6 +1534,7 @@ def report_attendance(request):
                         'faculties': [],
                         'stats': {'total': 0, 'present': 0, 'absent': 0, 'unmarked': 0}
                     }
+
                     
                     seating = SeatingPlan.objects.filter(exam_slot=slot, room=room).select_related('student_exam__student')
                     duties = list(InvigilationDuty.objects.filter(exam_slot=slot, room=room).select_related('faculty'))
@@ -1470,7 +1562,6 @@ def report_attendance(request):
                     for idx, stud_plan in enumerate(student_list):
                         assigned_faculty = None
                         if faculty_count > 0:
-                            # Split students into segments for each faculty
                             per_fac = math.ceil(total_stud / faculty_count)
                             faculty_idx = idx // per_fac
                             if faculty_idx < faculty_count:
@@ -1490,6 +1581,8 @@ def report_attendance(request):
                             else:
                                 slot_info['stats']['absent'] += 1
                                 room_info['stats']['absent'] += 1
+
+
                         else:
                             slot_info['stats']['unmarked'] += 1
                             room_info['stats']['unmarked'] += 1
@@ -1505,7 +1598,6 @@ def report_attendance(request):
                                 else:
                                     f['absent'] += 1
                                 
-                                # Update submission time
                                 if not f['last_marked_at'] or att_record.marked_at > f['last_marked_at']:
                                     f['last_marked_at'] = att_record.marked_at
                             else:
@@ -1521,7 +1613,6 @@ def report_attendance(request):
                             elif status == 'UPCOMING':
                                 f['status'] = 'UPCOMING'
                             else:
-                                # Not fully marked. Check if slot is over.
                                 slot_end_dt = timezone.make_aware(datetime.combine(slot.exam_date, slot.end_time))
                                 if now <= slot_end_dt:
                                     f['status'] = 'PENDING'
@@ -1549,3 +1640,124 @@ def report_attendance(request):
         'selected_exam_id': exam_id,
         'base_template': base_template
     })
+
+
+@login_required
+def report_faculty_load(request):
+    from .models import Examinations, InvigilationDuty
+    from masters.models import Faculty
+    from django.db.models import Count, Q
+    
+    exam_id = request.GET.get('exam_id')
+    exams = Examinations.objects.all().order_by('-start_date')
+    
+    # Filter logic for Duty Count
+    count_q = Q()
+    if exam_id:
+        count_q = Q(invigilationduty__exam_slot__examination_id=exam_id)
+        
+    faculties_qs = Faculty.objects.filter(status='ACTIVE').annotate(
+        assigned_duties=Count('invigilationduty', filter=count_q)
+    ).select_related('dept').order_by('-assigned_duties')
+
+    
+    # Filter logic for detailed duties
+    duties_filter = Q()
+    if exam_id:
+        duties_filter = Q(exam_slot__examination_id=exam_id)
+        
+    duties_qs = InvigilationDuty.objects.filter(duties_filter).select_related(
+        'exam_slot__examination', 'room', 'faculty'
+    ).order_by('exam_slot__exam_date', 'exam_slot__start_time')
+    
+    # Group duties by faculty_id for template access
+    faculty_duties = {}
+    from django.utils import timezone
+    today = timezone.now().date()
+    
+    for duty in duties_qs:
+        fid = duty.faculty.faculty_id
+        if fid not in faculty_duties:
+            faculty_duties[fid] = []
+            
+        # Determine Status
+        status = "Upcoming"
+        exam = duty.exam_slot.examination
+        if exam.is_locked:
+            status = "Completed"
+        elif duty.exam_slot.exam_date < today:
+            status = "Completed"
+        elif duty.exam_slot.exam_date == today:
+            status = "Ongoing"
+            
+        faculty_duties[fid].append({
+            'date': duty.exam_slot.exam_date.strftime('%Y-%m-%d'),
+            'time': f"{duty.exam_slot.start_time.strftime('%I:%M %p')} - {duty.exam_slot.end_time.strftime('%I:%M %p')}",
+            'room': duty.room.room_code,
+            'block': duty.room.block,
+            'exam': exam.exam_name,
+            'status': status
+        })
+
+
+        
+    return render(request, "operations/reports/faculty_load.html", {
+        'faculties': faculties_qs,
+        'exams': exams,
+        'selected_exam_id': exam_id,
+        'faculty_duties': faculty_duties,
+    })
+
+
+@login_required
+def report_exam_overview(request):
+    from .models import Examinations, ExamSlot
+    from masters.models import Student, Faculty, Room
+    from django.db.models import Count
+    import json
+    
+    # Calculate metrics
+    metrics = {
+        'total_exams': Examinations.objects.count(),
+        'total_students': Student.objects.count(),
+        'total_rooms': Room.objects.filter(is_active=True).count(),
+        'total_faculty': Faculty.objects.count(),
+        'status_distribution': {
+            'scheduled': Examinations.objects.filter(published=False).count(),
+            'ongoing': Examinations.objects.filter(published=True, is_locked=False).count(),
+            'completed': Examinations.objects.filter(is_locked=True).count()
+        }
+    }
+    
+    # Get daily trend (formatted for Chart.js)
+    epd_qs = ExamSlot.objects.values('exam_date').annotate(count=Count('id')).order_by('exam_date')[:7]
+    exams_per_day = [{'exam_date': item['exam_date'].strftime('%Y-%m-%d'), 'count': item['count']} for item in epd_qs]
+    
+    return render(request, "operations/reports/exam_overview.html", {
+        **metrics,
+        'exams_per_day_json': json.dumps(exams_per_day),
+        'status_dist_json': json.dumps(metrics['status_distribution'])
+    })
+        
+    # Group by (slot, room) for paging
+    rooms_list = []
+    current_key = None
+    temp_data = None
+    
+    for plan in queryset:
+        key = (plan.exam_slot.id, plan.room.id)
+        if key != current_key:
+            if temp_data:
+                rooms_list.append(temp_data)
+            current_key = key
+            temp_data = {"slot": plan.exam_slot, "room": plan.room, "students": []}
+        temp_data["students"].append(plan)
+        
+    if temp_data:
+        rooms_list.append(temp_data)
+        
+    return render(request, "operations/reports/pdf_attendance_sheets.html", {
+        "exam": exam,
+        "rooms_list": rooms_list
+    })
+
