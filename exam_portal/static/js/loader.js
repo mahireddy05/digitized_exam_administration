@@ -8,6 +8,8 @@ window.Loader = {
     _isPermanent: false,
     _showTimeout: null,
     _dismissTimeout: null,
+    _timerInterval: null,
+    _startTime: null,
 
     getLabelForUrl: function(url) {
         url = (url || "").toLowerCase();
@@ -36,6 +38,18 @@ window.Loader = {
         if (subtextEl) subtextEl.textContent = subtext;
         if (dismissBtn) dismissBtn.classList.remove('visible');
 
+        // Timer Logic
+        const timerEl = document.getElementById('loader-timer');
+        if (timerEl) {
+            if (isPermanent) {
+                timerEl.style.display = 'block';
+                this.startTimer(timerEl);
+            } else {
+                timerEl.style.display = 'none';
+                this.stopTimer();
+            }
+        }
+
         this._showTimeout = setTimeout(() => {
             if (!this._isActive) return;
 
@@ -62,6 +76,28 @@ window.Loader = {
             }
         }, 500);
     },
+
+    startTimer: function(el) {
+        this.stopTimer();
+        this._startTime = Date.now();
+        this._timerInterval = setInterval(() => {
+            const elapsed = Date.now() - this._startTime;
+            const seconds = Math.floor((elapsed / 1000) % 60);
+            const minutes = Math.floor((elapsed / (1000 * 60)) % 60);
+            el.textContent = 
+                (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+                (seconds < 10 ? "0" + seconds : seconds);
+        }, 1000);
+    },
+
+    stopTimer: function() {
+        if (this._timerInterval) {
+            clearInterval(this._timerInterval);
+            this._timerInterval = null;
+        }
+        const timerEl = document.getElementById('loader-timer');
+        if (timerEl) timerEl.textContent = "00:00";
+    },
     
     hide: function() {
         if (this._showTimeout) clearTimeout(this._showTimeout);
@@ -71,6 +107,7 @@ window.Loader = {
         
         this._isActive = false;
         this._isPermanent = false;
+        this.stopTimer();
 
         const overlay = document.querySelector('.loader-overlay');
         const bar = document.querySelector('.top-progress');

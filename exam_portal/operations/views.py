@@ -1536,8 +1536,8 @@ def report_attendance(request):
                     }
 
                     
-                    seating = SeatingPlan.objects.filter(exam_slot=slot, room=room).select_related('student_exam__student')
-                    duties = list(InvigilationDuty.objects.filter(exam_slot=slot, room=room).select_related('faculty'))
+                    seating = SeatingPlan.objects.filter(exam_slot=slot, room=room).select_related('student_exam__student').order_by('row_no', 'seat_no')
+                    duties = list(InvigilationDuty.objects.filter(exam_slot=slot, room=room).select_related('faculty').order_by('faculty__faculty_id'))
                     
                     student_list = list(seating)
                     total_stud = len(student_list)

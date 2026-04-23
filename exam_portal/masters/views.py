@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.db import transaction
 from io import TextIOWrapper
 import csv
 import unicodedata
@@ -275,13 +276,7 @@ def batch_list(request):
 @login_required
 def batch_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
-        from io import TextIOWrapper
-        import csv
-        import collections
-        import unicodedata
-        import re
         from .models import Batch
-
         csv_file = request.FILES["csv_file"]
         success_count = 0
         error_groups = collections.defaultdict(list)
@@ -303,7 +298,6 @@ def batch_upload(request):
                 return redirect("core:settings")
 
             # Robust header normalization (removes BOM, non-alphanumeric, etc.)
-            import unicodedata
             def norm_h(s):
                 if not s: return ""
                 s = unicodedata.normalize("NFKC", s)
@@ -455,10 +449,6 @@ def coursereg_conflict_resolve(request):
 @login_required
 def course_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
-        from io import TextIOWrapper
-        import csv
-        import collections
-        import re
         from .models import Course, Department
 
         csv_file = request.FILES["csv_file"]
@@ -482,7 +472,6 @@ def course_upload(request):
                 return redirect("masters:courses")
 
             # Robust header normalization
-            import unicodedata
             def norm_h(s):
                 if not s: return ""
                 s = unicodedata.normalize("NFKC", s)
@@ -554,11 +543,6 @@ def course_upload(request):
 @login_required
 def faculty_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
-        from io import TextIOWrapper
-        import csv
-        import unicodedata
-        import re
-        import collections
         from .models import Department, Faculty
         from accounts.models import User
 
@@ -583,7 +567,6 @@ def faculty_upload(request):
                 return redirect("masters:faculty")
 
             # Robust header normalization
-            import unicodedata
             def norm_h(s):
                 if not s: return ""
                 s = unicodedata.normalize("NFKC", s)
@@ -669,7 +652,7 @@ def faculty_upload(request):
                     row_has_error = True
                     dept = None
                 else:
-                    norm_dept_name = normalize(dept_name)
+                    norm_dept_name = normalize_val(dept_name)
                     dept = dept_lookup.get(norm_dept_name)
                     if not dept:
                         error_groups["Departments not found in system"].append(dept_name)
@@ -1394,11 +1377,8 @@ def coursereg(request):
 @login_required
 def coursereg_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
-        from io import TextIOWrapper
-        import csv
         from .models import Student, Course
         from operations.models import StudentCourse
-        from django.db import transaction
 
         csv_file = request.FILES["csv_file"]
         success_count = 0
@@ -1475,7 +1455,6 @@ def coursereg_upload(request):
                         continue
 
                     # Normalization for student_id lookup
-                    import unicodedata, re
                     sid_norm = unicodedata.normalize("NFKC", sid)
                     sid_norm = re.sub(r"[\s\u00A0\u200B\u200C\u200D\ufeff]+", " ", sid_norm).strip().lower()
 
@@ -1579,10 +1558,6 @@ def display_students(request):
 @login_required
 def student_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
-        from io import TextIOWrapper
-        import csv
-        import unicodedata
-        import re
 
         csv_file = request.FILES["csv_file"]
         success_count = 0
@@ -1629,7 +1604,6 @@ def student_upload(request):
 
             mismatches = []
 
-            import collections
             error_groups = collections.defaultdict(list)
 
             # --- First pass: validate row structure and lookups, collect data ---
@@ -1894,7 +1868,6 @@ def student_update_conflicts(request):
         def normalize(val):
             if not val:
                 return ""
-            import unicodedata, re
             val = unicodedata.normalize("NFKC", val)
             val = re.sub(r"[\s\u00A0\u200B\u200C\u200D\uFEFF]+", " ", val)
             return val.strip().lower()
@@ -2050,9 +2023,6 @@ def room_add(request):
 @login_required
 def room_upload(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
-        from io import TextIOWrapper
-        import csv
-        import collections
         from .models import Room
 
         csv_file = request.FILES["csv_file"]
@@ -2076,7 +2046,6 @@ def room_upload(request):
                 return redirect("masters:rooms")
 
             # Robust header normalization
-            import unicodedata
             def norm_h(s):
                 if not s: return ""
                 s = unicodedata.normalize("NFKC", s)

@@ -156,3 +156,24 @@
     display: none;
     transition: width 0.3s ease;
 }
+
+/* Loader Timer */
+.loader-timer {
+    margin-top: 15px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2563eb;
+    background: rgba(37, 99, 235, 0.05);
+    padding: 8px 20px;
+    border-radius: 50px;
+    border: 1.5px solid rgba(37, 99, 235, 0.2);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+    letter-spacing: 2px;
+    animation: timer-pulse 2s infinite ease-in-out;
+}
+
+@keyframes timer-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.02); opacity: 0.8; }
+}
